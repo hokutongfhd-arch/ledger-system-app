@@ -1,0 +1,11 @@
+﻿node_modules/
+.next/
+.env
+.env.local
+.env.*.local
+.DS_Store
+npm-debug.log*
+yarn-error.log*
+dist/
+build/
+.vercel

@@ -1,0 +1,46 @@
+{
+    "theme": {
+        "colors": {
+            "background": "#FEFEF8",
+            "surface": "#FFFFFF",
+            "text": {
+                "primary": "#0A0E27",
+                "secondary": "#4A4E69",
+                "muted": "#8D90A1"
+            },
+            "border": "#0A0E27",
+            "accent": {
+                "primary": "#00F0FF",
+                "secondary": "#FF6B6B"
+            }
+        },
+        "typography": {
+            "fontFamily": {
+                "sans": [
+                    "Zen Kaku Gothic New",
+                    "sans-serif"
+                ],
+                "display": [
+                    "Space Grotesk",
+                    "sans-serif"
+                ]
+            }
+        },
+        "components": {
+            "button": {
+                "primary": {
+                    "bg": "#0A0E27",
+                    "text": "#FFFFFF",
+                    "border": "none",
+                    "hover": "opacity-90"
+                },
+                "secondary": {
+                    "bg": "transparent",
+                    "text": "#0A0E27",
+                    "border": "2px solid #0A0E27",
+                    "hover": "bg-ink text-white"
+                }
+            }
+        }
+    }
+}

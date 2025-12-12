@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-paper text-ink antialiased min-h-screen font-sans;
+  }
+
+  /* Custom Selection Color */
+  ::selection {
+    @apply bg-accent-electric text-ink;
+  }
+
+  /* Scrollbar - Ink Style */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-paper border-l border-ink;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink hover:bg-accent-violet transition-colors;
+  }
+}
+
+@layer components {
+
+  /* Literary Card Style */
+  .card {
+    @apply bg-white border-2 border-ink shadow-offset transition-all duration-300 rounded-none relative overflow-hidden;
+  }
+
+  .card:hover {
+    @apply transform -translate-x-1 -translate-y-1 shadow-offset-hover;
+  }
+
+  /* Number Badge for Cards */
+  .card-number {
+    @apply absolute top-0 left-0 bg-accent-electric px-3 py-1 font-display font-bold text-lg border-r-2 border-b-2 border-ink z-10;
+  }
+
+  /* Table Styles */
+  .table-container {
+    @apply w-full overflow-hidden border-2 border-ink bg-white shadow-offset rounded-none;
+  }
+
+  .table-header {
+    @apply bg-background-subtle border-b-2 border-ink text-xs font-bold text-ink uppercase tracking-widest text-left py-3 px-6 font-display;
+  }
+
+  .table-cell {
+    @apply py-4 px-6 text-sm text-ink border-b border-gray-200 whitespace-nowrap;
+  }
+}

@@ -1,0 +1,25 @@
+{
+    "components": [
+        {
+            "name": "StoryCard",
+            "description": "Main numbering card for featured content",
+            "usage": "Dashboard widgets, feature lists",
+            "props": {
+                "number": "01",
+                "title": "String",
+                "description": "String"
+            }
+        },
+        {
+            "name": "EditorialTable",
+            "description": "Clean data table with ink borders",
+            "usage": "Data lists (Devices, Employees)",
+            "style": "Border-collapse, 2px solid headers"
+        },
+        {
+            "name": "MinimalNav",
+            "description": "Fixed top navigation with underline interactions",
+            "usage": "Global navigation"
+        }
+    ]
+}

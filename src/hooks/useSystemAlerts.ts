@@ -1,0 +1,181 @@
+
+import { useMemo } from 'react';
+import { useData } from '../context/DataContext';
+
+export type AlertType =
+    | 'unregistered_employee'
+    | 'unregistered_address'
+    | 'unregistered_area'
+    | 'missing_receipt'
+    | 'duplicate_terminal'
+    | 'duplicate_management'
+    | 'duplicate_phone'
+    | 'duplicate_employee_code'
+    | 'duplicate_area_code'
+    | 'duplicate_address_code';
+
+export type AlertSource =
+    | 'iPhone'
+    | 'FeaturePhone'
+    | 'Tablet'
+    | 'Router'
+    | 'Employee'
+    | 'Area'
+    | 'Address';
+
+export interface SystemAlert {
+    id: string; // unique key for list
+    type: AlertType;
+    source: AlertSource;
+    message: string;
+    recordId: string; // For navigation
+    recordName?: string; // For display
+    path: string; // Navigation path
+}
+
+export const useSystemAlerts = () => {
+    const { tablets, iPhones, featurePhones, routers, employees, areas, addresses } = useData();
+
+    const alerts = useMemo(() => {
+        const result: SystemAlert[] = [];
+
+        // Pre-compute Sets for O(1) lookups
+        const employeeCodes = new Set(employees.map(e => e.code));
+        const addressCodes = new Set(addresses.map(a => a.addressCode));
+        const areaCodes = new Set(areas.map(a => a.areaCode));
+
+        // Helper to check frequencies
+        const checkDuplicates = (items: any[], key: string, source: AlertSource, path: string, label: string) => {
+            const counts: Record<string, string[]> = {};
+            items.forEach(item => {
+                const val = String(item[key] || '').trim();
+                if (val) {
+                    if (!counts[val]) counts[val] = [];
+                    counts[val].push(item.id);
+                }
+            });
+
+            Object.entries(counts).forEach(([val, ids]) => {
+                if (ids.length > 1) {
+                    ids.forEach(id => {
+                        result.push({
+                            id: `dup-${source}-${id}-${key}`,
+                            type: `duplicate_${key === 'terminalCode' ? 'terminal' : key === 'managementNumber' ? 'management' : key === 'phoneNumber' ? 'phone' : key === 'code' ? 'employee_code' : key === 'areaCode' ? 'area_code' : 'address_code'}` as AlertType,
+                            source,
+                            message: `${label}「${val}」が重複しています`,
+                            recordId: id,
+                            path: `${path}?highlight=${id}&field=${key}`
+                        });
+                    });
+                }
+            });
+        };
+
+        // 1. Unregistered Employee Code
+        // iPhone
+        iPhones.forEach(d => {
+            if (d.employeeId && !employeeCodes.has(d.employeeId)) {
+                result.push({
+                    id: `unreg-emp-iphone-${d.id}`,
+                    type: 'unregistered_employee',
+                    source: 'iPhone',
+                    message: `登録されていない社員コード「${d.employeeId}」が使用されています`,
+                    recordId: d.id,
+                    path: `/devices/iphones?highlight=${d.id}&field=employeeId`
+                });
+            }
+        });
+        // FeaturePhone
+        featurePhones.forEach(d => {
+            if (d.employeeId && !employeeCodes.has(d.employeeId)) {
+                result.push({
+                    id: `unreg-emp-fp-${d.id}`,
+                    type: 'unregistered_employee',
+                    source: 'FeaturePhone',
+                    message: `登録されていない社員コード「${d.employeeId}」が使用されています`,
+                    recordId: d.id,
+                    path: `/devices/feature-phones?highlight=${d.id}&field=employeeId`
+                });
+            }
+        });
+
+        // 2. Unregistered Address Code
+        // Tablet, iPhone, FeaturePhone, Router, Employee
+        const checkAddress = (item: any, source: AlertSource, path: string) => {
+            if (item.addressCode && !addressCodes.has(item.addressCode)) {
+                result.push({
+                    id: `unreg-addr-${source}-${item.id}`,
+                    type: 'unregistered_address',
+                    source,
+                    message: `登録されていない住所コード「${item.addressCode}」が使用されています`,
+                    recordId: item.id,
+                    path: `${path}?highlight=${item.id}&field=addressCode`
+                });
+            }
+        };
+        tablets.forEach(i => checkAddress(i, 'Tablet', '/devices/tablets'));
+        iPhones.forEach(i => checkAddress(i, 'iPhone', '/devices/iphones'));
+        featurePhones.forEach(i => checkAddress(i, 'FeaturePhone', '/devices/feature-phones'));
+        routers.forEach(i => checkAddress(i, 'Router', '/devices/routers'));
+        employees.forEach(i => checkAddress(i, 'Employee', '/masters/employees'));
+
+        // 3. Unregistered Area Code -> Employee
+        employees.forEach(e => {
+            if (e.areaCode && !areaCodes.has(e.areaCode)) {
+                result.push({
+                    id: `unreg-area-emp-${e.id}`,
+                    type: 'unregistered_area',
+                    source: 'Employee',
+                    message: `登録されていないエリアコード「${e.areaCode}」が使用されています`,
+                    recordId: e.id,
+                    path: `/masters/employees?highlight=${e.id}&field=areaCode`
+                });
+            }
+        });
+
+        // 4. Receipt Date is NULL (iPhone, FeaturePhone)
+        // Assume applies if lendDate is present (loaned) but receiptDate is missing
+        iPhones.forEach(i => {
+            if (i.lendDate && !i.receiptDate) {
+                result.push({
+                    id: `no-receipt-iphone-${i.id}`,
+                    type: 'missing_receipt',
+                    source: 'iPhone',
+                    message: '受領書受領日が未入力です',
+                    recordId: i.id,
+                    path: `/devices/iphones?highlight=${i.id}&field=receiptDate`
+                });
+            }
+        });
+        featurePhones.forEach(f => {
+            if (f.lendDate && !f.receiptDate) {
+                result.push({
+                    id: `no-receipt-fp-${f.id}`,
+                    type: 'missing_receipt',
+                    source: 'FeaturePhone',
+                    message: '受領書受領日が未入力です',
+                    recordId: f.id,
+                    path: `/devices/feature-phones?highlight=${f.id}&field=receiptDate`
+                });
+            }
+        });
+
+        // 5. Duplicates Checks
+        checkDuplicates(tablets, 'terminalCode', 'Tablet', '/devices/tablets', '端末CD');
+        checkDuplicates(routers, 'terminalCode', 'Router', '/devices/routers', '端末CD');
+
+        checkDuplicates(iPhones, 'managementNumber', 'iPhone', '/devices/iphones', '管理番号');
+        checkDuplicates(featurePhones, 'managementNumber', 'FeaturePhone', '/devices/feature-phones', '管理番号');
+
+        checkDuplicates(iPhones, 'phoneNumber', 'iPhone', '/devices/iphones', '電話番号');
+        checkDuplicates(featurePhones, 'phoneNumber', 'FeaturePhone', '/devices/feature-phones', '電話番号');
+
+        checkDuplicates(employees, 'code', 'Employee', '/masters/employees', '社員コード');
+        checkDuplicates(areas, 'areaCode', 'Area', '/masters/areas', 'エリアコード');
+        checkDuplicates(addresses, 'addressCode', 'Address', '/masters/addresses', '住所コード');
+
+        return result;
+    }, [tablets, iPhones, featurePhones, routers, employees, areas, addresses]);
+
+    return alerts;
+};

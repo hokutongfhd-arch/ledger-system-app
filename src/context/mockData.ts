@@ -1,0 +1,215 @@
+import type { Tablet, IPhone, FeaturePhone, Router, Employee, Area, Address } from '../types';
+
+export const mockAddresses: Address[] = [
+    {
+        id: '1',
+        no: '1',
+        addressCode: 'AD001',
+        officeName: '東京本社',
+        tel: '03-1234-5678',
+        fax: '03-1234-5679',
+        type: '本社',
+        zipCode: '100-0005',
+        address: '東京都千代田区丸の内1-9-1',
+        notes: '受付は2F',
+        division: '管理本部',
+        area: '東京',
+        mainPerson: 'Taro Yamada', // Assuming matches user name
+        branchNumber: '001',
+        specialNote: '',
+        labelName: '株式会社テスト',
+        labelZip: '100-0005',
+        labelAddress: '東京都千代田区丸の内1-9-1',
+        attentionNote: '郵送物は午前に',
+    },
+];
+
+export const mockAreas: Area[] = [
+    {
+        id: '1',
+        areaCode: '01',
+        areaName: '東京',
+    },
+    {
+        id: '2',
+        areaCode: '02',
+        areaName: '大阪',
+    },
+];
+
+export const mockTablets: Tablet[] = [
+    {
+        id: '1',
+        terminalCode: 'TAB-001',
+        maker: 'Apple',
+        modelNumber: 'iPad Air 5',
+        officeCode: 'OFF-001',
+        addressCode: '100-0001',
+        address: '東京都千代田区1-1-1',
+        notes: '画面に小傷あり',
+        history: '2023/04/01 貸出',
+        status: 'in-use',
+        assignee: '山田太郎'
+    },
+    {
+        id: '2',
+        terminalCode: 'TAB-002',
+        maker: 'Samsung',
+        modelNumber: 'Galaxy Tab S8',
+        officeCode: 'OFF-002',
+        addressCode: '530-0001',
+        address: '大阪府大阪市北区1-1-1',
+        notes: '美品',
+        history: '2023/05/15 貸出',
+        status: 'available',
+        assignee: ''
+    },
+    {
+        id: '3',
+        terminalCode: 'TAB-003',
+        maker: 'Microsoft',
+        modelNumber: 'Surface Go 3',
+        officeCode: 'OFF-001',
+        addressCode: '100-0001',
+        address: '東京都千代田区1-1-1',
+        notes: 'バッテリー持ち悪い',
+        history: '2023/01/10 修理完了',
+        status: 'broken',
+        assignee: '鈴木一郎'
+    },
+];
+
+export const mockIPhones: IPhone[] = [
+    {
+        id: '1',
+        carrier: 'Docomo',
+        phoneNumber: '090-1234-5678',
+        managementNumber: 'IP-001',
+        employeeId: 'EMP001',
+        user: 'Taro Yamada',
+        addressCode: 'ADDR001',
+        smartAddressId: 'smart01',
+        smartAddressPw: 'pass01',
+        lendDate: '2023-01-15',
+        receiptDate: '2023-01-20',
+        notes: 'Screen protector applied',
+        returnDate: '',
+        modelName: 'iPhone 13',
+        status: '貸出中'
+    },
+    {
+        id: '2',
+        carrier: 'Au',
+        phoneNumber: '080-9876-5432',
+        managementNumber: 'IP-002',
+        employeeId: 'EMP002',
+        user: 'Jiro Suzuki',
+        addressCode: 'ADDR002',
+        smartAddressId: 'smart02',
+        smartAddressPw: 'pass02',
+        lendDate: '2023-02-10',
+        receiptDate: '2023-02-15',
+        notes: 'Case provided',
+        returnDate: '',
+        modelName: 'iPhone SE',
+        status: '貸出中'
+    },
+];
+
+export const mockFeaturePhones: FeaturePhone[] = [
+    {
+        id: '1',
+        carrier: 'Au',
+        phoneNumber: '080-9876-5432',
+        managementNumber: 'FP-001',
+        employeeId: 'EMP002',
+        user: 'Jiro Suzuki',
+        addressCode: 'ADDR002',
+        costCompany: 'TechCorp',
+        lendDate: '2022-05-20',
+        receiptDate: '2022-05-20',
+        returnDate: '',
+        modelName: 'Gratina',
+        notes: '',
+    },
+];
+
+export const mockRouters: Router[] = [
+    {
+        id: '1',
+        no: '1',
+        biller: 'Softbank',
+        terminalCode: 'R-001',
+        modelNumber: 'Pocket WiFi',
+        carrier: 'Softbank',
+        cost: 4000,
+        costTransfer: '部門A',
+        dataCapacity: '50GB',
+        simNumber: '070-1111-2222',
+        ipAddress: '192.168.1.1',
+        subnetMask: '255.255.255.0',
+        startIp: '192.168.1.100',
+        endIp: '192.168.1.200',
+        company: 'TechCorp',
+        addressCode: '1000001',
+        actualLender: 'EMP001',
+        costBearer: '開発部',
+        actualLenderName: 'Taro Yamada',
+        lendingHistory: '2023-01-01: Lent to Taro',
+        notes: '',
+        returnDate: '',
+        contractStatus: 'Active',
+    },
+];
+export const mockEmployees: Employee[] = [
+    {
+        id: '1',
+        code: 'EMP001',
+        name: 'Taro Yamada',
+        nameKana: 'ヤマダ タロウ',
+        companyNo: '1',
+        departmentCode: 'DEP001',
+        email: 'taro@example.com',
+        role: 'admin',
+        password: 'password123',
+        gender: '男性',
+        birthDate: '1985-05-15',
+        joinDate: '2010-04-01',
+        age: 38,
+        yearsOfService: 13,
+        monthsHasuu: 8,
+        employeeType: '正社員',
+        salaryType: '月給',
+        costType: '直接',
+        areaCode: '01',
+        addressCode: '1000001',
+        roleTitle: '課長',
+        jobType: '営業',
+    },
+    {
+        id: '2',
+        code: 'EMP002',
+        name: 'Jiro Suzuki',
+        nameKana: 'スズキ ジロウ',
+        companyNo: '1',
+        departmentCode: 'DEP002',
+        email: 'jiro@example.com',
+        role: 'user',
+        password: 'password456', // Should be hidden in UI for non-admins usually, but here for mock
+        gender: '男性',
+        birthDate: '1990-08-20',
+        joinDate: '2015-04-01',
+        age: 33,
+        yearsOfService: 8,
+        monthsHasuu: 8,
+        employeeType: '正社員',
+        salaryType: '月給',
+        costType: '間接',
+        areaCode: '01',
+        addressCode: '1000002',
+        roleTitle: '主任',
+        jobType: '物流',
+    },
+];
+
+
