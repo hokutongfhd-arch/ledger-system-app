@@ -107,9 +107,10 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                         >
                             <option value="">選択してください</option>
-                            <option value="Docomo">Docomo</option>
+                            <option value="KDDI">KDDI</option>
                             <option value="Au">Au</option>
                             <option value="Softbank">Softbank</option>
+                            <option value="Docomo">Docomo</option>
                             <option value="Rakuten">Rakuten</option>
                         </select>
                     </div>
