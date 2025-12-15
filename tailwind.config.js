@@ -29,6 +29,10 @@ export default {
           secondary: '#4A4E69',
           muted: '#8D90A1',
         },
+        secondary: {
+          ocean: '#0EA5E9',
+          'ocean-dark': '#0284C7',
+        },
         border: {
           DEFAULT: '#0A0E27',
           light: '#E5E5E5',

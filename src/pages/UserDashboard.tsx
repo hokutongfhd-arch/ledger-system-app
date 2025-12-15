@@ -4,6 +4,7 @@ import { useSystemAlerts } from '../hooks/useSystemAlerts';
 import { AlertCircle, ChevronRight } from 'lucide-react';
 import { UserProfileCard } from '../components/ui/UserProfileCard';
 import { UserDeviceList } from '../components/ui/UserDeviceList';
+import { MemoPad } from '../components/ui/MemoPad';
 
 export const UserDashboard = () => {
     const { user } = useAuth();
@@ -44,7 +45,6 @@ export const UserDashboard = () => {
                 </div>
             </div>
 
-            {/* Alert Section */}
             {/* Alert Section */}
             <div className="space-y-6 mt-12">
                 <h2 className="text-2xl font-bold text-text-main font-display border-l-4 border-accent-coral pl-4 flex items-center gap-3">
@@ -88,6 +88,16 @@ export const UserDashboard = () => {
                     </div>
                 </div>
             </div>
-        </div >
+
+            {/* Memo Section */}
+            <div className="space-y-6 mt-12 mb-12">
+                <h2 className="text-2xl font-bold text-text-main font-display border-l-4 border-secondary-ocean pl-4 flex items-center gap-3">
+                    マイメモ
+                </h2>
+                <div className="h-full">
+                    {user && <MemoPad employeeCode={user.code} />}
+                </div>
+            </div>
+        </div>
     );
 };

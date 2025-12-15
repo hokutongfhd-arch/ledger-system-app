@@ -142,3 +142,10 @@ export interface Log {
     action: 'add' | 'update' | 'delete' | 'import';
     details: string;
 }
+
+export interface Memo {
+    id: number;
+    employee_code: string;
+    memo: string;
+    created_at?: string;
+}
