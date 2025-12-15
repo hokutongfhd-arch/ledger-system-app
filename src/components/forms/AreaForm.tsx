@@ -32,29 +32,34 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">エリアコード</label>
-                    <input
-                        type="text"
-                        name="areaCode"
-                        value={formData.areaCode}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        required
-                    />
-                </div>
+            <div className="space-y-8">
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">エリアコード</label>
+                            <input
+                                type="text"
+                                name="areaCode"
+                                value={formData.areaCode}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                required
+                            />
+                        </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">エリア名</label>
-                    <input
-                        type="text"
-                        name="areaName"
-                        value={formData.areaName}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        required
-                    />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア名</label>
+                            <input
+                                type="text"
+                                name="areaName"
+                                value={formData.areaName}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                required
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 

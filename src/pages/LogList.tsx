@@ -1,14 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Table } from '../components/ui/Table';
 import type { Log } from '../types';
-import { Search, Filter, Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Search, Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Archive, Calendar } from 'lucide-react';
+import { generateWeekRanges, getWeekRange } from '../utils/dateHelpers';
 
 export const LogList = () => {
-    const { logs } = useData();
+    const { logs, fetchLogRange, fetchLogMinDate } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
+
+    // Archive Logic
+    const [isArchiveMode, setIsArchiveMode] = useState(false);
+    const [weekOptions, setWeekOptions] = useState<{ start: Date; end: Date; label: string }[]>([]);
+    const [selectedWeekLabel, setSelectedWeekLabel] = useState<string>('');
+
+    useEffect(() => {
+        const initWeeks = async () => {
+            const minDateStr = await fetchLogMinDate();
+            if (minDateStr) {
+                const minDate = new Date(minDateStr);
+                // Calculate end of last week to exclude current week
+                const { start: currentWeekStart } = getWeekRange(new Date());
+                const endOfLastWeek = new Date(currentWeekStart);
+                endOfLastWeek.setDate(endOfLastWeek.getDate() - 1);
+
+                const ranges = generateWeekRanges(minDate, endOfLastWeek);
+                setWeekOptions(ranges);
+            }
+        };
+        initWeeks();
+    }, [fetchLogMinDate]);
+
+    const handleArchiveToggle = async () => {
+        const newMode = !isArchiveMode;
+        setIsArchiveMode(newMode);
+
+        if (newMode) {
+            // Switch to Archive: Select the most recent past week (index 1 if exists, else index 0)
+            // Actually index 0 is "current week" in our generator usually if we include today.
+            // Let's check generator... `generateWeekRanges` goes up to `toDate` (default today).
+            // So index 0 is this week.
+            if (weekOptions.length > 0) {
+                // Select the first option by default
+                const defaultWeek = weekOptions[0];
+                setSelectedWeekLabel(defaultWeek.label);
+                await fetchLogRange(defaultWeek.start.toISOString(), defaultWeek.end.toISOString());
+            }
+        } else {
+            // Switch back to Current: fetch current week
+            const { start, end } = getWeekRange(new Date());
+            await fetchLogRange(start.toISOString(), end.toISOString());
+        }
+    };
+
+    const handleWeekSelect = async (label: string) => {
+        setSelectedWeekLabel(label);
+        const range = weekOptions.find(w => w.label === label);
+        if (range) {
+            await fetchLogRange(range.start.toISOString(), range.end.toISOString());
+        }
+    };
 
     const filteredLogs = logs.filter(log =>
         Object.values(log).some(val =>
@@ -55,11 +108,26 @@ export const LogList = () => {
     return (
         <div className="space-y-4 h-full flex flex-col">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">ログ</h1>
+                <div className="flex items-center gap-4">
+                    <h1 className="text-2xl font-bold text-gray-800">
+                        {isArchiveMode ? 'ログ (アーカイブ)' : 'ログ (今週)'}
+                    </h1>
+                </div>
+
+                <button
+                    onClick={handleArchiveToggle}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors text-sm shadow-sm border ${isArchiveMode
+                        ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                >
+                    <Archive size={16} />
+                    {isArchiveMode ? '最新ログに戻る' : 'アーカイブ'}
+                </button>
             </div>
 
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-4 items-center">
-                <div className="relative flex-1 max-w-md">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div className="relative flex-1 max-w-md w-full">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                     <input
                         type="text"
@@ -69,9 +137,23 @@ export const LogList = () => {
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
                 </div>
-                <button className="text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100">
-                    <Filter size={20} />
-                </button>
+
+                {isArchiveMode && (
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Calendar size={18} className="text-gray-500" />
+                        <select
+                            value={selectedWeekLabel}
+                            onChange={(e) => handleWeekSelect(e.target.value)}
+                            className="border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
+                        >
+                            {weekOptions.map(option => (
+                                <option key={option.label} value={option.label}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
 
             <Table<Log>

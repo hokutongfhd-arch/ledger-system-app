@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Tablet, IPhone, FeaturePhone, Router, Employee, Area, Address, Log, DeviceStatus } from '../types';
 import { useAuth } from './AuthContext';
 import { supabase } from '../supabaseClient';
+import { getWeekRange } from '../utils/dateHelpers';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -33,6 +34,8 @@ interface DataContextType {
     updateAddress: (item: Address) => Promise<void>;
     deleteAddress: (id: string) => Promise<void>;
     addLog: (endpoint: string, action: 'add' | 'update' | 'delete' | 'import', details: string) => Promise<void>;
+    fetchLogRange: (startDate: string, endDate: string) => Promise<void>;
+    fetchLogMinDate: () => Promise<string | null>;
     logs: Log[];
 }
 
@@ -324,7 +327,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchData = async () => {
         try {
-            const [t, i, f, r, e, a, ad, l] = await Promise.all([
+            const [t, i, f, r, e, a, ad] = await Promise.all([
                 supabase.from('tablets').select('*'),
                 supabase.from('iphones').select('*'),
                 supabase.from('featurephones').select('*'),
@@ -332,8 +335,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 supabase.from('employees').select('*'),
                 supabase.from('areas').select('*'),
                 supabase.from('addresses').select('*'),
-                supabase.from('logs').select('*').order('created_at', { ascending: false }).limit(100),
             ]);
+
+            // Default fetch: Current week's logs
+            const { start, end } = getWeekRange(new Date());
+            const { data: logData } = await supabase.from('logs')
+                .select('*')
+                .gte('created_at', start.toISOString())
+                .lte('created_at', end.toISOString())
+                .order('created_at', { ascending: false });
 
             if (t.data) setTablets(t.data.map(mapTabletFromDb));
             if (i.data) setIPhones(i.data.map(mapIPhoneFromDb));
@@ -342,7 +352,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (e.data) setEmployees(e.data.map(mapEmployeeFromDb));
             if (a.data) setAreas(a.data.map(mapAreaFromDb));
             if (ad.data) setAddresses(ad.data.map(mapAddressFromDb));
-            if (l.data) setLogs(l.data.map(mapLogFromDb));
+            if (logData) setLogs(logData.map(mapLogFromDb));
 
         } catch (error) {
             console.error('Failed to fetch data from Supabase:', error);
@@ -495,6 +505,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updateAddress = (item: Address) => updateItem('addresses', item, mapAddressToDb, addresses, setAddresses);
     const deleteAddress = (id: string) => deleteItem('addresses', id, setAddresses);
 
+    const fetchLogRange = async (startDate: string, endDate: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('logs')
+                .select('*')
+                .gte('created_at', startDate)
+                .lte('created_at', endDate)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (data) setLogs(data.map(mapLogFromDb));
+        } catch (error) {
+            console.error('Failed to fetch log range:', error);
+        }
+    };
+
+    const fetchLogMinDate = async (): Promise<string | null> => {
+        try {
+            const { data, error } = await supabase
+                .from('logs')
+                .select('created_at')
+                .order('created_at', { ascending: true })
+                .limit(1)
+                .single();
+
+            if (error) return null; // Likely no logs
+            return data?.created_at || null;
+        } catch (error) {
+            console.error('Failed to fetch min log date:', error);
+            return null;
+        }
+    };
+
     return (
         <DataContext.Provider value={{
             tablets, iPhones, featurePhones, routers, employees, areas, addresses,
@@ -506,6 +549,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addArea, updateArea, deleteArea,
             addAddress, updateAddress, deleteAddress,
             addLog: logAction,
+            fetchLogRange,
+            fetchLogMinDate,
             logs
         }}>
             {children}
