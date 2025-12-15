@@ -13,6 +13,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { Pagination } from '../../components/ui/Pagination';
 import { ActionButton } from '../../components/ui/ActionButton';
+import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const IPhoneList = () => {
     const { iPhones, addIPhone, updateIPhone, deleteIPhone, addLog } = useData();
@@ -155,7 +156,7 @@ export const IPhoneList = () => {
         const headers = [
             'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
             '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
-            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID'
+            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
         ];
         const csvContent = [
             headers.join(','),
@@ -173,7 +174,8 @@ export const IPhoneList = () => {
                 `"${item.notes}"`,
                 item.returnDate,
                 item.modelName,
-                item.id
+                item.id,
+                item.contractYears || ''
             ].join(','))
         ].join('\n');
 
@@ -209,7 +211,7 @@ export const IPhoneList = () => {
             const requiredHeaders = [
                 'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
                 '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
-                '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID'
+                '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
             ];
 
             const invalidHeaders = headers.filter(h => !requiredHeaders.includes(h));
@@ -244,8 +246,36 @@ export const IPhoneList = () => {
                         const date = new Date((val - 25569) * 86400 * 1000);
                         return date.toISOString().split('T')[0];
                     }
-                    return String(val);
+                    const strVal = String(val).trim();
+                    // Replace slashes with hyphens for DB compatibility
+                    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(strVal)) {
+                        return strVal.replace(/\//g, '-');
+                    }
+                    return strVal;
                 };
+
+                // Date Validation Helper
+                const isValidDate = (dateStr: string) => {
+                    if (!dateStr) return true;
+                    // Check for YYYY-MM-DD or YYYY/MM/DD
+                    return /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr);
+                };
+
+                let rawLendDate = formatDate(rowData['貸与日']);
+                let rawReceiptDate = formatDate(rowData['受領書提出日']);
+                let rawReturnDate = formatDate(rowData['返却日']);
+                let notes = String(rowData['備考1'] || '');
+
+                if (rawLendDate && !isValidDate(rawLendDate)) {
+                    notes += ` (貸与日: ${rawLendDate})`;
+                    rawLendDate = '';
+                }
+                // receiptDate is now text, so no date validation needed - just store whatever was there (formatted if it was a date)
+
+                if (rawReturnDate && !isValidDate(rawReturnDate)) {
+                    notes += ` (返却日: ${rawReturnDate})`;
+                    rawReturnDate = '';
+                }
 
                 const newIPhone: Omit<IPhone, 'id'> & { id?: string } = {
                     carrier: String(rowData['キャリア'] || ''),
@@ -256,13 +286,14 @@ export const IPhoneList = () => {
                     addressCode: String(rowData['住所コード'] || ''),
                     smartAddressId: String(rowData['SMARTアドレス帳ID'] || ''),
                     smartAddressPw: String(rowData['SMARTアドレス帳PW'] || ''),
-                    lendDate: formatDate(rowData['貸与日']),
-                    receiptDate: formatDate(rowData['受領書提出日']),
-                    notes: String(rowData['備考1'] || ''),
-                    returnDate: formatDate(rowData['返却日']),
+                    lendDate: rawLendDate,
+                    receiptDate: rawReceiptDate,
+                    notes: notes.trim(),
+                    returnDate: rawReturnDate,
                     modelName: String(rowData['機種名'] || ''),
                     status: '貸出準備中',
-                    id: rowData['ID'] ? String(rowData['ID']) : undefined
+                    id: rowData['ID'] ? String(rowData['ID']) : undefined,
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || ''))
                 };
 
                 if (newIPhone.user) newIPhone.status = '貸出中';
@@ -272,9 +303,13 @@ export const IPhoneList = () => {
                 try {
                     await addIPhone(newIPhone, true);
                     successCount++;
-                } catch (error) {
+                } catch (error: any) {
                     console.error('Import error for row:', row, error);
                     errorCount++;
+                    // Show alert for the first error to help debugging
+                    if (errorCount === 1) {
+                        alert(`インポートエラー (行 ${i + 2}): ${error.message || JSON.stringify(error)}`);
+                    }
                 }
             }
 
@@ -294,7 +329,7 @@ export const IPhoneList = () => {
         const headers = [
             'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
             '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
-            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID'
+            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
@@ -377,6 +412,7 @@ export const IPhoneList = () => {
                     { header: '使用者名', accessor: 'user' },
                     { header: 'キャリア', accessor: 'carrier' },
                     { header: '貸与日', accessor: 'lendDate' },
+                    { header: '契約年数', accessor: 'contractYears' },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
@@ -431,7 +467,8 @@ export const IPhoneList = () => {
                     notes: '備考1',
                     returnDate: '返却日',
                     modelName: '機種名',
-                    id: 'ID'
+                    id: 'ID',
+                    contractYears: '契約年数'
                 }}
             />
         </div>

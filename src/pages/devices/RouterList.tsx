@@ -9,6 +9,7 @@ import { Modal } from '../../components/ui/Modal';
 import { DetailModal } from '../../components/ui/DetailModal';
 import { RouterForm } from '../../components/forms/RouterForm';
 import * as XLSX from 'xlsx';
+import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const RouterList = () => {
     const { routers, addRouter, updateRouter, deleteRouter, addLog } = useData();
@@ -145,7 +146,7 @@ export const RouterList = () => {
         const headers = [
             'No', '請求元', '端末CD', '機種型番', 'キャリア', '費用', '費用振替', '通信容量',
             'SIM電番', 'IPアドレス', 'サブネットマスク', '開始IP', '終了IP', '会社',
-            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考', '返却日', '契約状況'
+            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考', '返却日', '契約状況', '契約年数'
         ];
 
         const csvContent = [
@@ -172,7 +173,9 @@ export const RouterList = () => {
                 `"${item.lendingHistory}"`,
                 `"${item.notes}"`,
                 item.returnDate,
+                item.returnDate,
                 item.contractStatus,
+                item.contractYears || ''
             ].join(','))
         ].join('\n');
 
@@ -187,7 +190,7 @@ export const RouterList = () => {
         const headers = [
             'No.', '請求元', '端末ＣＤ', '機種型番', '通信キャリア', '費用', '費用振替', '通信容量',
             'SIM電番', 'ＩＰアドレス', 'サブネットマスク', '開始ＩＰ', '終了ＩＰ', '会社',
-            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況'
+            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況', '契約年数'
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
@@ -220,7 +223,7 @@ export const RouterList = () => {
             const requiredHeaders = [
                 'No.', '請求元', '端末ＣＤ', '機種型番', '通信キャリア', '費用', '費用振替', '通信容量',
                 'SIM電番', 'ＩＰアドレス', 'サブネットマスク', '開始ＩＰ', '終了ＩＰ', '会社',
-                '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況'
+                '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況', '契約年数'
             ];
 
             const invalidHeaders = headers.filter(h => !requiredHeaders.includes(h));
@@ -271,6 +274,7 @@ export const RouterList = () => {
                     lendingHistory: String(rowData['貸与履歴'] || ''),
                     notes: String(rowData['備考(返却日)'] || ''),
                     contractStatus: String(rowData['契約状況'] || ''),
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     returnDate: '',
                 };
 
@@ -391,6 +395,7 @@ export const RouterList = () => {
                     { header: '通信キャリア', accessor: 'carrier' },
                     { header: 'SIM電番', accessor: 'simNumber' },
                     { header: '実貸与先名', accessor: 'actualLenderName' },
+                    { header: '契約年数', accessor: 'contractYears' },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
@@ -521,6 +526,7 @@ export const RouterList = () => {
                     lendingHistory: '貸与履歴',
                     notes: '備考(返却日)',
                     contractStatus: '契約状況',
+                    contractYears: '契約年数',
                 }}
             />
         </div>

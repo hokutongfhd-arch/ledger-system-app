@@ -24,6 +24,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         modelName: '',
         notes: '',
         status: '貸出準備中',
+        contractYears: '',
     });
 
     useEffect(() => {
@@ -113,7 +114,17 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                         </select>
                     </div>
 
-
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">契約年数</label>
+                        <input
+                            type="text"
+                            name="contractYears"
+                            value={formData.contractYears || ''}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="例: 2年"
+                        />
+                    </div>
                 </div>
 
                 {/* User Info */}
@@ -168,11 +179,12 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">受領書提出日</label>
                             <input
-                                type="date"
+                                type="text"
                                 name="receiptDate"
                                 value={formData.receiptDate}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="日付またはテキスト"
                             />
                         </div>
 
@@ -228,7 +240,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                         />
                     </div>
                 </div>
-            </div>
+            </div >
 
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
                 <button

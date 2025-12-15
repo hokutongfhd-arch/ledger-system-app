@@ -46,3 +46,20 @@ export const toFullWidthKana = (str: string): string => {
 
     return result;
 };
+
+/**
+ * Normalizes the contract year string.
+ * Converts full-width numbers to half-width and ensures "年" suffix.
+ * e.g., "２年" -> "2年", "2" -> "2年"
+ */
+export const normalizeContractYear = (str: string): string => {
+    if (!str) return '';
+    // Convert full-width numbers to half-width
+    let normalized = str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    // Extract numbers
+    const match = normalized.match(/(\d+)/);
+    if (match) {
+        return `${match[1]}年`;
+    }
+    return str;
+};

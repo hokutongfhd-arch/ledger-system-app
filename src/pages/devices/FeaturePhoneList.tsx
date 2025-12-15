@@ -9,6 +9,7 @@ import { DetailModal } from '../../components/ui/DetailModal';
 import { FeaturePhoneForm } from '../../components/forms/FeaturePhoneForm';
 import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
+import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const FeaturePhoneList = () => {
     const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog } = useData();
@@ -144,7 +145,7 @@ export const FeaturePhoneList = () => {
     const handleExportCSV = () => {
         const headers = [
             'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
-            '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名'
+            '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名', '契約年数'
         ];
         const csvContent = [
             headers.join(','),
@@ -159,8 +160,10 @@ export const FeaturePhoneList = () => {
                 item.lendDate,
                 item.receiptDate,
                 `"${item.notes}"`,
+                `"${item.notes}"`,
                 item.returnDate,
-                item.modelName
+                item.modelName,
+                item.contractYears || ''
             ].join(','))
         ].join('\n');
 
@@ -174,7 +177,7 @@ export const FeaturePhoneList = () => {
     const handleDownloadTemplate = () => {
         const headers = [
             'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
-            '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名'
+            '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名', '契約年数'
         ];
 
         // Create a worksheet with just the headers
@@ -209,7 +212,7 @@ export const FeaturePhoneList = () => {
             const headers = jsonData[0] as string[];
             const requiredHeaders = [
                 'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
-                '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名'
+                '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名', '契約年数'
             ];
 
             const invalidHeaders = headers.filter(h => !requiredHeaders.includes(h));
@@ -260,6 +263,7 @@ export const FeaturePhoneList = () => {
                     notes: String(rowData['備考1'] || ''),
                     returnDate: formatDate(rowData['返却日']),
                     modelName: String(rowData['機種名'] || ''),
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                 };
 
                 if (!newFeaturePhone.managementNumber) continue;
@@ -384,6 +388,7 @@ export const FeaturePhoneList = () => {
                     { header: '使用者名', accessor: 'user' },
                     { header: 'キャリア', accessor: 'carrier' },
                     { header: '貸与日', accessor: 'lendDate' },
+                    { header: '契約年数', accessor: 'contractYears' },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
@@ -498,7 +503,8 @@ export const FeaturePhoneList = () => {
                     receiptDate: '受領書提出日',
                     notes: '備考1',
                     returnDate: '返却日',
-                    modelName: '機種名'
+                    modelName: '機種名',
+                    contractYears: '契約年数'
                 }}
             />
         </div>

@@ -9,6 +9,7 @@ import { Modal } from '../../components/ui/Modal';
 import { DetailModal } from '../../components/ui/DetailModal';
 import { TabletForm } from '../../components/forms/TabletForm';
 import * as XLSX from 'xlsx';
+import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const TabletList = () => {
     const { tablets, addTablet, updateTablet, deleteTablet, addLog } = useData();
@@ -145,7 +146,7 @@ export const TabletList = () => {
     };
 
     const handleExportCSV = () => {
-        const headers = ['端末CD', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '状況', '備考', '過去貸与履歴'];
+        const headers = ['端末CD', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '状況', '備考', '過去貸与履歴', '契約年数'];
         const csvContent = [
             headers.join(','),
             ...filteredData.map(item => [
@@ -157,7 +158,8 @@ export const TabletList = () => {
                 item.address,
                 item.status,
                 `"${item.notes}"`,
-                `"${item.history}"`
+                `"${item.history}"`,
+                item.contractYears || ''
             ].join(','))
         ].join('\n');
 
@@ -170,7 +172,7 @@ export const TabletList = () => {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況'
+            '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況', '契約年数'
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
@@ -201,7 +203,7 @@ export const TabletList = () => {
 
             const headerRow = data[0];
             const requiredHeaders = [
-                '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況'
+                '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況', '契約年数'
             ];
 
             const isValidHeader = requiredHeaders.every((header, index) => headerRow[index] === header);
@@ -243,6 +245,7 @@ export const TabletList = () => {
                     history: String(row[7] || ''),
                     status: statusMap[String(row[8] || '')] || 'available',
                     assignee: '', // Default empty for imported data
+                    contractYears: normalizeContractYear(String(row[9] || ''))
                 };
 
                 try {
@@ -359,6 +362,7 @@ export const TabletList = () => {
                         )
                     },
                     { header: '事業所CD', accessor: 'officeCode' },
+                    { header: '契約年数', accessor: 'contractYears' },
                     {
                         header: '状況', accessor: (item) => (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium 
@@ -484,7 +488,8 @@ export const TabletList = () => {
                     notes: '備考',
                     history: '過去貸与履歴',
                     id: 'ID',
-                    assignee: '使用者'
+                    assignee: '使用者',
+                    contractYears: '契約年数'
                 }}
             />
         </div>

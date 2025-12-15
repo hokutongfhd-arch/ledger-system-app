@@ -54,6 +54,7 @@ const mapTabletFromDb = (d: any): Tablet => ({
     history: s(d.lend_history),
     status: (d.status as DeviceStatus) || 'available',
     assignee: '',
+    contractYears: s(d.contract_years),
 });
 
 const mapTabletToDb = (t: Partial<Tablet>) => ({
@@ -66,6 +67,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     notes: t.notes,
     lend_history: t.history,
     status: t.status,
+    contract_years: t.contractYears,
 });
 
 const mapIPhoneFromDb = (d: any): IPhone => ({
@@ -84,6 +86,7 @@ const mapIPhoneFromDb = (d: any): IPhone => ({
     returnDate: s(d.return_date),
     modelName: s(d.model_name),
     status: '貸出中', // Placeholder as 'status' column is missing in provided DB schema
+    contractYears: s(d.contract_years),
 });
 
 const mapIPhoneToDb = (t: Partial<IPhone>) => ({
@@ -100,6 +103,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     notes: t.notes,
     return_date: t.returnDate,
     model_name: t.modelName,
+    contract_years: t.contractYears,
 });
 
 const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
@@ -116,6 +120,7 @@ const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
     notes: s(d.notes),
     returnDate: s(d.return_date),
     modelName: s(d.model_name),
+    contractYears: s(d.contract_years),
 });
 
 const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
@@ -131,6 +136,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     notes: t.notes,
     return_date: t.returnDate,
     model_name: t.modelName,
+    contract_years: t.contractYears,
 });
 
 const mapRouterFromDb = (d: any): Router => ({
@@ -157,6 +163,7 @@ const mapRouterFromDb = (d: any): Router => ({
     notes: s(d.notes),
     contractStatus: s(d.contract_status),
     returnDate: '', // Missing in DB
+    contractYears: s(d.contract_years),
 });
 
 const mapRouterToDb = (t: Partial<Router>) => ({
@@ -181,6 +188,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     lend_history: t.lendingHistory,
     notes: t.notes,
     contract_status: t.contractStatus,
+    contract_years: t.contractYears,
 });
 
 const mapEmployeeFromDb = (d: any): Employee => ({

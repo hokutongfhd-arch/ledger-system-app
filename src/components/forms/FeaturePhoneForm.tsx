@@ -21,6 +21,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         returnDate: '',
         modelName: '',
         notes: '',
+        contractYears: '',
     });
 
     useEffect(() => {
@@ -96,6 +97,18 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             <option value="Softbank">Softbank</option>
                         </select>
                     </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">契約年数</label>
+                        <input
+                            type="text"
+                            name="contractYears"
+                            value={formData.contractYears || ''}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="例: 2年"
+                        />
+                    </div>
                 </div>
 
                 <div className="space-y-4">
@@ -163,11 +176,12 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">受領書提出日</label>
                         <input
-                            type="date"
+                            type="text"
                             name="receiptDate"
                             value={formData.receiptDate}
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="日付またはテキスト"
                         />
                     </div>
 

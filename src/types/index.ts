@@ -12,6 +12,7 @@ export interface Tablet {
     history: string;
     status: DeviceStatus;
     assignee: string; // For permission check
+    contractYears?: string;
 }
 
 export interface IPhone {
@@ -30,6 +31,7 @@ export interface IPhone {
     returnDate: string;
     modelName: string;
     status: '貸出中' | '返却済み' | '貸出準備中';
+    contractYears?: string;
 }
 
 export interface FeaturePhone {
@@ -46,6 +48,7 @@ export interface FeaturePhone {
     notes: string; // notes1
     returnDate: string;
     modelName: string;
+    contractYears?: string;
 }
 
 export interface Router {
@@ -72,6 +75,7 @@ export interface Router {
     notes: string; // 備考
     returnDate: string; // 返却日 (part of notes requirement but good to have separate)
     contractStatus: string; // 契約状況
+    contractYears?: string;
 }
 
 
