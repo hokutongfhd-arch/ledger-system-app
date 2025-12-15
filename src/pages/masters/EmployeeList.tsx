@@ -11,6 +11,7 @@ import { EmployeeForm } from '../../components/forms/EmployeeForm';
 import { DetailModal } from '../../components/ui/DetailModal';
 
 import { useAuth } from '../../context/AuthContext';
+import { toFullWidthKana } from '../../utils/stringUtils';
 
 export const EmployeeList = () => {
     const { employees, addEmployee, updateEmployee, deleteEmployee, addLog } = useData();
@@ -245,6 +246,10 @@ export const EmployeeList = () => {
                             if (englishKey === 'gender') {
                                 if (value === 1 || value === '1') processedValue = '男性';
                                 else if (value === 2 || value === '2') processedValue = '女性';
+                            }
+
+                            if (englishKey === 'nameKana' && typeof value === 'string') {
+                                processedValue = toFullWidthKana(value);
                             }
 
                             if (englishKey === 'role') {

@@ -88,9 +88,9 @@ export const LogList = () => {
                         header: '操作',
                         accessor: (item) => (
                             <span className={`px-3 py-0.5 rounded text-xs font-bold ${item.action === 'add' ? 'bg-emerald-50 text-emerald-500' :
-                                    item.action === 'update' ? 'bg-blue-50 text-blue-500' :
-                                        item.action === 'delete' ? 'bg-red-50 text-red-500' :
-                                            'bg-purple-50 text-purple-500'
+                                item.action === 'update' ? 'bg-blue-50 text-blue-500' :
+                                    item.action === 'delete' ? 'bg-red-50 text-red-500' :
+                                        'bg-purple-50 text-purple-500'
                                 }`}>
                                 {item.action === 'add' ? '追加' :
                                     item.action === 'update' ? '更新' :
