@@ -63,7 +63,7 @@ export const Sidebar = () => {
                 {user?.role === 'admin' && (
                     <SidebarSection>
                         <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" />
-                        <SidebarItem to="/logs" icon={Bell} label="ログ" />
+                        <SidebarItem to="/logs" icon={Bell} label="log" />
                     </SidebarSection>
                 )}
 
