@@ -431,7 +431,7 @@ export const EmployeeList = () => {
                         header: '社員コード', accessor: (item) => (
                             <button
                                 onClick={() => setDetailItem(item)}
-                                className="text-primary hover:text-primary-hover hover:underline text-left font-medium"
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium"
                             >
                                 {item.code}
                             </button>

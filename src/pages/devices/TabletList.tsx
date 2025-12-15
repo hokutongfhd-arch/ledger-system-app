@@ -352,7 +352,7 @@ export const TabletList = () => {
                         header: '端末CD', accessor: (item) => (
                             <button
                                 onClick={() => setDetailItem(item)}
-                                className="text-primary hover:text-primary-hover hover:underline text-left font-medium"
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium"
                             >
                                 {item.terminalCode}
                             </button>

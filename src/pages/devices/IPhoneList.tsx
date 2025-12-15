@@ -366,7 +366,7 @@ export const IPhoneList = () => {
                         header: '管理番号', accessor: (item) => (
                             <button
                                 onClick={() => setDetailItem(item)}
-                                className="text-primary hover:text-primary-hover hover:underline text-left font-medium whitespace-nowrap"
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium whitespace-nowrap"
                             >
                                 {item.managementNumber}
                             </button>
