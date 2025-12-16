@@ -40,7 +40,7 @@ export interface FeaturePhone {
     phoneNumber: string;
     managementNumber: string;
     employeeId: string;
-    user: string; // User Name
+
     addressCode: string;
     costCompany: string;
     lendDate: string;

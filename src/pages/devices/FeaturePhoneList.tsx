@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const FeaturePhoneList = () => {
-    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog } = useData();
+    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog, employees } = useData();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<FeaturePhone | undefined>(undefined);
@@ -36,7 +36,7 @@ export const FeaturePhoneList = () => {
     const handleDelete = async (item: FeaturePhone) => {
         if (window.confirm('本当に削除しますか？')) {
             await deleteFeaturePhone(item.id, true);
-            await addLog('featurePhones', 'delete', `ガラホ削除: ${item.managementNumber} (${item.user})`);
+            await addLog('featurePhones', 'delete', `ガラホ削除: ${item.managementNumber} (${item.employeeId})`);
         }
     };
 
@@ -84,7 +84,7 @@ export const FeaturePhoneList = () => {
         try {
             if (editingItem) {
                 await updateFeaturePhone({ ...data, id: editingItem.id }, true);
-                await addLog('featurePhones', 'update', `ガラホ更新: ${data.managementNumber} (${data.user})`);
+                await addLog('featurePhones', 'update', `ガラホ更新: ${data.managementNumber} (${data.employeeId})`);
                 // Check if this was the highlighted item
                 if (editingItem.id === searchParams.get('highlight')) {
                     setSearchParams(prev => {
@@ -96,7 +96,7 @@ export const FeaturePhoneList = () => {
                 }
             } else {
                 await addFeaturePhone(data, true);
-                await addLog('featurePhones', 'add', `ガラホ新規登録: ${data.managementNumber} (${data.user})`);
+                await addLog('featurePhones', 'add', `ガラホ新規登録: ${data.managementNumber} (${data.employeeId})`);
             }
             setIsModalOpen(false);
         } catch (error) {
@@ -147,7 +147,7 @@ export const FeaturePhoneList = () => {
 
     const handleExportCSV = () => {
         const headers = [
-            'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
+            'キャリア', '電話番号', '管理番号', '社員コード', // User Name removed
             '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名', '契約年数'
         ];
         const csvContent = [
@@ -157,7 +157,6 @@ export const FeaturePhoneList = () => {
                 item.phoneNumber,
                 item.managementNumber,
                 item.employeeId,
-                item.user,
                 item.addressCode,
                 item.costCompany,
                 item.lendDate,
@@ -179,7 +178,7 @@ export const FeaturePhoneList = () => {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
+            'キャリア', '電話番号', '管理番号', '社員コード',
             '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名', '契約年数'
         ];
 
@@ -214,7 +213,7 @@ export const FeaturePhoneList = () => {
 
             const headers = jsonData[0] as string[];
             const requiredHeaders = [
-                'キャリア', '電話番号', '管理番号', '社員コード', '使用者名',
+                'キャリア', '電話番号', '管理番号', '社員コード',
                 '住所コード', '負担先会社', '貸与日', '受領書提出日', '備考1', '返却日', '機種名', '契約年数'
             ];
 
@@ -258,7 +257,6 @@ export const FeaturePhoneList = () => {
                     phoneNumber: String(rowData['電話番号'] || ''),
                     managementNumber: String(rowData['管理番号'] || ''),
                     employeeId: String(rowData['社員コード'] || ''),
-                    user: String(rowData['使用者名'] || ''),
                     addressCode: String(rowData['住所コード'] || ''),
                     costCompany: String(rowData['負担先会社'] || ''),
                     lendDate: formatDate(rowData['貸与日']),
@@ -341,7 +339,7 @@ export const FeaturePhoneList = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
                     <input
                         type="text"
-                        placeholder="検索 (管理番号, 使用者, 電話番号...)"
+                        placeholder="検索 (管理番号, 電話番号...)"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-background-subtle text-text-main placeholder-text-muted"
@@ -388,7 +386,10 @@ export const FeaturePhoneList = () => {
                     },
                     { header: '機種名', accessor: 'modelName' },
                     { header: '電話番号', accessor: 'phoneNumber' },
-                    { header: '使用者名', accessor: 'user' },
+                    {
+                        header: '使用者名',
+                        accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || ''
+                    },
                     { header: 'キャリア', accessor: 'carrier' },
                     { header: '貸与日', accessor: 'lendDate' },
                     { header: '契約年数', accessor: 'contractYears' },
@@ -527,10 +528,12 @@ export const FeaturePhoneList = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">使用者名</label>
-                                    <div className="text-gray-900">{detailItem.user || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {employees.find(e => e.code === detailItem.employeeId)?.name || '未登録'}
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員番号</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
                                     <div className="text-gray-900">{detailItem.employeeId || '-'}</div>
                                 </div>
                                 <div>
