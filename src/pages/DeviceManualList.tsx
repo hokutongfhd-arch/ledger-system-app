@@ -194,6 +194,15 @@ export const DeviceManualList = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [dragActive, setDragActive] = useState(false);
 
+    // Alert Modal State
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
+    const showAlert = (message: string) => {
+        setAlertMessage(message);
+        setIsAlertOpen(true);
+    };
+
     const allowedExtensions = ['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.pdf', '.csv'];
 
     const handleDrag = (e: React.DragEvent) => {
@@ -210,7 +219,7 @@ export const DeviceManualList = () => {
         const fileName = file.name.toLowerCase();
         const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
         if (!isValid) {
-            alert(`許可されていないファイル形式です。\n許可のみ: ${allowedExtensions.join(', ')}`);
+            showAlert(`許可されていないファイル形式です。\n許可のみ: ${allowedExtensions.join(', ')}`);
             return false;
         }
         return true;
@@ -240,7 +249,7 @@ export const DeviceManualList = () => {
 
     const handleRegister = async () => {
         if (!title || !selectedFile) {
-            alert('タイトルとファイルを入力してください');
+            showAlert('タイトルとファイルを入力してください');
             return;
         }
 
@@ -248,7 +257,7 @@ export const DeviceManualList = () => {
         // Check for duplicates globally
         const isDuplicate = manuals.some(item => item.files.some(f => f.name === selectedFile.name));
         if (isDuplicate) {
-            alert('同じ名前のファイルが既に存在します。');
+            showAlert('同じ名前のファイルが既に存在します。');
             return;
         }
 
@@ -310,7 +319,7 @@ export const DeviceManualList = () => {
 
         } catch (error: any) {
             console.error('Error registering manual:', error);
-            alert(`登録に失敗しました: ${error.message || JSON.stringify(error)}`);
+            showAlert(`登録に失敗しました: ${error.message || JSON.stringify(error)}`);
         }
     };
 
@@ -348,7 +357,7 @@ export const DeviceManualList = () => {
 
         } catch (error) {
             console.error('Error deleting file:', error);
-            alert('削除に失敗しました');
+            showAlert('削除に失敗しました');
         }
     };
 
@@ -479,6 +488,21 @@ export const DeviceManualList = () => {
                             登録
                         </ActionButton>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Error/Alert Modal */}
+            <Modal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="通知"
+                maxWidth="max-w-sm"
+            >
+                <div className="flex flex-col items-center gap-4 py-2">
+                    <p className="text-ink text-center whitespace-pre-line">{alertMessage}</p>
+                    <ActionButton variant="primary" onClick={() => setIsAlertOpen(false)}>
+                        OK
+                    </ActionButton>
                 </div>
             </Modal>
         </div>

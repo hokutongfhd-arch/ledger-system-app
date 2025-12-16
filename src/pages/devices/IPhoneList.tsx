@@ -3,16 +3,12 @@ import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { Table } from '../../components/ui/Table';
 import type { IPhone } from '../../types';
-import { Plus, Download, FileSpreadsheet, Upload } from 'lucide-react';
+import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { DetailModal } from '../../components/ui/DetailModal';
 import { IPhoneForm } from '../../components/forms/IPhoneForm';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../../context/AuthContext';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { SearchBar } from '../../components/ui/SearchBar';
-import { Pagination } from '../../components/ui/Pagination';
-import { ActionButton } from '../../components/ui/ActionButton';
 import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const IPhoneList = () => {
@@ -339,39 +335,62 @@ export const IPhoneList = () => {
 
     return (
         <div className="space-y-4 h-full flex flex-col">
-            <PageHeader
-                title="iPhone 管理台帳"
-                actions={
-                    <>
-                        <ActionButton onClick={handleExportCSV} icon={Download}>
-                            CSV出力
-                        </ActionButton>
-                        <ActionButton onClick={handleDownloadTemplate} icon={FileSpreadsheet}>
-                            フォーマットDL
-                        </ActionButton>
-                        <ActionButton onClick={handleImportClick} icon={Upload}>
-                            インポート
-                        </ActionButton>
-                        <input
-                            type="file"
-                            id="fileInput"
-                            accept=".xlsx, .xls"
-                            className="hidden"
-                            onChange={handleFileChange}
-                        />
-                        <ActionButton onClick={handleAdd} icon={Plus} variant="primary">
-                            新規登録
-                        </ActionButton>
-                    </>
-                }
-            />
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h1 className="text-2xl font-bold text-text-main">iPhone 管理台帳</h1>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleExportCSV}
+                        className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle transition-colors shadow-sm"
+                    >
+                        <Download size={18} />
+                        CSV出力
+                    </button>
+                    <button
+                        onClick={handleDownloadTemplate}
+                        className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle transition-colors shadow-sm"
+                    >
+                        <FileSpreadsheet size={18} />
+                        フォーマットDL
+                    </button>
+                    <button
+                        onClick={handleImportClick}
+                        className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle transition-colors shadow-sm"
+                    >
+                        <Upload size={18} />
+                        インポート
+                    </button>
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept=".xlsx, .xls"
+                        className="hidden"
+                        onChange={handleFileChange}
+                    />
+                    <button
+                        onClick={handleAdd}
+                        className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover transition-colors shadow-sm"
+                    >
+                        <Plus size={18} />
+                        新規登録
+                    </button>
+                </div>
+            </div>
 
-            <SearchBar
-                value={searchTerm}
-                onChange={setSearchTerm}
-                placeholder="検索 (管理番号, 使用者, 電話番号...)"
-                onFilterClick={() => { /* Filter logic extension */ }}
-            />
+            <div className="bg-background-paper p-4 rounded-xl shadow-card border border-border flex gap-4 items-center">
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
+                    <input
+                        type="text"
+                        placeholder="検索 (管理番号, 使用者, 電話番号...)"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-background-subtle text-text-main placeholder-text-muted"
+                    />
+                </div>
+                <button className="text-text-secondary hover:text-text-main p-2 rounded-lg hover:bg-background-subtle">
+                    <Filter size={20} />
+                </button>
+            </div>
 
             <Table<IPhone>
                 containerClassName="max-h-[600px] overflow-auto border-b border-border"
@@ -420,21 +439,83 @@ export const IPhoneList = () => {
                 canDelete={hasPermission}
             />
 
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalItems}
-                startIndex={startIndex}
-                endIndex={endIndex}
-                pageSize={pageSize}
-                onPageChange={handlePageChange}
-                onPageSizeChange={(size) => {
-                    setPageSize(size);
-                    setCurrentPage(1);
-                }}
-                selectedCount={selectedIds.size}
-                onBulkDelete={handleBulkDelete}
-            />
+            {/* Footer with Actions and Pagination */}
+            <div className="flex flex-col xl:flex-row justify-between items-center bg-white p-4 border-t border-gray-200 mt-auto rounded-b-lg gap-4">
+                {/* Left: Result Count */}
+                <div className="flex flex-wrap items-center gap-4 justify-center sm:justify-start">
+                    <span className="text-sm text-gray-600 whitespace-nowrap">
+                        {totalItems} 件中 {startIndex + 1} - {endIndex} を表示
+                    </span>
+                    <button
+                        onClick={handleBulkDelete}
+                        disabled={selectedIds.size === 0}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <Trash2 size={16} />
+                        まとめて削除
+                    </button>
+                </div>
+
+                {/* Right: Pagination Controls */}
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => handlePageChange(1)}
+                            disabled={currentPage === 1}
+                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronsLeft size={20} />
+                        </button>
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+
+                        <div className="flex items-center gap-2 mx-2">
+                            <input
+                                type="number"
+                                min={1}
+                                max={totalPages}
+                                value={currentPage}
+                                onChange={(e) => handlePageChange(Number(e.target.value))}
+                                className="w-16 border border-gray-300 rounded px-2 py-1 text-center text-sm"
+                            />
+                            <span className="text-sm text-gray-600 whitespace-nowrap">/ {totalPages} ページ</span>
+                        </div>
+
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                        <button
+                            onClick={() => handlePageChange(totalPages)}
+                            disabled={currentPage === totalPages}
+                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronsRight size={20} />
+                        </button>
+                    </div>
+
+                    <select
+                        value={pageSize}
+                        onChange={(e) => {
+                            setPageSize(Number(e.target.value));
+                            setCurrentPage(1);
+                        }}
+                        className="border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                        {[15, 30, 50, 100].map(size => (
+                            <option key={size} value={size}>{size} 件 / ページ</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
 
             <Modal
                 isOpen={isModalOpen}
