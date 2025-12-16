@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const RouterList = () => {
-    const { routers, addRouter, updateRouter, deleteRouter, addLog } = useData();
+    const { routers, addRouter, updateRouter, deleteRouter, addLog, employees } = useData();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -400,8 +400,11 @@ export const RouterList = () => {
                     { header: '通信キャリア', accessor: 'carrier' },
                     { header: 'SIM電番', accessor: 'simNumber' },
                     { header: '実貸与先名', accessor: 'actualLenderName' },
+                    {
+                        header: '使用者名',
+                        accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || ''
+                    },
                     { header: '契約年数', accessor: 'contractYears' },
-                    { header: '社員コード', accessor: 'employeeCode' },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
