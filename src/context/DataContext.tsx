@@ -80,7 +80,7 @@ const mapIPhoneFromDb = (d: any): IPhone => ({
     phoneNumber: s(d.phone_number),
     managementNumber: s(d.management_number),
     employeeId: s(d.employee_code),
-    user: s(d.user_name),
+
     addressCode: s(d.address_code),
     smartAddressId: s(d.smart_address_id),
     smartAddressPw: s(d.smart_address_pw),
@@ -98,7 +98,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     phone_number: t.phoneNumber,
     management_number: t.managementNumber,
     employee_code: t.employeeId,
-    user_name: t.user,
+
     address_code: t.addressCode,
     smart_address_id: t.smartAddressId,
     smart_address_pw: t.smartAddressPw,

@@ -21,7 +21,7 @@ export interface IPhone {
     phoneNumber: string;
     managementNumber: string;
     employeeId: string; // Employee Code
-    user: string; // User Name
+
     addressCode: string;
     smartAddressId: string;
     smartAddressPw: string;
