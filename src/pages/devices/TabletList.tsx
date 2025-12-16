@@ -44,7 +44,8 @@ export const TabletList = () => {
 
     const handleDelete = async (item: Tablet) => {
         if (window.confirm('本当に削除しますか？')) {
-            await deleteTablet(item.id);
+            await deleteTablet(item.id, true);
+            await addLog('tablets', 'delete', `タブレット削除: ${item.terminalCode} (${item.status})`);
         }
     };
 
@@ -55,8 +56,9 @@ export const TabletList = () => {
             try {
                 // Execute deletions sequentially
                 for (const id of selectedIds) {
-                    await deleteTablet(id);
+                    await deleteTablet(id, true);
                 }
+                await addLog('tablets', 'delete', `タブレット一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 alert('削除しました');
             } catch (error) {
@@ -93,7 +95,8 @@ export const TabletList = () => {
     const handleSubmit = async (data: Omit<Tablet, 'id'>) => {
         try {
             if (editingItem) {
-                await updateTablet({ ...data, id: editingItem.id });
+                await updateTablet({ ...data, id: editingItem.id }, true);
+                await addLog('tablets', 'update', `タブレット更新: ${data.terminalCode} (${data.status})`);
                 // Check if this was the highlighted item
                 if (editingItem.id === searchParams.get('highlight')) {
                     setSearchParams(prev => {
@@ -104,7 +107,8 @@ export const TabletList = () => {
                     }, { replace: true });
                 }
             } else {
-                await addTablet(data);
+                await addTablet(data, true);
+                await addLog('tablets', 'add', `タブレット新規登録: ${data.terminalCode} (${data.status})`);
             }
             setIsModalOpen(false);
         } catch (error) {

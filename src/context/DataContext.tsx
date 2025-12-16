@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Tablet, IPhone, FeaturePhone, Router, Employee, Area, Address, Log, DeviceStatus } from '../types';
 import { useAuth } from './AuthContext';
 import { supabase } from '../supabaseClient';
@@ -13,23 +13,23 @@ interface DataContextType {
     areas: Area[];
     addresses: Address[];
     addTablet: (item: Omit<Tablet, 'id'> & { id?: string }, skipLog?: boolean) => Promise<void>;
-    updateTablet: (item: Tablet) => Promise<void>;
-    deleteTablet: (id: string) => Promise<void>;
+    updateTablet: (item: Tablet, skipLog?: boolean) => Promise<void>;
+    deleteTablet: (id: string, skipLog?: boolean) => Promise<void>;
     addIPhone: (item: Omit<IPhone, 'id'> & { id?: string }, skipLog?: boolean) => Promise<void>;
-    updateIPhone: (item: IPhone) => Promise<void>;
-    deleteIPhone: (id: string) => Promise<void>;
+    updateIPhone: (item: IPhone, skipLog?: boolean) => Promise<void>;
+    deleteIPhone: (id: string, skipLog?: boolean) => Promise<void>;
     addFeaturePhone: (item: Omit<FeaturePhone, 'id'> & { id?: string }, skipLog?: boolean) => Promise<void>;
-    updateFeaturePhone: (item: FeaturePhone) => Promise<void>;
-    deleteFeaturePhone: (id: string) => Promise<void>;
+    updateFeaturePhone: (item: FeaturePhone, skipLog?: boolean) => Promise<void>;
+    deleteFeaturePhone: (id: string, skipLog?: boolean) => Promise<void>;
     addRouter: (item: Omit<Router, 'id'> & { id?: string }, skipLog?: boolean) => Promise<void>;
-    updateRouter: (item: Router) => Promise<void>;
-    deleteRouter: (id: string) => Promise<void>;
+    updateRouter: (item: Router, skipLog?: boolean) => Promise<void>;
+    deleteRouter: (id: string, skipLog?: boolean) => Promise<void>;
     addEmployee: (item: Omit<Employee, 'id'> & { id?: string }, skipLog?: boolean) => Promise<void>;
-    updateEmployee: (item: Employee) => Promise<void>;
-    deleteEmployee: (id: string) => Promise<void>;
+    updateEmployee: (item: Employee, skipLog?: boolean) => Promise<void>;
+    deleteEmployee: (id: string, skipLog?: boolean) => Promise<void>;
     addArea: (item: Omit<Area, 'id'> & { id?: string }, skipLog?: boolean) => Promise<void>;
-    updateArea: (item: Area) => Promise<void>;
-    deleteArea: (id: string) => Promise<void>;
+    updateArea: (item: Area, skipLog?: boolean) => Promise<void>;
+    deleteArea: (id: string, skipLog?: boolean) => Promise<void>;
     addAddress: (item: Omit<Address, 'id'> & { id?: string }, skipLog?: boolean) => Promise<void>;
     updateAddress: (item: Address) => Promise<void>;
     deleteAddress: (id: string) => Promise<void>;
@@ -304,6 +304,19 @@ const mapLogFromDb = (d: any): Log => ({
     details: s(d.detail), // Map 'detail' from DB to 'details' in frontend type
 });
 
+const TARGET_NAMES: Record<string, string> = {
+    tablets: '勤怠タブレット',
+    iPhones: 'IPhone',
+    iphones: 'IPhone',
+    featurePhones: 'ガラホ',
+    featurephones: 'ガラホ',
+    routers: 'モバイルルーター',
+    employees: '社員マスタ',
+    areas: 'エリアマスタ',
+    addresses: '住所マスタ',
+    manuals: 'マニュアル'
+};
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [tablets, setTablets] = useState<Tablet[]>([]);
     const [iPhones, setIPhones] = useState<IPhone[]>([]);
@@ -314,16 +327,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [logs, setLogs] = useState<Log[]>([]);
     const { user } = useAuth();
-
-    const TARGET_NAMES: Record<string, string> = {
-        tablets: '勤怠タブレット',
-        iPhones: 'IPhone',
-        featurePhones: 'ガラホ',
-        routers: 'モバイルルーター',
-        employees: '社員マスタ',
-        areas: 'エリアマスタ',
-        addresses: '住所マスタ'
-    };
 
     const fetchData = async () => {
         try {
@@ -363,7 +366,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchData();
     }, []);
 
-    const logAction = async (endpoint: string, action: 'add' | 'update' | 'delete' | 'import', details: string) => {
+    const logAction = useCallback(async (endpoint: string, action: 'add' | 'update' | 'delete' | 'import', details: string) => {
         try {
             const newLog = {
                 user: user?.name || 'Unknown',
@@ -378,13 +381,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (data) {
                 setLogs(prev => [mapLogFromDb(data), ...prev]);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to log action:', error);
         }
-    };
+    }, [user]);
 
     // Generic CRUD helpers
-    const addItem = async <T,>(
+    const addItem = useCallback(async <T,>(
         table: string,
         item: any,
         mapperToDb: (i: any) => any,
@@ -409,14 +412,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error(`Failed to add item to ${table}:`, error);
             throw error;
         }
-    };
+    }, [logAction]);
 
-    const updateItem = async <T extends { id: string }>(
+    const updateItem = useCallback(async <T extends { id: string }>(
         table: string,
         item: T,
         mapperToDb: (i: T) => any,
         currentData: T[],
-        setState: React.Dispatch<React.SetStateAction<T[]>>
+        setState: React.Dispatch<React.SetStateAction<T[]>>,
+        skipLog: boolean = false
     ) => {
         try {
             const oldItem = currentData.find(d => d.id === item.id);
@@ -430,48 +434,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setState(prev => prev.map(p => p.id === item.id ? item : p));
 
-            if (changedColumns.length > 0) {
+            if (!skipLog && changedColumns.length > 0) {
                 await logAction(table, 'update', `修正: ${changedColumns.join(', ')}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to update item in ${table}:`, error);
             throw error;
         }
-    };
+    }, [logAction]);
 
-    const deleteItem = async <T extends { id: string }>(table: string, id: string, setState: React.Dispatch<React.SetStateAction<T[]>>) => {
+    const deleteItem = useCallback(async <T extends { id: string }>(table: string, id: string, setState: React.Dispatch<React.SetStateAction<T[]>>, skipLog: boolean = false) => {
         try {
             const { error } = await supabase.from(table).delete().eq('id', id);
             if (error) throw error;
 
             setState(prev => prev.filter(p => p.id !== id));
-            await logAction(table, 'delete', '削除');
-        } catch (error) {
+            if (!skipLog) {
+                await logAction(table, 'delete', '削除');
+            }
+        } catch (error: any) {
             console.error(`Failed to delete item from ${table}:`, error);
             throw error;
         }
-    };
+    }, [logAction]);
 
     // Specific implementations
     const addTablet = (item: Omit<Tablet, 'id'> & { id?: string }, skipLog: boolean = false) => addItem('tablets', item, mapTabletToDb, mapTabletFromDb, setTablets, skipLog);
-    const updateTablet = (item: Tablet) => updateItem('tablets', item, mapTabletToDb, tablets, setTablets);
-    const deleteTablet = (id: string) => deleteItem('tablets', id, setTablets);
+    const updateTablet = (item: Tablet, skipLog: boolean = false) => updateItem('tablets', item, mapTabletToDb, tablets, setTablets, skipLog);
+    const deleteTablet = (id: string, skipLog: boolean = false) => deleteItem('tablets', id, setTablets, skipLog);
 
     const addIPhone = (item: Omit<IPhone, 'id'> & { id?: string }, skipLog: boolean = false) => addItem('iphones', item, mapIPhoneToDb, mapIPhoneFromDb, setIPhones, skipLog);
-    const updateIPhone = (item: IPhone) => updateItem('iphones', item, mapIPhoneToDb, iPhones, setIPhones);
-    const deleteIPhone = (id: string) => deleteItem('iphones', id, setIPhones);
+    const updateIPhone = (item: IPhone, skipLog: boolean = false) => updateItem('iphones', item, mapIPhoneToDb, iPhones, setIPhones, skipLog);
+    const deleteIPhone = (id: string, skipLog: boolean = false) => deleteItem('iphones', id, setIPhones, skipLog);
 
     const addFeaturePhone = (item: Omit<FeaturePhone, 'id'> & { id?: string }, skipLog: boolean = false) => addItem('featurephones', item, mapFeaturePhoneToDb, mapFeaturePhoneFromDb, setFeaturePhones, skipLog);
-    const updateFeaturePhone = (item: FeaturePhone) => updateItem('featurephones', item, mapFeaturePhoneToDb, featurePhones, setFeaturePhones);
-    const deleteFeaturePhone = (id: string) => deleteItem('featurephones', id, setFeaturePhones);
+    const updateFeaturePhone = (item: FeaturePhone, skipLog: boolean = false) => updateItem('featurephones', item, mapFeaturePhoneToDb, featurePhones, setFeaturePhones, skipLog);
+    const deleteFeaturePhone = (id: string, skipLog: boolean = false) => deleteItem('featurephones', id, setFeaturePhones, skipLog);
 
     const addRouter = (item: Omit<Router, 'id'> & { id?: string }, skipLog: boolean = false) => addItem('routers', item, mapRouterToDb, mapRouterFromDb, setRouters, skipLog);
-    const updateRouter = (item: Router) => updateItem('routers', item, mapRouterToDb, routers, setRouters);
-    const deleteRouter = (id: string) => deleteItem('routers', id, setRouters);
+    const updateRouter = (item: Router, skipLog: boolean = false) => updateItem('routers', item, mapRouterToDb, routers, setRouters, skipLog);
+    const deleteRouter = (id: string, skipLog: boolean = false) => deleteItem('routers', id, setRouters, skipLog);
 
 
     const addEmployee = (item: Omit<Employee, 'id'> & { id?: string }, skipLog: boolean = false) => addItem('employees', item, mapEmployeeToDb, mapEmployeeFromDb, setEmployees, skipLog);
-    const updateEmployee = async (item: Employee) => {
+    const updateEmployee = async (item: Employee, skipLog: boolean = false) => {
         // Intercept to save profile image to localStorage
         if (item.profileImage) {
             try {
@@ -480,21 +486,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('Failed to save profile image to localStorage', e);
             }
         }
-        return updateItem('employees', item, mapEmployeeToDb, employees, setEmployees);
+        return updateItem('employees', item, mapEmployeeToDb, employees, setEmployees, skipLog);
     };
-    const deleteEmployee = (id: string) => deleteItem('employees', id, setEmployees);
+    const deleteEmployee = (id: string, skipLog: boolean = false) => deleteItem('employees', id, setEmployees, skipLog);
 
     const addArea = (item: Omit<Area, 'id'> & { id?: string }, skipLog: boolean = false) => addItem('areas', item, mapAreaToDb, mapAreaFromDb, setAreas, skipLog);
-    const updateArea = (item: Area) => updateItem('areas', item, mapAreaToDb, areas, setAreas);
+    const updateArea = (item: Area, skipLog: boolean = false) => updateItem('areas', item, mapAreaToDb, areas, setAreas, skipLog);
 
     // Areas delete handling - assuming area_code is unique and we use it as ID for deletion if id matches areaCode
-    const deleteArea = async (id: string) => {
+    const deleteArea = async (id: string, skipLog: boolean = false) => {
         try {
             // Note: DB PK is area_code. TS Area.id is areaCode.
             const { error } = await supabase.from('areas').delete().eq('area_code', id);
             if (error) throw error;
             setAreas(prev => prev.filter(p => p.id !== id));
-            await logAction('areas', 'delete', '削除');
+            if (!skipLog) {
+                await logAction('areas', 'delete', '削除');
+            }
         } catch (error) {
             console.error(`Failed to delete item from areas:`, error);
             throw error;
@@ -505,7 +513,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updateAddress = (item: Address) => updateItem('addresses', item, mapAddressToDb, addresses, setAddresses);
     const deleteAddress = (id: string) => deleteItem('addresses', id, setAddresses);
 
-    const fetchLogRange = async (startDate: string, endDate: string) => {
+    const fetchLogRange = useCallback(async (startDate: string, endDate: string) => {
         try {
             const { data, error } = await supabase
                 .from('logs')
@@ -519,9 +527,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
             console.error('Failed to fetch log range:', error);
         }
-    };
+    }, []);
 
-    const fetchLogMinDate = async (): Promise<string | null> => {
+    const fetchLogMinDate = useCallback(async (): Promise<string | null> => {
         try {
             const { data, error } = await supabase
                 .from('logs')
@@ -536,7 +544,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Failed to fetch min log date:', error);
             return null;
         }
-    };
+    }, []);
 
     return (
         <DataContext.Provider value={{

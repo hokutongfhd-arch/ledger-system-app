@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
+import { useData } from '../context/DataContext';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Table } from '../components/ui/Table';
 import { Download, Plus, Upload, X, FileText, Trash2 } from 'lucide-react';
@@ -81,6 +82,7 @@ export const DeviceManualList = () => {
     // Initial mock data
     const [manuals, setManuals] = useState<ManualItem[]>([]);
     const isDraggingRef = useRef(false);
+    const { addLog } = useData();
 
     const fetchManuals = async () => {
         try {
@@ -313,6 +315,10 @@ export const DeviceManualList = () => {
 
             // 4. Refresh List
             await fetchManuals();
+
+            // Log the action
+            await addLog('manuals', 'add', `ファイル追加: ${selectedFile.name} (${title})`);
+
             setIsAddModalOpen(false);
             setTitle('');
             setSelectedFile(null);
@@ -354,6 +360,10 @@ export const DeviceManualList = () => {
             }
 
             fetchManuals();
+
+            // Log the action (find item title for details)
+            const deletedFileName = item.files[fileIndex]?.name || '不明なファイル';
+            await addLog('manuals', 'delete', `ファイル削除: ${deletedFileName} (${item.title})`);
 
         } catch (error) {
             console.error('Error deleting file:', error);

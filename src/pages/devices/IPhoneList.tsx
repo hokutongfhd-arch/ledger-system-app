@@ -36,7 +36,8 @@ export const IPhoneList = () => {
 
     const handleDelete = async (item: IPhone) => {
         if (window.confirm('本当に削除しますか？')) {
-            await deleteIPhone(item.id);
+            await deleteIPhone(item.id, true);
+            await addLog('iPhones', 'delete', `iPhone削除: ${item.managementNumber} (${item.user})`);
         }
     };
 
@@ -47,8 +48,9 @@ export const IPhoneList = () => {
             try {
                 // Execute deletions sequentially
                 for (const id of selectedIds) {
-                    await deleteIPhone(id);
+                    await deleteIPhone(id, true);
                 }
+                await addLog('iPhones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 alert('削除しました');
             } catch (error) {
@@ -85,7 +87,8 @@ export const IPhoneList = () => {
     const handleSubmit = async (data: Omit<IPhone, 'id'> & { id?: string }) => {
         try {
             if (editingItem) {
-                await updateIPhone({ ...data, id: editingItem.id });
+                await updateIPhone({ ...data, id: editingItem.id }, true);
+                await addLog('iPhones', 'update', `iPhone更新: ${data.managementNumber} (${data.user})`);
                 // Check if this was the highlighted item
                 if (editingItem.id === searchParams.get('highlight')) {
                     setSearchParams(prev => {
@@ -96,7 +99,8 @@ export const IPhoneList = () => {
                     }, { replace: true });
                 }
             } else {
-                await addIPhone(data);
+                await addIPhone(data, true);
+                await addLog('iPhones', 'add', `iPhone新規登録: ${data.managementNumber} (${data.user})`);
             }
             setIsModalOpen(false);
         } catch (error) {

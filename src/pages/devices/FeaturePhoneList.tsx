@@ -36,7 +36,8 @@ export const FeaturePhoneList = () => {
 
     const handleDelete = async (item: FeaturePhone) => {
         if (window.confirm('本当に削除しますか？')) {
-            await deleteFeaturePhone(item.id);
+            await deleteFeaturePhone(item.id, true);
+            await addLog('featurePhones', 'delete', `ガラホ削除: ${item.managementNumber} (${item.user})`);
         }
     };
 
@@ -46,8 +47,9 @@ export const FeaturePhoneList = () => {
         if (window.confirm('本当に削除しますか')) {
             try {
                 for (const id of selectedIds) {
-                    await deleteFeaturePhone(id);
+                    await deleteFeaturePhone(id, true);
                 }
+                await addLog('featurePhones', 'delete', `ガラホ一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 alert('削除しました');
             } catch (error) {
@@ -82,7 +84,8 @@ export const FeaturePhoneList = () => {
     const handleSubmit = async (data: Omit<FeaturePhone, 'id'>) => {
         try {
             if (editingItem) {
-                await updateFeaturePhone({ ...data, id: editingItem.id });
+                await updateFeaturePhone({ ...data, id: editingItem.id }, true);
+                await addLog('featurePhones', 'update', `ガラホ更新: ${data.managementNumber} (${data.user})`);
                 // Check if this was the highlighted item
                 if (editingItem.id === searchParams.get('highlight')) {
                     setSearchParams(prev => {
@@ -93,7 +96,8 @@ export const FeaturePhoneList = () => {
                     }, { replace: true });
                 }
             } else {
-                await addFeaturePhone(data);
+                await addFeaturePhone(data, true);
+                await addLog('featurePhones', 'add', `ガラホ新規登録: ${data.managementNumber} (${data.user})`);
             }
             setIsModalOpen(false);
         } catch (error) {

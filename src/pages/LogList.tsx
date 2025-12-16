@@ -17,6 +17,10 @@ export const LogList = () => {
     const [selectedWeekLabel, setSelectedWeekLabel] = useState<string>('');
 
     useEffect(() => {
+        // Fetch fresh logs on mount
+        const { start, end } = getWeekRange(new Date());
+        fetchLogRange(start.toISOString(), end.toISOString());
+
         const initWeeks = async () => {
             const minDateStr = await fetchLogMinDate();
             if (minDateStr) {
@@ -31,7 +35,7 @@ export const LogList = () => {
             }
         };
         initWeeks();
-    }, [fetchLogMinDate]);
+    }, [fetchLogRange, fetchLogMinDate]);
 
     const handleArchiveToggle = async () => {
         const newMode = !isArchiveMode;

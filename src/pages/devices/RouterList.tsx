@@ -44,7 +44,8 @@ export const RouterList = () => {
 
     const handleDelete = async (item: Router) => {
         if (window.confirm('本当に削除しますか？')) {
-            await deleteRouter(item.id);
+            await deleteRouter(item.id, true);
+            await addLog('routers', 'delete', `モバイルルーター削除: ${item.terminalCode} (${item.simNumber})`);
         }
     };
 
@@ -54,8 +55,9 @@ export const RouterList = () => {
         if (window.confirm('本当に削除しますか')) {
             try {
                 for (const id of selectedIds) {
-                    await deleteRouter(id);
+                    await deleteRouter(id, true);
                 }
+                await addLog('routers', 'delete', `モバイルルーター一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 alert('削除しました');
             } catch (error) {
@@ -90,7 +92,8 @@ export const RouterList = () => {
     const handleSubmit = async (data: Omit<Router, 'id'>) => {
         try {
             if (editingItem) {
-                await updateRouter({ ...data, id: editingItem.id });
+                await updateRouter({ ...data, id: editingItem.id }, true);
+                await addLog('routers', 'update', `モバイルルーター更新: ${data.terminalCode} (${data.simNumber})`);
                 // Check if this was the highlighted item
                 if (editingItem.id === searchParams.get('highlight')) {
                     setSearchParams(prev => {
@@ -101,7 +104,8 @@ export const RouterList = () => {
                     }, { replace: true });
                 }
             } else {
-                await addRouter(data);
+                await addRouter(data, true);
+                await addLog('routers', 'add', `モバイルルーター新規登録: ${data.terminalCode} (${data.simNumber})`);
             }
             setIsModalOpen(false);
         } catch (error) {
