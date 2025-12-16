@@ -168,6 +168,7 @@ const mapRouterFromDb = (d: any): Router => ({
     contractStatus: s(d.contract_status),
     returnDate: '', // Missing in DB
     contractYears: s(d.contract_years),
+    employeeCode: s(d.employee_code),
 });
 
 const mapRouterToDb = (t: Partial<Router>) => ({
@@ -193,6 +194,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     notes: t.notes,
     contract_status: t.contractStatus,
     contract_years: t.contractYears,
+    employee_code: t.employeeCode,
 });
 
 const mapEmployeeFromDb = (d: any): Employee => ({

@@ -32,6 +32,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         contractStatus: '',
         returnDate: '',
         contractYears: '',
+        employeeCode: '',
     });
 
     useEffect(() => {
@@ -69,11 +70,11 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">管理番号</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">No.</label>
                             <input type="text" name="no" value={formData.no} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">契約ステータス</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">契約状況</label>
                             <input type="text" name="contractStatus" value={formData.contractStatus} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
@@ -81,7 +82,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <input type="text" name="contractYears" value={formData.contractYears || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="例: 2年" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">キャリア</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">通信キャリア</label>
                             <select
                                 name="carrier"
                                 value={formData.carrier}
@@ -97,19 +98,19 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">機種名</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">機種型番</label>
                             <input type="text" name="modelNumber" value={formData.modelNumber} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">SIM電話番号</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">SIM電番</label>
                             <input type="text" name="simNumber" value={formData.simNumber} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">データ容量</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">通信容量</label>
                             <input type="text" name="dataCapacity" value={formData.dataCapacity} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">端末暗証番号</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">端末CD</label>
                             <input type="text" name="terminalCode" value={formData.terminalCode} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                     </div>
@@ -120,11 +121,11 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">実質貸与者名</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">実貸与先名</label>
                             <input type="text" name="actualLenderName" value={formData.actualLenderName} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">実質貸与者</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">実貸与先</label>
                             <input type="text" name="actualLender" value={formData.actualLender} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
@@ -134,6 +135,10 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
                             <input type="text" name="addressCode" value={formData.addressCode} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
+                            <input type="text" name="employeeCode" value={formData.employeeCode} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="社員番号を入力" />
                         </div>
                     </div>
                 </div>
@@ -170,7 +175,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <input type="text" name="biller" value={formData.biller} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">月額コスト</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">費用</label>
                             <input type="number" name="cost" value={formData.cost} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
@@ -178,7 +183,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <input type="text" name="costTransfer" value={formData.costTransfer} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">費用負担者</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">負担先</label>
                             <input type="text" name="costBearer" value={formData.costBearer} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                     </div>

@@ -147,9 +147,9 @@ export const RouterList = () => {
 
     const handleExportCSV = () => {
         const headers = [
-            'No', '請求元', '端末CD', '機種型番', 'キャリア', '費用', '費用振替', '通信容量',
+            'No.', '請求元', '端末CD', '機種型番', '通信キャリア', '費用', '費用振替', '通信容量',
             'SIM電番', 'IPアドレス', 'サブネットマスク', '開始IP', '終了IP', '会社',
-            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考', '返却日', '契約状況', '契約年数'
+            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考', '返却日', '契約状況', '契約年数', '社員コード'
         ];
 
         const csvContent = [
@@ -178,7 +178,8 @@ export const RouterList = () => {
                 item.returnDate,
                 item.returnDate,
                 item.contractStatus,
-                item.contractYears || ''
+                item.contractYears || '',
+                item.employeeCode || ''
             ].join(','))
         ].join('\n');
 
@@ -193,7 +194,7 @@ export const RouterList = () => {
         const headers = [
             'No.', '請求元', '端末ＣＤ', '機種型番', '通信キャリア', '費用', '費用振替', '通信容量',
             'SIM電番', 'ＩＰアドレス', 'サブネットマスク', '開始ＩＰ', '終了ＩＰ', '会社',
-            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況', '契約年数'
+            '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況', '契約年数', '社員コード'
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
@@ -226,7 +227,7 @@ export const RouterList = () => {
             const requiredHeaders = [
                 'No.', '請求元', '端末ＣＤ', '機種型番', '通信キャリア', '費用', '費用振替', '通信容量',
                 'SIM電番', 'ＩＰアドレス', 'サブネットマスク', '開始ＩＰ', '終了ＩＰ', '会社',
-                '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況', '契約年数'
+                '住所コード', '実貸与先', '負担先', '実貸与先名', '貸与履歴', '備考(返却日)', '契約状況', '契約年数', '社員コード'
             ];
 
             const invalidHeaders = headers.filter(h => !requiredHeaders.includes(h));
@@ -279,6 +280,7 @@ export const RouterList = () => {
                     contractStatus: String(rowData['契約状況'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     returnDate: '',
+                    employeeCode: String(rowData['社員コード'] || ''),
                 };
 
                 try {
@@ -399,6 +401,7 @@ export const RouterList = () => {
                     { header: 'SIM電番', accessor: 'simNumber' },
                     { header: '実貸与先名', accessor: 'actualLenderName' },
                     { header: '契約年数', accessor: 'contractYears' },
+                    { header: '社員コード', accessor: 'employeeCode' },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
@@ -507,11 +510,11 @@ export const RouterList = () => {
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">管理番号</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">No.</label>
                                     <div className="text-gray-900">{detailItem.no}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">契約ステータス</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">契約状況</label>
                                     <div className="text-gray-900">{detailItem.contractStatus || '-'}</div>
                                 </div>
                                 <div>
@@ -519,23 +522,23 @@ export const RouterList = () => {
                                     <div className="text-gray-900">{detailItem.contractYears || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">キャリア</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">通信キャリア</label>
                                     <div className="text-gray-900">{detailItem.carrier || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">機種名</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">機種型番</label>
                                     <div className="text-gray-900">{detailItem.modelNumber || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">SIM電話番号</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">SIM電番</label>
                                     <div className="text-gray-900">{detailItem.simNumber || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">データ容量</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">通信容量</label>
                                     <div className="text-gray-900">{detailItem.dataCapacity || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">端末暗証番号</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">端末CD</label>
                                     <div className="text-gray-900">{detailItem.terminalCode || '-'}</div>
                                 </div>
                             </div>
@@ -545,11 +548,11 @@ export const RouterList = () => {
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">実質貸与者名</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">実貸与先名</label>
                                     <div className="text-gray-900">{detailItem.actualLenderName || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">実質貸与者</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">実貸与先</label>
                                     <div className="text-gray-900">{detailItem.actualLender || '-'}</div>
                                 </div>
                                 <div>
@@ -559,6 +562,10 @@ export const RouterList = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
                                     <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
+                                    <div className="text-gray-900">{detailItem.employeeCode || '-'}</div>
                                 </div>
                             </div>
                         </div>
@@ -585,6 +592,8 @@ export const RouterList = () => {
                             </div>
                         </div>
 
+
+
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">費用・管理情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -593,7 +602,7 @@ export const RouterList = () => {
                                     <div className="text-gray-900">{detailItem.biller || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">月額コスト</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">費用</label>
                                     <div className="text-gray-900">{detailItem.cost ? detailItem.cost.toLocaleString() : '-'}</div>
                                 </div>
                                 <div>
@@ -601,7 +610,7 @@ export const RouterList = () => {
                                     <div className="text-gray-900">{detailItem.costTransfer || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">費用負担者</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">負担先</label>
                                     <div className="text-gray-900">{detailItem.costBearer || '-'}</div>
                                 </div>
                             </div>

@@ -76,6 +76,7 @@ export interface Router {
     returnDate: string; // 返却日 (part of notes requirement but good to have separate)
     contractStatus: string; // 契約状況
     contractYears?: string;
+    employeeCode: string;
 }
 
 
