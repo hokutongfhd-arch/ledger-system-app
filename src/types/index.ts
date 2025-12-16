@@ -11,8 +11,8 @@ export interface Tablet {
     notes: string;
     history: string;
     status: DeviceStatus;
-    assignee: string; // For permission check
     contractYears?: string;
+    employeeCode: string;
 }
 
 export interface IPhone {

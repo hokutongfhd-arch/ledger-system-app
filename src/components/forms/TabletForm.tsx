@@ -18,7 +18,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         status: 'available',
         notes: '',
         history: '',
-        assignee: '',
+        employeeCode: '',
         contractYears: '',
     });
 
@@ -140,11 +140,11 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">使用者</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
                             <input
                                 type="text"
-                                name="assignee"
-                                value={formData.assignee}
+                                name="employeeCode"
+                                value={formData.employeeCode || ''}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />

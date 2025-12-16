@@ -23,7 +23,7 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
     const myIPhones = iPhones.filter(d => d.employeeId === codeToUse);
     const myFeaturePhones = featurePhones.filter(d => d.employeeId === codeToUse);
     const myRouters = routers.filter(d => d.actualLender === codeToUse || d.actualLender === nameToUse);
-    const myTablets = tablets.filter(d => d.assignee === codeToUse);
+    const myTablets = tablets.filter(d => d.employeeCode === codeToUse);
 
     const hasNoDevices = myIPhones.length === 0 && myFeaturePhones.length === 0 && myRouters.length === 0 && myTablets.length === 0;
 

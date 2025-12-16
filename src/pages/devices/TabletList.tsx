@@ -32,8 +32,8 @@ export const TabletList = () => {
     const hasPermission = (item: Tablet) => {
         if (isAdmin) return true;
         // Check if the item belongs to the logged-in user
-        // Assuming user.name is used for assignee in Tablet
-        return !!(user?.name && item.assignee === user.name);
+        // Check if the item belongs to the logged-in user
+        return !!(user?.code && item.employeeCode === user.code);
     };
 
     const handleEdit = (item: Tablet) => {
@@ -149,7 +149,7 @@ export const TabletList = () => {
     };
 
     const handleExportCSV = () => {
-        const headers = ['端末CD', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '状況', '備考', '過去貸与履歴', '契約年数'];
+        const headers = ['端末CD', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '状況', '備考', '過去貸与履歴', '契約年数', '社員コード'];
         const csvContent = [
             headers.join(','),
             ...filteredData.map(item => [
@@ -162,7 +162,8 @@ export const TabletList = () => {
                 item.status,
                 `"${item.notes}"`,
                 `"${item.history}"`,
-                item.contractYears || ''
+                item.contractYears || '',
+                item.employeeCode || ''
             ].join(','))
         ].join('\n');
 
@@ -175,7 +176,7 @@ export const TabletList = () => {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況', '契約年数'
+            '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況', '契約年数', '社員コード'
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
@@ -206,7 +207,7 @@ export const TabletList = () => {
 
             const headerRow = data[0];
             const requiredHeaders = [
-                '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況', '契約年数'
+                '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況', '契約年数', '社員コード'
             ];
 
             const isValidHeader = requiredHeaders.every((header, index) => headerRow[index] === header);
@@ -247,8 +248,8 @@ export const TabletList = () => {
                     notes: String(row[6] || ''),
                     history: String(row[7] || ''),
                     status: statusMap[String(row[8] || '')] || 'available',
-                    assignee: '', // Default empty for imported data
-                    contractYears: normalizeContractYear(String(row[9] || ''))
+                    contractYears: normalizeContractYear(String(row[9] || '')),
+                    employeeCode: String(row[10] || '')
                 };
 
                 try {
@@ -365,6 +366,7 @@ export const TabletList = () => {
                         )
                     },
                     { header: '事業所CD', accessor: 'officeCode' },
+                    { header: '社員コード', accessor: 'employeeCode' },
                     { header: '契約年数', accessor: 'contractYears' },
                     {
                         header: '状況', accessor: (item) => (
@@ -524,8 +526,8 @@ export const TabletList = () => {
                                     <div className="text-gray-900">{detailItem.address || '-'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">使用者</label>
-                                    <div className="text-gray-900">{detailItem.assignee || '-'}</div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
+                                    <div className="text-gray-900">{detailItem.employeeCode || '-'}</div>
                                 </div>
                             </div>
                         </div>

@@ -56,8 +56,8 @@ const mapTabletFromDb = (d: any): Tablet => ({
     notes: s(d.notes),
     history: s(d.lend_history),
     status: (d.status as DeviceStatus) || 'available',
-    assignee: '',
     contractYears: s(d.contract_years),
+    employeeCode: s(d.employee_code),
 });
 
 const mapTabletToDb = (t: Partial<Tablet>) => ({
@@ -71,6 +71,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     lend_history: t.history,
     status: t.status,
     contract_years: t.contractYears,
+    employee_code: t.employeeCode,
 });
 
 const mapIPhoneFromDb = (d: any): IPhone => ({
