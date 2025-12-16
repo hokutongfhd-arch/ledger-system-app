@@ -7,6 +7,7 @@ import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, C
 import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
 import { Table } from '../../components/ui/Table';
+import { UserDeviceList } from '../../components/ui/UserDeviceList';
 import { EmployeeForm } from '../../components/forms/EmployeeForm';
 
 import { useAuth } from '../../context/AuthContext';
@@ -639,6 +640,11 @@ export const EmployeeList = () => {
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">貸与デバイス</h3>
+                            <UserDeviceList targetCode={detailItem.code} targetName={detailItem.name} />
                         </div>
 
                         <div className="flex justify-end pt-6 border-t border-gray-100">

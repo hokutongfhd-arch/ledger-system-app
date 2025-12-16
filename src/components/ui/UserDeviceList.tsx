@@ -3,19 +3,27 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
 
-export const UserDeviceList = () => {
+interface UserDeviceListProps {
+    targetCode?: string;
+    targetName?: string;
+}
+
+export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targetName }) => {
     const { user } = useAuth();
     const { iPhones, featurePhones, routers, tablets } = useData();
 
-    if (!user) return null;
+    // Determine target user to display
+    // If props are provided, use them. Otherwise, use logged-in user.
+    const codeToUse = targetCode || user?.code;
+    const nameToUse = targetName || user?.name;
 
-    // Filter devices assigned to the current user
-    // Assuming 'code' is used for linking across all devices
-    const myIPhones = iPhones.filter(d => d.employeeId === user.code);
-    const myFeaturePhones = featurePhones.filter(d => d.employeeId === user.code);
-    const myRouters = routers.filter(d => d.actualLender === user.code || d.actualLender === user.name); // Check both just in case, though code is standard
-    // For tablets, 'assignee' likely holds the user code
-    const myTablets = tablets.filter(d => d.assignee === user.code);
+    if (!codeToUse && !targetCode) return null; // If no target and no logged-in user, show nothing
+
+    // Filter devices assigned to the target user
+    const myIPhones = iPhones.filter(d => d.employeeId === codeToUse);
+    const myFeaturePhones = featurePhones.filter(d => d.employeeId === codeToUse);
+    const myRouters = routers.filter(d => d.actualLender === codeToUse || d.actualLender === nameToUse);
+    const myTablets = tablets.filter(d => d.assignee === codeToUse);
 
     const hasNoDevices = myIPhones.length === 0 && myFeaturePhones.length === 0 && myRouters.length === 0 && myTablets.length === 0;
 
@@ -26,7 +34,7 @@ export const UserDeviceList = () => {
                     <Smartphone size={48} className="text-slate-300" />
                 </div>
                 <h3 className="text-lg font-bold text-text-main mb-2">貸与デバイスはありません</h3>
-                <p className="text-text-secondary text-sm">あなたに割り当てられているデバイスは現在ありません。</p>
+                <p className="text-text-secondary text-sm">割り当てられているデバイスは現在ありません。</p>
             </div>
         );
     }
