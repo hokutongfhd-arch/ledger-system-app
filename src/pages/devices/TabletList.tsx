@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../utils/stringUtils';
 
 export const TabletList = () => {
-    const { tablets, addTablet, updateTablet, deleteTablet, addLog } = useData();
+    const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees } = useData();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -366,7 +366,10 @@ export const TabletList = () => {
                         )
                     },
                     { header: '事業所CD', accessor: 'officeCode' },
-                    { header: '社員コード', accessor: 'employeeCode' },
+                    {
+                        header: '使用者名',
+                        accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || ''
+                    },
                     { header: '契約年数', accessor: 'contractYears' },
                     {
                         header: '状況', accessor: (item) => (
