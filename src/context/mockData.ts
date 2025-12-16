@@ -49,7 +49,7 @@ export const mockTablets: Tablet[] = [
         notes: '画面に小傷あり',
         history: '2023/04/01 貸出',
         status: 'in-use',
-        assignee: '山田太郎'
+        employeeCode: 'EMP001',
     },
     {
         id: '2',
@@ -62,7 +62,7 @@ export const mockTablets: Tablet[] = [
         notes: '美品',
         history: '2023/05/15 貸出',
         status: 'available',
-        assignee: ''
+        employeeCode: '',
     },
     {
         id: '3',
@@ -75,7 +75,7 @@ export const mockTablets: Tablet[] = [
         notes: 'バッテリー持ち悪い',
         history: '2023/01/10 修理完了',
         status: 'broken',
-        assignee: '鈴木一郎'
+        employeeCode: 'EMP002',
     },
 ];
 
@@ -86,7 +86,6 @@ export const mockIPhones: IPhone[] = [
         phoneNumber: '090-1234-5678',
         managementNumber: 'IP-001',
         employeeId: 'EMP001',
-        user: 'Taro Yamada',
         addressCode: 'ADDR001',
         smartAddressId: 'smart01',
         smartAddressPw: 'pass01',
@@ -103,7 +102,6 @@ export const mockIPhones: IPhone[] = [
         phoneNumber: '080-9876-5432',
         managementNumber: 'IP-002',
         employeeId: 'EMP002',
-        user: 'Jiro Suzuki',
         addressCode: 'ADDR002',
         smartAddressId: 'smart02',
         smartAddressPw: 'pass02',
@@ -123,7 +121,6 @@ export const mockFeaturePhones: FeaturePhone[] = [
         phoneNumber: '080-9876-5432',
         managementNumber: 'FP-001',
         employeeId: 'EMP002',
-        user: 'Jiro Suzuki',
         addressCode: 'ADDR002',
         costCompany: 'TechCorp',
         lendDate: '2022-05-20',
@@ -159,6 +156,7 @@ export const mockRouters: Router[] = [
         notes: '',
         returnDate: '',
         contractStatus: 'Active',
+        employeeCode: 'EMP001',
     },
 ];
 export const mockEmployees: Employee[] = [
