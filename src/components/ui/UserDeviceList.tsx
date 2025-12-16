@@ -1,7 +1,9 @@
 
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
+
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface UserDeviceListProps {
     targetCode?: string;
@@ -11,6 +13,11 @@ interface UserDeviceListProps {
 export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targetName }) => {
     const { user } = useAuth();
     const { iPhones, featurePhones, routers, tablets } = useData();
+    const navigate = useNavigate();
+
+    const handleDeviceClick = (path: string, id: string) => {
+        navigate(`${path}?highlight=${id}`);
+    };
 
     // Determine target user to display
     // If props are provided, use them. Otherwise, use logged-in user.
@@ -56,9 +63,13 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
                             <h3 className="font-bold text-text-main">iPhone</h3>
                             <span className="ml-auto text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{myIPhones.length}台</span>
                         </div>
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-gray-200">
                             {myIPhones.map(device => (
-                                <div key={device.id} className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                <div
+                                    key={device.id}
+                                    className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                                    onClick={() => handleDeviceClick('/devices/iphones', device.id)}
+                                >
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">管理番号</p>
                                         <p className="font-medium text-text-main">{device.managementNumber}</p>
@@ -95,9 +106,13 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
                             <h3 className="font-bold text-text-main">ガラホ</h3>
                             <span className="ml-auto text-xs font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">{myFeaturePhones.length}台</span>
                         </div>
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-gray-200">
                             {myFeaturePhones.map(device => (
-                                <div key={device.id} className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                <div
+                                    key={device.id}
+                                    className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                                    onClick={() => handleDeviceClick('/devices/feature-phones', device.id)}
+                                >
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">管理番号</p>
                                         <p className="font-medium text-text-main">{device.managementNumber}</p>
@@ -134,9 +149,13 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
                             <h3 className="font-bold text-text-main">モバイルルーター</h3>
                             <span className="ml-auto text-xs font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-full">{myRouters.length}台</span>
                         </div>
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-gray-200">
                             {myRouters.map(device => (
-                                <div key={device.id} className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                <div
+                                    key={device.id}
+                                    className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                                    onClick={() => handleDeviceClick('/devices/routers', device.id)}
+                                >
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">端末CD</p>
                                         <p className="font-medium text-text-main">{device.terminalCode}</p>
@@ -169,9 +188,13 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
                             <h3 className="font-bold text-text-main">勤怠タブレット</h3>
                             <span className="ml-auto text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">{myTablets.length}台</span>
                         </div>
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-gray-200">
                             {myTablets.map(device => (
-                                <div key={device.id} className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                <div
+                                    key={device.id}
+                                    className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                                    onClick={() => handleDeviceClick('/devices/tablets', device.id)}
+                                >
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">端末CD</p>
                                         <p className="font-medium text-text-main">{device.terminalCode}</p>
