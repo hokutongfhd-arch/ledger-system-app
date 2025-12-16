@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
 import { AddressForm } from '../../components/forms/AddressForm';
 import { useAuth } from '../../context/AuthContext';
+import { AddressDeviceList } from '../../components/ui/AddressDeviceList';
 
 export const AddressList = () => {
     const { addresses, addAddress, updateAddress, deleteAddress, addLog } = useData();
@@ -577,6 +578,10 @@ export const AddressList = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {detailItem.addressCode && (
+                            <AddressDeviceList addressCode={detailItem.addressCode} />
+                        )}
 
                         <div className="flex justify-end pt-6 border-t border-gray-100">
                             <button
