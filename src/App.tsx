@@ -18,6 +18,7 @@ const EmployeeList = React.lazy(() => import('./pages/masters/EmployeeList').the
 const AreaList = React.lazy(() => import('./pages/masters/AreaList').then(module => ({ default: module.AreaList })));
 const AddressList = React.lazy(() => import('./pages/masters/AddressList').then(module => ({ default: module.AddressList })));
 const LogList = React.lazy(() => import('./pages/LogList').then(module => ({ default: module.LogList })));
+const DeviceManualList = React.lazy(() => import('./pages/DeviceManualList').then(module => ({ default: module.DeviceManualList })));
 const DesignPreview = React.lazy(() => import('./pages/DesignPreview').then(module => ({ default: module.DesignPreview })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -60,6 +61,8 @@ function App() {
                   <Route path="areas" element={<AreaList />} />
                   <Route path="addresses" element={<AddressList />} />
                 </Route>
+
+                <Route path="/device-manuals" element={<DeviceManualList />} />
               </Route>
             </Routes>
           </Suspense>

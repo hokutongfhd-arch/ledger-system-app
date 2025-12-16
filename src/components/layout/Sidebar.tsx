@@ -72,6 +72,7 @@ export const Sidebar = () => {
                     <SidebarItem to="/devices/feature-phones" icon={Phone} label="Feature Phone" />
                     <SidebarItem to="/devices/tablets" icon={Tablet} label="Tablet" />
                     <SidebarItem to="/devices/routers" icon={RouterIcon} label="WiFi Router" />
+                    <SidebarItem to="/device-manuals" icon={FileText} label="Device Manuals" />
                 </SidebarSection>
 
                 <SidebarSection label="MASTERS">
