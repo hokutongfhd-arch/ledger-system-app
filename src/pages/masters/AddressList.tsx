@@ -6,7 +6,6 @@ import type { Address } from '../../types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
-import { DetailModal } from '../../components/ui/DetailModal';
 import { AddressForm } from '../../components/forms/AddressForm';
 import { useAuth } from '../../context/AuthContext';
 
@@ -461,7 +460,7 @@ export const AddressList = () => {
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={editingItem ? '住所編集' : '住所新規登録'}
+                title={editingItem ? '住所 編集' : '住所 新規登録'}
             >
                 <AddressForm
                     initialData={editingItem}
@@ -470,33 +469,126 @@ export const AddressList = () => {
                 />
             </Modal>
 
-            <DetailModal
+            <Modal
                 isOpen={!!detailItem}
                 onClose={() => setDetailItem(undefined)}
-                title="住所詳細"
-                data={detailItem}
-                labels={{
-                    no: 'No.',
-                    addressCode: '住所コード',
-                    officeName: '事業所名',
-                    tel: 'ＴＥＬ',
-                    fax: 'ＦＡＸ',
-                    type: '区分',
-                    zipCode: '〒',
-                    address: '住所',
-                    notes: '備考',
-                    division: '事業部',
-                    area: 'エリア',
-                    mainPerson: '主担当',
-                    branchNumber: '枝番',
-                    specialNote: '※',
-                    labelName: '宛名ラベル用',
-                    labelZip: '宛名ラベル用〒',
-                    labelAddress: '宛名ラベル用住所',
-                    attentionNote: '注意書き',
-                    id: 'ID'
-                }}
-            />
+                title="住所 詳細"
+            >
+                {detailItem && (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">No</label>
+                                    <div className="text-gray-900">{detailItem.no}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
+                                    <div className="text-gray-900">{detailItem.addressCode}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">事業所名</label>
+                                    <div className="text-gray-900">{detailItem.officeName}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">事業部</label>
+                                    <div className="text-gray-900">{detailItem.division || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">エリア</label>
+                                    <div className="text-gray-900">{detailItem.area || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">連絡先情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">TEL</label>
+                                    <div className="text-gray-900">{detailItem.tel || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">FAX</label>
+                                    <div className="text-gray-900">{detailItem.fax || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">郵便番号</label>
+                                    <div className="text-gray-900">{detailItem.zipCode || '-'}</div>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所</label>
+                                    <div className="text-gray-900">{detailItem.address || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">詳細情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">種別</label>
+                                    <div className="text-gray-900">{detailItem.type || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">主担当者</label>
+                                    <div className="text-gray-900">{detailItem.mainPerson || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">店番</label>
+                                    <div className="text-gray-900">{detailItem.branchNumber || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">特記事項</label>
+                                    <div className="text-gray-900">{detailItem.specialNote || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">宛名ラベル情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">宛名ラベル名</label>
+                                    <div className="text-gray-900">{detailItem.labelName || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">宛名ラベル郵便番号</label>
+                                    <div className="text-gray-900">{detailItem.labelZip || '-'}</div>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">宛名ラベル住所</label>
+                                    <div className="text-gray-900">{detailItem.labelAddress || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                            <div className="grid grid-cols-1 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">備考</label>
+                                    <div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">注意書き</label>
+                                    <div className="text-gray-900 whitespace-pre-wrap">{detailItem.attentionNote || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-6 border-t border-gray-100">
+                            <button
+                                onClick={() => setDetailItem(undefined)}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div >
     );
 };

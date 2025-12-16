@@ -6,7 +6,6 @@ import { Table } from '../../components/ui/Table';
 import type { Router } from '../../types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
-import { DetailModal } from '../../components/ui/DetailModal';
 import { RouterForm } from '../../components/forms/RouterForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../utils/stringUtils';
@@ -497,42 +496,145 @@ export const RouterList = () => {
                 />
             </Modal>
 
-            <DetailModal
+            <Modal
                 isOpen={!!detailItem}
                 onClose={() => setDetailItem(undefined)}
                 title="モバイルルーター 詳細"
-                data={detailItem ? {
-                    ...detailItem,
-                    notes: detailItem.returnDate
-                        ? `${detailItem.notes || ''} (返却日: ${new Date(detailItem.returnDate).toLocaleDateString('ja-JP')})`
-                        : detailItem.notes,
-                    returnDate: undefined // Hide original returnDate from detailed view as it's merged
-                } : undefined}
-                labels={{
-                    no: 'No.',
-                    biller: '請求元',
-                    terminalCode: '端末CD',
-                    modelNumber: '機種型番',
-                    carrier: '通信キャリア',
-                    cost: '費用',
-                    costTransfer: '費用振替',
-                    dataCapacity: '通信容量',
-                    simNumber: 'SIM電番',
-                    ipAddress: 'IPアドレス',
-                    subnetMask: 'サブネットマスク',
-                    startIp: '開始IP',
-                    endIp: '終了IP',
-                    company: '会社',
-                    addressCode: '住所コード',
-                    actualLender: '実貸与先',
-                    costBearer: '負担先',
-                    actualLenderName: '実貸与先名',
-                    lendingHistory: '貸与履歴',
-                    notes: '備考(返却日)',
-                    contractStatus: '契約状況',
-                    contractYears: '契約年数',
-                }}
-            />
+            >
+                {detailItem && (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">管理番号</label>
+                                    <div className="text-gray-900">{detailItem.no}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">契約ステータス</label>
+                                    <div className="text-gray-900">{detailItem.contractStatus || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label>
+                                    <div className="text-gray-900">{detailItem.contractYears || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">キャリア</label>
+                                    <div className="text-gray-900">{detailItem.carrier || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">機種名</label>
+                                    <div className="text-gray-900">{detailItem.modelNumber || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">SIM電話番号</label>
+                                    <div className="text-gray-900">{detailItem.simNumber || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">データ容量</label>
+                                    <div className="text-gray-900">{detailItem.dataCapacity || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">端末暗証番号</label>
+                                    <div className="text-gray-900">{detailItem.terminalCode || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">実質貸与者名</label>
+                                    <div className="text-gray-900">{detailItem.actualLenderName || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">実質貸与者</label>
+                                    <div className="text-gray-900">{detailItem.actualLender || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">会社</label>
+                                    <div className="text-gray-900">{detailItem.company || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
+                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">ネットワーク情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">IPアドレス</label>
+                                    <div className="text-gray-900">{detailItem.ipAddress || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">サブネットマスク</label>
+                                    <div className="text-gray-900">{detailItem.subnetMask || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">開始IP</label>
+                                    <div className="text-gray-900">{detailItem.startIp || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">終了IP</label>
+                                    <div className="text-gray-900">{detailItem.endIp || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">費用・管理情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">請求元</label>
+                                    <div className="text-gray-900">{detailItem.biller || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">月額コスト</label>
+                                    <div className="text-gray-900">{detailItem.cost ? detailItem.cost.toLocaleString() : '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">費用振替</label>
+                                    <div className="text-gray-900">{detailItem.costTransfer || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">費用負担者</label>
+                                    <div className="text-gray-900">{detailItem.costBearer || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                            <div className="grid grid-cols-1 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">貸与履歴</label>
+                                    <div className="text-gray-900 whitespace-pre-wrap">{detailItem.lendingHistory || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">備考(返却日)</label>
+                                    <div className="text-gray-900 whitespace-pre-wrap">
+                                        {detailItem.notes || ''}
+                                        {detailItem.returnDate ? (detailItem.notes ? `\n(返却日: ${detailItem.returnDate})` : `(返却日: ${detailItem.returnDate})`) : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-6 border-t border-gray-100">
+                            <button
+                                onClick={() => setDetailItem(undefined)}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

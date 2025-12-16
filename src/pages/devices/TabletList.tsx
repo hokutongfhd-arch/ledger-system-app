@@ -6,7 +6,6 @@ import { Table } from '../../components/ui/Table';
 import type { Tablet } from '../../types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
-import { DetailModal } from '../../components/ui/DetailModal';
 import { TabletForm } from '../../components/forms/TabletForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../utils/stringUtils';
@@ -476,26 +475,86 @@ export const TabletList = () => {
                 />
             </Modal>
 
-            <DetailModal
+            <Modal
                 isOpen={!!detailItem}
                 onClose={() => setDetailItem(undefined)}
                 title="タブレット 詳細"
-                data={detailItem}
-                labels={{
-                    terminalCode: '端末CD',
-                    maker: 'メーカー',
-                    modelNumber: '型番',
-                    officeCode: '事業所CD',
-                    addressCode: '住所コード',
-                    address: '住所',
-                    status: '状況',
-                    notes: '備考',
-                    history: '過去貸与履歴',
-                    id: 'ID',
-                    assignee: '使用者',
-                    contractYears: '契約年数'
-                }}
-            />
+            >
+                {detailItem && (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">端末CD</label>
+                                    <div className="text-gray-900">{detailItem.terminalCode}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">メーカー</label>
+                                    <div className="text-gray-900">{detailItem.maker || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">型番</label>
+                                    <div className="text-gray-900">{detailItem.modelNumber || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">状況</label>
+                                    <div className="text-gray-900">{detailItem.status || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label>
+                                    <div className="text-gray-900">{detailItem.contractYears || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">場所・使用者</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">事業所CD</label>
+                                    <div className="text-gray-900">{detailItem.officeCode || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
+                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所</label>
+                                    <div className="text-gray-900">{detailItem.address || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">使用者</label>
+                                    <div className="text-gray-900">{detailItem.assignee || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                            <div className="grid grid-cols-1 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">過去貸与履歴</label>
+                                    <div className="text-gray-900 whitespace-pre-wrap">{detailItem.history || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">備考</label>
+                                    <div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-6 border-t border-gray-100">
+                            <button
+                                onClick={() => setDetailItem(undefined)}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

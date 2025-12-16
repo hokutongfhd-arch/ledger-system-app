@@ -5,7 +5,6 @@ import { Table } from '../../components/ui/Table';
 import type { FeaturePhone } from '../../types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
-import { DetailModal } from '../../components/ui/DetailModal';
 import { FeaturePhoneForm } from '../../components/forms/FeaturePhoneForm';
 import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
@@ -490,27 +489,98 @@ export const FeaturePhoneList = () => {
                 />
             </Modal>
 
-            <DetailModal
+            <Modal
                 isOpen={!!detailItem}
                 onClose={() => setDetailItem(undefined)}
                 title="ガラホ 詳細"
-                data={detailItem}
-                labels={{
-                    carrier: 'キャリア',
-                    phoneNumber: '電話番号',
-                    managementNumber: '管理番号',
-                    employeeId: '社員コード',
-                    user: '使用者名',
-                    addressCode: '住所コード',
-                    costCompany: '負担先会社',
-                    lendDate: '貸与日',
-                    receiptDate: '受領書提出日',
-                    notes: '備考1',
-                    returnDate: '返却日',
-                    modelName: '機種名',
-                    contractYears: '契約年数'
-                }}
-            />
+            >
+                {detailItem && (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">管理番号</label>
+                                    <div className="text-gray-900">{detailItem.managementNumber}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">機種名</label>
+                                    <div className="text-gray-900">{detailItem.modelName}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">電話番号</label>
+                                    <div className="text-gray-900">{detailItem.phoneNumber}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">キャリア</label>
+                                    <div className="text-gray-900">{detailItem.carrier || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label>
+                                    <div className="text-gray-900">{detailItem.contractYears || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">使用者名</label>
+                                    <div className="text-gray-900">{detailItem.user || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員番号</label>
+                                    <div className="text-gray-900">{detailItem.employeeId || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
+                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">貸与日</label>
+                                    <div className="text-gray-900">{detailItem.lendDate || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">管理情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">負担先会社</label>
+                                    <div className="text-gray-900">{detailItem.costCompany || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">受領書提出日</label>
+                                    <div className="text-gray-900">{detailItem.receiptDate || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">返却日</label>
+                                    <div className="text-gray-900">{detailItem.returnDate || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                            <div className="mt-4">
+                                <label className="block text-sm font-medium text-gray-500 mb-1">備考1</label>
+                                <div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-6 border-t border-gray-100">
+                            <button
+                                onClick={() => setDetailItem(undefined)}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

@@ -2,13 +2,12 @@
 import { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { Table } from '../../components/ui/Table';
 import type { Employee } from '../../types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
+import { Table } from '../../components/ui/Table';
 import { EmployeeForm } from '../../components/forms/EmployeeForm';
-import { DetailModal } from '../../components/ui/DetailModal';
 
 import { useAuth } from '../../context/AuthContext';
 import { toFullWidthKana } from '../../utils/stringUtils';
@@ -231,7 +230,7 @@ export const EmployeeList = () => {
                 const invalidColumns = Object.keys(firstRow).filter(key => !validHeaders.includes(key));
 
                 if (invalidColumns.length > 0) {
-                    alert(`不正なカラムが含まれています: ${invalidColumns.join(', ')}`);
+                    alert(`不正なカラムが含まれています: ${invalidColumns.join(', ')} `);
                     return;
                 }
 
@@ -263,14 +262,14 @@ export const EmployeeList = () => {
                                     const y = value.getFullYear();
                                     const m = String(value.getMonth() + 1).padStart(2, '0');
                                     const d = String(value.getDate()).padStart(2, '0');
-                                    processedValue = `${y}-${m}-${d}`;
+                                    processedValue = `${y} -${m} -${d} `;
                                 } else if (typeof value === 'string') {
                                     const parts = value.split('/');
                                     if (parts.length === 3) {
                                         const y = parts[0];
                                         const m = parts[1].padStart(2, '0');
                                         const d = parts[2].padStart(2, '0');
-                                        processedValue = `${y}-${m}-${d}`;
+                                        processedValue = `${y} -${m} -${d} `;
                                     }
                                 }
                             }
@@ -292,10 +291,10 @@ export const EmployeeList = () => {
                 }
 
                 if (successCount > 0) {
-                    await addLog('employees', 'import', `Excelインポート: ${successCount}件追加`);
+                    await addLog('employees', 'import', `Excelインポート: ${successCount} 件追加`);
                 }
 
-                alert(`${successCount}件のインポートが完了しました。`);
+                alert(`${successCount} 件のインポートが完了しました。`);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
@@ -309,33 +308,7 @@ export const EmployeeList = () => {
 
     const isAdmin = user?.role === 'admin';
 
-    // Define all detail labels
-    const detailLabels: Record<string, string> = {
-        code: '社員コード',
-        password: 'パスワード',
-        name: '氏名',
-        nameKana: '氏名カナ',
-        gender: '性別',
-        birthDate: '生年月日',
-        joinDate: '入社年月日',
-        age: '当月末満年齢',
-        yearsOfService: '勤続年数',
-        monthsHasuu: '勤続端数月数',
-        employeeType: '社員区分',
-        salaryType: '給与区分',
-        costType: '原価区分',
-        areaCode: 'エリアコード',
-        addressCode: '住所コード',
-        roleTitle: '役付',
-        jobType: '職種',
-        role: '権限',
-    };
 
-    // Filter labels based on role (hide password for non-admins)
-    const filteredLabels = { ...detailLabels };
-    if (!isAdmin) {
-        delete filteredLabels['password'];
-    }
 
     const filteredEmployees = employees.filter(item =>
         (item.code ? String(item.code).toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
@@ -460,7 +433,7 @@ export const EmployeeList = () => {
                     { header: '氏名カナ', accessor: 'nameKana' },
                     {
                         header: '権限', accessor: (item) => (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                            <span className={`px - 2 py - 1 rounded - full text - xs font - medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'} `}>
                                 {item.role === 'admin' ? '管理者' : 'ユーザー'}
                             </span>
                         )
@@ -562,13 +535,123 @@ export const EmployeeList = () => {
                     isSelfEdit={editingItem?.id === user?.id}
                 />
             </Modal>
-            <DetailModal
+            <Modal
                 isOpen={!!detailItem}
                 onClose={() => setDetailItem(undefined)}
                 title="社員 詳細"
-                data={detailItem}
-                labels={filteredLabels}
-            />
+            >
+                {detailItem && (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
+                                    <div className="text-gray-900">{detailItem.code}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">氏名</label>
+                                    <div className="text-gray-900">{detailItem.name}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">氏名カナ</label>
+                                    <div className="text-gray-900">{detailItem.nameKana || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">性別</label>
+                                    <div className="text-gray-900">{detailItem.gender || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">生年月日</label>
+                                    <div className="text-gray-900">{detailItem.birthDate || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">年齢</label>
+                                    <div className="text-gray-900">{detailItem.age || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">所属・勤務情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">部署コード</label>
+                                    <div className="text-gray-900">{detailItem.departmentCode || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">役付</label>
+                                    <div className="text-gray-900">{detailItem.roleTitle || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">職種</label>
+                                    <div className="text-gray-900">{detailItem.jobType || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員区分</label>
+                                    <div className="text-gray-900">{detailItem.employeeType || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">給与区分</label>
+                                    <div className="text-gray-900">{detailItem.salaryType || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">原価区分</label>
+                                    <div className="text-gray-900">{detailItem.costType || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">エリアコード</label>
+                                    <div className="text-gray-900">{detailItem.areaCode || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
+                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">入社年月日</label>
+                                    <div className="text-gray-900">{detailItem.joinDate || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">勤続年数</label>
+                                    <div className="text-gray-900">{detailItem.yearsOfService || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">勤続端数月数</label>
+                                    <div className="text-gray-900">{detailItem.monthsHasuu || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">システム情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">権限</label>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium inline-block
+                                        ${detailItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {detailItem.role === 'admin' ? '管理者' : 'ユーザー'}
+                                    </span>
+                                </div>
+                                {isAdmin && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-500 mb-1">パスワード</label>
+                                        <div className="text-gray-900">{detailItem.password || '-'}</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-6 border-t border-gray-100">
+                            <button
+                                onClick={() => setDetailItem(undefined)}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div >
     );
 };

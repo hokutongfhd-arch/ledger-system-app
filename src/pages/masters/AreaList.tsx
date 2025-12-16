@@ -7,7 +7,6 @@ import type { Area } from '../../types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
-import { DetailModal } from '../../components/ui/DetailModal';
 import { AreaForm } from '../../components/forms/AreaForm';
 import { useAuth } from '../../context/AuthContext';
 
@@ -415,7 +414,8 @@ export const AreaList = () => {
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={editingItem ? 'エリア編集' : 'エリア新規登録'}
+                title={editingItem ? 'エリア 編集' : 'エリア 新規登録'}
+                maxWidth="max-w-xl"
             >
                 <AreaForm
                     initialData={editingItem}
@@ -424,16 +424,39 @@ export const AreaList = () => {
                 />
             </Modal>
 
-            <DetailModal
+            <Modal
                 isOpen={!!detailItem}
                 onClose={() => setDetailItem(undefined)}
-                title="エリア詳細"
-                data={detailItem}
-                labels={{
-                    areaCode: 'エリアコード',
-                    areaName: 'エリア名'
-                }}
-            />
+                title="エリア 詳細"
+                maxWidth="max-w-xl"
+            >
+                {detailItem && (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">エリアコード</label>
+                                    <div className="text-gray-900">{detailItem.areaCode}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">エリア名</label>
+                                    <div className="text-gray-900">{detailItem.areaName}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-6 border-t border-gray-100">
+                            <button
+                                onClick={() => setDetailItem(undefined)}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
