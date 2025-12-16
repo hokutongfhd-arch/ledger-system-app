@@ -83,10 +83,7 @@ export const Login = () => {
                     </button>
                 </form>
 
-                <div className="mt-10 pt-6 border-t-2 border-ink text-center text-xs text-ink-light font-mono">
-                    <p className="mb-1">DEMO ACCOUNTS:</p>
-                    <p>ADMIN: EMP001 / USER: EMP002</p>
-                </div>
+
             </div>
         </div>
     );
