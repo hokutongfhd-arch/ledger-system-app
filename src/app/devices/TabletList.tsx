@@ -283,7 +283,8 @@ export const TabletList = () => {
                     '使用中': 'in-use',
                     '故障': 'broken',
                     '修理中': 'repairing',
-                    '廃棄': 'discarded'
+                    '廃棄': 'discarded',
+                    '予備機': 'backup'
                 };
 
                 const newTablet: Omit<Tablet, 'id'> = {
@@ -424,10 +425,14 @@ export const TabletList = () => {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium 
                             ${item.status === 'available' ? 'bg-blue-100 text-blue-800' :
                                     item.status === 'in-use' ? 'bg-green-100 text-green-800' :
-                                        item.status === 'broken' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        item.status === 'broken' ? 'bg-red-100 text-red-800' :
+                                            item.status === 'backup' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
                                 {item.status === 'available' ? '在庫' :
                                     item.status === 'in-use' ? '使用中' :
-                                        item.status === 'broken' ? '故障' : item.status}
+                                        item.status === 'broken' ? '故障' :
+                                            item.status === 'repairing' ? '修理中' :
+                                                item.status === 'discarded' ? '廃棄' :
+                                                    item.status === 'backup' ? '予備機' : item.status}
                             </span>
                         )
                     },

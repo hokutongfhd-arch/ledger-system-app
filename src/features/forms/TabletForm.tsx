@@ -86,8 +86,9 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value="available">在庫</option>
                                 <option value="in-use">使用中</option>
+                                <option value="backup">予備機</option>
+                                <option value="available">在庫</option>
                                 <option value="broken">故障</option>
                                 <option value="repairing">修理中</option>
                                 <option value="discarded">廃棄</option>

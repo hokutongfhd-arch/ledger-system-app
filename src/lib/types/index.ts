@@ -1,4 +1,4 @@
-export type DeviceStatus = 'available' | 'in-use' | 'broken' | 'discarded' | 'repairing';
+export type DeviceStatus = 'available' | 'in-use' | 'broken' | 'discarded' | 'repairing' | 'backup';
 
 export interface Tablet {
     id: string;
