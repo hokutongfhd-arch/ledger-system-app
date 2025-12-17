@@ -12,7 +12,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 export const TabletList = () => {
-    const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees } = useData();
+    const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees, addresses } = useData();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -557,7 +557,16 @@ export const TabletList = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">状況</label>
-                                    <div className="text-gray-900">{detailItem.status || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {{
+                                            'available': '在庫',
+                                            'in-use': '使用中',
+                                            'broken': '故障',
+                                            'repairing': '修理中',
+                                            'discarded': '廃棄',
+                                            'backup': '予備機'
+                                        }[detailItem.status] || detailItem.status}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label>
@@ -570,27 +579,37 @@ export const TabletList = () => {
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">場所・使用者</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">事業所CD</label>
-                                    <div className="text-gray-900">{detailItem.officeCode || '-'}</div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
+                                    <div className="text-gray-900">
+                                        {detailItem.employeeCode}
+                                        {detailItem.employeeCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({employees.find(e => e.code === detailItem.employeeCode)?.name || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
-                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {detailItem.addressCode}
+                                        {detailItem.addressCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所</label>
-                                    <div className="text-gray-900">{detailItem.address || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
-                                    <div className="text-gray-900">{detailItem.employeeCode || '-'}</div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">事業所CD</label>
+                                    <div className="text-gray-900">{detailItem.officeCode || '-'}</div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
-                            <div className="grid grid-cols-1 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">過去貸与履歴</label>
                                     <div className="text-gray-900 whitespace-pre-wrap">{detailItem.history || '-'}</div>

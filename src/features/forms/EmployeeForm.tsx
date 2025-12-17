@@ -99,6 +99,19 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                             />
                         </div>
                         <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                            <select
+                                name="gender"
+                                value={formData.gender}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="">選択してください</option>
+                                <option value="男性">男性</option>
+                                <option value="女性">女性</option>
+                            </select>
+                        </div>
+                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">氏名</label>
                             <input
                                 type="text"
@@ -118,19 +131,6 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
-                            <select
-                                name="gender"
-                                value={formData.gender}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="">選択してください</option>
-                                <option value="男性">男性</option>
-                                <option value="女性">女性</option>
-                            </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">生年月日</label>
@@ -159,57 +159,6 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                 <div className="space-y-4">
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">所属・勤務情報</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">役付</label>
-                            <input
-                                type="text"
-                                name="roleTitle"
-                                value={formData.roleTitle}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">職種</label>
-                            <input
-                                type="text"
-                                name="jobType"
-                                value={formData.jobType}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員区分</label>
-                            <input
-                                type="text"
-                                name="employeeType"
-                                value={formData.employeeType}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">給与区分</label>
-                            <input
-                                type="text"
-                                name="salaryType"
-                                value={formData.salaryType}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">原価区分</label>
-                            <input
-                                type="text"
-                                name="costType"
-                                value={formData.costType}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">エリアコード</label>
                             <SearchableSelect
@@ -254,6 +203,56 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 type="number"
                                 name="monthsHasuu"
                                 value={formData.monthsHasuu}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">職種</label>
+                            <input
+                                type="text"
+                                name="jobType"
+                                value={formData.jobType}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">役付</label>
+                            <input
+                                type="text"
+                                name="roleTitle"
+                                value={formData.roleTitle}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員区分</label>
+                            <input
+                                type="text"
+                                name="employeeType"
+                                value={formData.employeeType}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">給与区分</label>
+                            <input
+                                type="text"
+                                name="salaryType"
+                                value={formData.salaryType}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">原価区分</label>
+                            <input
+                                type="text"
+                                name="costType"
+                                value={formData.costType}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />

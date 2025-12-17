@@ -12,7 +12,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 export const RouterList = () => {
-    const { routers, addRouter, updateRouter, deleteRouter, addLog, employees } = useData();
+    const { routers, addRouter, updateRouter, deleteRouter, addLog, employees, addresses } = useData();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -608,11 +608,25 @@ export const RouterList = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
-                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {detailItem.addressCode}
+                                        {detailItem.addressCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
-                                    <div className="text-gray-900">{detailItem.employeeCode || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {detailItem.employeeCode}
+                                        {detailItem.employeeCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({employees.find(e => e.code === detailItem.employeeCode)?.name || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -12,7 +12,7 @@ import { useAuth } from '../../features/context/AuthContext';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 export const IPhoneList = () => {
-    const { iPhones, addIPhone, updateIPhone, deleteIPhone, addLog, employees } = useData();
+    const { iPhones, addIPhone, updateIPhone, deleteIPhone, addLog, employees, addresses } = useData();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<IPhone | undefined>(undefined);
@@ -50,7 +50,7 @@ export const IPhoneList = () => {
         });
     };
 
-    const { user } = useAuth(); // Need user for permission check
+    const { user } = useAuth();
 
     const handleAdd = () => {
         setEditingItem(undefined);
@@ -87,7 +87,6 @@ export const IPhoneList = () => {
             'confirm',
             async () => {
                 try {
-                    // Execute deletions sequentially
                     for (const id of selectedIds) {
                         await deleteIPhone(id, true);
                     }
@@ -115,12 +114,10 @@ export const IPhoneList = () => {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            // Select all current page items
             const newSelected = new Set(selectedIds);
             paginatedData.forEach(item => newSelected.add(item.id));
             setSelectedIds(newSelected);
         } else {
-            // Deselect all current page items
             const newSelected = new Set(selectedIds);
             paginatedData.forEach(item => newSelected.delete(item.id));
             setSelectedIds(newSelected);
@@ -131,9 +128,7 @@ export const IPhoneList = () => {
         try {
             if (editingItem) {
                 await updateIPhone({ ...data, id: editingItem.id }, true);
-                // No need to update twice.
                 await addLog('iPhones', 'update', `iPhone更新: ${data.managementNumber} (${data.employeeId})`);
-                // Check if this was the highlighted item
                 if (editingItem.id === searchParams.get('highlight')) {
                     setSearchParams(prev => {
                         const newParams = new URLSearchParams(prev);
@@ -153,12 +148,9 @@ export const IPhoneList = () => {
         }
     };
 
-    // Permission Logic
     const isAdmin = user?.role === 'admin';
     const hasPermission = (item: IPhone) => {
         if (isAdmin) return true;
-        // Check if the item belongs to the logged-in user
-        // Assuming user.code is the employee code
         return user?.code === item.employeeId;
     };
 
@@ -169,14 +161,12 @@ export const IPhoneList = () => {
         return '';
     };
 
-    // Filtering Logic
     const filteredData = iPhones.filter(item =>
         Object.values(item).some(val =>
             String(val).toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
 
-    // Pagination Logic
     const totalItems = filteredData.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
@@ -192,13 +182,11 @@ export const IPhoneList = () => {
         setCurrentPage(p);
     };
 
-    // Check if all items on current page are selected
     const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
 
-    // CSV Export Logic
     const handleExportCSV = () => {
         const headers = [
-            'キャリア', '電話番号', '管理番号', '社員コード', // User Name removed
+            'キャリア', '電話番号', '管理番号', '社員コード',
             '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
             '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
         ];
@@ -227,6 +215,18 @@ export const IPhoneList = () => {
         link.href = URL.createObjectURL(blob);
         link.download = `iphone_list_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
+    };
+
+    const handleDownloadTemplate = () => {
+        const headers = [
+            'キャリア', '電話番号', '管理番号', '社員コード',
+            '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
+            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, 'iPhoneエクセルフォーマット.xlsx');
     };
 
     const handleImportClick = () => {
@@ -290,17 +290,14 @@ export const IPhoneList = () => {
                         return date.toISOString().split('T')[0];
                     }
                     const strVal = String(val).trim();
-                    // Replace slashes with hyphens for DB compatibility
                     if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(strVal)) {
                         return strVal.replace(/\//g, '-');
                     }
                     return strVal;
                 };
 
-                // Date Validation Helper
                 const isValidDate = (dateStr: string) => {
                     if (!dateStr) return true;
-                    // Check for YYYY-MM-DD or YYYY/MM/DD
                     return /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr);
                 };
 
@@ -313,8 +310,6 @@ export const IPhoneList = () => {
                     notes += ` (貸与日: ${rawLendDate})`;
                     rawLendDate = '';
                 }
-                // receiptDate is now text, so no date validation needed - just store whatever was there (formatted if it was a date)
-
                 if (rawReturnDate && !isValidDate(rawReturnDate)) {
                     notes += ` (返却日: ${rawReturnDate})`;
                     rawReturnDate = '';
@@ -348,7 +343,6 @@ export const IPhoneList = () => {
                 } catch (error: any) {
                     console.error('Import error for row:', row, error);
                     errorCount++;
-                    // Show alert for the first error to help debugging
                     if (errorCount === 1) {
                         showNotification(`インポートエラー (行 ${i + 2}): ${error.message || JSON.stringify(error)}`, 'alert', undefined, 'エラー');
                     }
@@ -365,19 +359,6 @@ export const IPhoneList = () => {
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
-    };
-
-    const handleDownloadTemplate = () => {
-        const headers = [
-
-            'キャリア', '電話番号', '管理番号', '社員コード',
-            '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
-            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
-        ];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'iPhoneエクセルフォーマット.xlsx');
     };
 
     return (
@@ -489,9 +470,7 @@ export const IPhoneList = () => {
                 canDelete={hasPermission}
             />
 
-            {/* Footer with Actions and Pagination */}
             <div className="flex flex-col xl:flex-row justify-between items-center bg-white p-4 border-t border-gray-200 mt-auto rounded-b-lg gap-4">
-                {/* Left: Result Count */}
                 <div className="flex flex-wrap items-center gap-4 justify-center sm:justify-start">
                     <span className="text-sm text-gray-600 whitespace-nowrap">
                         {totalItems} 件中 {startIndex + 1} - {endIndex} を表示
@@ -506,7 +485,6 @@ export const IPhoneList = () => {
                     </button>
                 </div>
 
-                {/* Right: Pagination Controls */}
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1">
                         <button
@@ -621,17 +599,25 @@ export const IPhoneList = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
-                                    <div className="text-gray-900">{detailItem.employeeId || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">使用者名</label>
                                     <div className="text-gray-900">
-                                        {employees.find(e => e.code === detailItem.employeeId)?.name || '未登録'}
+                                        {detailItem.employeeId}
+                                        {detailItem.employeeId && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({employees.find(e => e.code === detailItem.employeeId)?.name || '未登録'})
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
-                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {detailItem.addressCode}
+                                        {detailItem.addressCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">貸与日</label>

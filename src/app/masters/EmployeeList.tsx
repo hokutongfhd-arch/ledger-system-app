@@ -15,7 +15,7 @@ import { useAuth } from '../../features/context/AuthContext';
 import { toFullWidthKana } from '../../lib/utils/stringUtils';
 
 export const EmployeeList = () => {
-    const { employees, addEmployee, updateEmployee, deleteEmployee, addLog } = useData(); // Trigger HMR
+    const { employees, addEmployee, updateEmployee, deleteEmployee, addLog, areas, addresses } = useData(); // Trigger HMR
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -590,16 +590,16 @@ export const EmployeeList = () => {
                                     <div className="text-gray-900">{detailItem.code}</div>
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">性別</label>
+                                    <div className="text-gray-900">{detailItem.gender || '-'}</div>
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">氏名</label>
                                     <div className="text-gray-900">{detailItem.name}</div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">氏名カナ</label>
                                     <div className="text-gray-900">{detailItem.nameKana || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">性別</label>
-                                    <div className="text-gray-900">{detailItem.gender || '-'}</div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">生年月日</label>
@@ -615,34 +615,27 @@ export const EmployeeList = () => {
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">所属・勤務情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">役付</label>
-                                    <div className="text-gray-900">{detailItem.roleTitle || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">職種</label>
-                                    <div className="text-gray-900">{detailItem.jobType || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員区分</label>
-                                    <div className="text-gray-900">{detailItem.employeeType || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">給与区分</label>
-                                    <div className="text-gray-900">{detailItem.salaryType || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">原価区分</label>
-                                    <div className="text-gray-900">{detailItem.costType || '-'}</div>
-                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">エリアコード</label>
-                                    <div className="text-gray-900">{detailItem.areaCode || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {detailItem.areaCode}
+                                        {detailItem.areaCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({areas.find(a => a.areaCode === detailItem.areaCode)?.areaName || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
-                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {detailItem.addressCode}
+                                        {detailItem.addressCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">入社年月日</label>
@@ -655,6 +648,26 @@ export const EmployeeList = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">勤続端数月数</label>
                                     <div className="text-gray-900">{detailItem.monthsHasuu || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">職種</label>
+                                    <div className="text-gray-900">{detailItem.jobType || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">役付</label>
+                                    <div className="text-gray-900">{detailItem.roleTitle || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員区分</label>
+                                    <div className="text-gray-900">{detailItem.employeeType || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">給与区分</label>
+                                    <div className="text-gray-900">{detailItem.salaryType || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">原価区分</label>
+                                    <div className="text-gray-900">{detailItem.costType || '-'}</div>
                                 </div>
                             </div>
                         </div>

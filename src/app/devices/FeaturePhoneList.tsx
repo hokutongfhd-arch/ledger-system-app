@@ -12,7 +12,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 export const FeaturePhoneList = () => {
-    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog, employees } = useData();
+    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog, employees, addresses } = useData();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<FeaturePhone | undefined>(undefined);
@@ -571,18 +571,26 @@ export const FeaturePhoneList = () => {
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">使用者名</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
                                     <div className="text-gray-900">
-                                        {employees.find(e => e.code === detailItem.employeeId)?.name || '未登録'}
+                                        {detailItem.employeeId}
+                                        {detailItem.employeeId && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({employees.find(e => e.code === detailItem.employeeId)?.name || '未登録'})
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
-                                    <div className="text-gray-900">{detailItem.employeeId || '-'}</div>
-                                </div>
-                                <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
-                                    <div className="text-gray-900">{detailItem.addressCode || '-'}</div>
+                                    <div className="text-gray-900">
+                                        {detailItem.addressCode}
+                                        {detailItem.addressCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">貸与日</label>

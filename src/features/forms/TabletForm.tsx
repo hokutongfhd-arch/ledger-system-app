@@ -135,13 +135,12 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">場所・使用者</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">事業所CD</label>
-                            <input
-                                type="text"
-                                name="officeCode"
-                                value={formData.officeCode}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
+                            <SearchableSelect
+                                options={employeeOptions}
+                                value={formData.employeeCode}
+                                onChange={(val) => handleSelectChange('employeeCode', val)}
+                                placeholder="社員を検索..."
                             />
                         </div>
                         <div>
@@ -154,22 +153,13 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">事業所CD</label>
                             <input
                                 type="text"
-                                name="address"
-                                value={formData.address}
+                                name="officeCode"
+                                value={formData.officeCode}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
-                            <SearchableSelect
-                                options={employeeOptions}
-                                value={formData.employeeCode}
-                                onChange={(val) => handleSelectChange('employeeCode', val)}
-                                placeholder="社員を検索..."
                             />
                         </div>
                     </div>
@@ -178,7 +168,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                 <div className="space-y-4">
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="col-span-1 md:col-span-2">
+                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">過去貸与履歴</label>
                             <textarea
                                 name="history"
@@ -188,7 +178,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
-                        <div className="col-span-1 md:col-span-2">
+                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
                             <textarea
                                 name="notes"
