@@ -2,8 +2,8 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, User, Smartphone, Tablet, Router as RouterIcon, Database, FileText, Phone, Bell } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
+import { useAuth } from '../../features/context/AuthContext';
+import { useData } from '../../features/context/DataContext';
 
 const SidebarItem = ({ to, icon: Icon, label, indent = false }: { to: string; icon: any; label: string; indent?: boolean }) => (
     <NavLink

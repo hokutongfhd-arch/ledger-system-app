@@ -1,25 +1,25 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { DataProvider } from './context/DataContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { DataProvider } from './features/context/DataContext';
+import { AuthProvider, useAuth } from './features/context/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { Suspense } from 'react';
 
 // Lazy load pages
-const Login = React.lazy(() => import('./pages/Login').then(module => ({ default: module.Login })));
-const Dashboard = React.lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
-const UserDashboard = React.lazy(() => import('./pages/UserDashboard').then(module => ({ default: module.UserDashboard })));
-const IPhoneList = React.lazy(() => import('./pages/devices/IPhoneList').then(module => ({ default: module.IPhoneList })));
-const TabletList = React.lazy(() => import('./pages/devices/TabletList').then(module => ({ default: module.TabletList })));
-const FeaturePhoneList = React.lazy(() => import('./pages/devices/FeaturePhoneList').then(module => ({ default: module.FeaturePhoneList })));
-const RouterList = React.lazy(() => import('./pages/devices/RouterList').then(module => ({ default: module.RouterList })));
+const Login = React.lazy(() => import('./app/Login').then(module => ({ default: module.Login })));
+const Dashboard = React.lazy(() => import('./app/Dashboard').then(module => ({ default: module.Dashboard })));
+const UserDashboard = React.lazy(() => import('./app/UserDashboard').then(module => ({ default: module.UserDashboard })));
+const IPhoneList = React.lazy(() => import('./app/devices/IPhoneList').then(module => ({ default: module.IPhoneList })));
+const TabletList = React.lazy(() => import('./app/devices/TabletList').then(module => ({ default: module.TabletList })));
+const FeaturePhoneList = React.lazy(() => import('./app/devices/FeaturePhoneList').then(module => ({ default: module.FeaturePhoneList })));
+const RouterList = React.lazy(() => import('./app/devices/RouterList').then(module => ({ default: module.RouterList })));
 
-const EmployeeList = React.lazy(() => import('./pages/masters/EmployeeList').then(module => ({ default: module.EmployeeList })));
-const AreaList = React.lazy(() => import('./pages/masters/AreaList').then(module => ({ default: module.AreaList })));
-const AddressList = React.lazy(() => import('./pages/masters/AddressList').then(module => ({ default: module.AddressList })));
-const LogList = React.lazy(() => import('./pages/LogList').then(module => ({ default: module.LogList })));
-const DeviceManualList = React.lazy(() => import('./pages/DeviceManualList').then(module => ({ default: module.DeviceManualList })));
-const DesignPreview = React.lazy(() => import('./pages/DesignPreview').then(module => ({ default: module.DesignPreview })));
+const EmployeeList = React.lazy(() => import('./app/masters/EmployeeList').then(module => ({ default: module.EmployeeList })));
+const AreaList = React.lazy(() => import('./app/masters/AreaList').then(module => ({ default: module.AreaList })));
+const AddressList = React.lazy(() => import('./app/masters/AddressList').then(module => ({ default: module.AddressList })));
+const LogList = React.lazy(() => import('./app/LogList').then(module => ({ default: module.LogList })));
+const DeviceManualList = React.lazy(() => import('./app/DeviceManualList').then(module => ({ default: module.DeviceManualList })));
+const DesignPreview = React.lazy(() => import('./app/DesignPreview').then(module => ({ default: module.DesignPreview })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();

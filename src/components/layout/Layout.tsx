@@ -1,7 +1,7 @@
 
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../features/context/AuthContext';
 import { LogOut } from 'lucide-react';
 
 export const Layout = () => {
