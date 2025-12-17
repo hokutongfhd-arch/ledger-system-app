@@ -535,16 +535,15 @@ export const RouterList = () => {
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">実貸与先名</label>
-                                    <div className="text-gray-900">{detailItem.actualLenderName || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">実貸与先</label>
-                                    <div className="text-gray-900">{detailItem.actualLender || '-'}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">会社</label>
-                                    <div className="text-gray-900">{detailItem.company || '-'}</div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
+                                    <div className="text-gray-900">
+                                        {detailItem.employeeCode}
+                                        {detailItem.employeeCode && (
+                                            <span className="ml-2 text-gray-600">
+                                                ({employees.find(e => e.code === detailItem.employeeCode)?.name || '未登録'})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label>
@@ -558,15 +557,16 @@ export const RouterList = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label>
-                                    <div className="text-gray-900">
-                                        {detailItem.employeeCode}
-                                        {detailItem.employeeCode && (
-                                            <span className="ml-2 text-gray-600">
-                                                ({employees.find(e => e.code === detailItem.employeeCode)?.name || '未登録'})
-                                            </span>
-                                        )}
-                                    </div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">実貸与先</label>
+                                    <div className="text-gray-900">{detailItem.actualLender || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">実貸与先名</label>
+                                    <div className="text-gray-900">{detailItem.actualLenderName || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">会社</label>
+                                    <div className="text-gray-900">{detailItem.company || '-'}</div>
                                 </div>
                             </div>
                         </div>
