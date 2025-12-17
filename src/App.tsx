@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './features/context/DataContext';
 import { AuthProvider, useAuth } from './features/context/AuthContext';
 import { Layout } from './components/layout/Layout';
+import { AppLayout } from './components/ui/AppLayout';
 import { Suspense } from 'react';
 
 // Lazy load pages
@@ -31,44 +32,46 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <BrowserRouter>
-          <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-            <Routes>
-              <Route path="/design-preview" element={<DesignPreview />} />
-              <Route path="/login" element={<Login />} />
+    <AppLayout>
+      <AuthProvider>
+        <DataProvider>
+          <BrowserRouter>
+            <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+              <Routes>
+                <Route path="/design-preview" element={<DesignPreview />} />
+                <Route path="/login" element={<Login />} />
 
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<Dashboard />} />
-                <Route path="user-dashboard" element={<UserDashboard />} />
-                <Route path="logs" element={<LogList />} />
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Dashboard />} />
+                  <Route path="user-dashboard" element={<UserDashboard />} />
+                  <Route path="logs" element={<LogList />} />
 
-                <Route path="devices">
-                  <Route path="iphones" element={<IPhoneList />} />
-                  <Route path="tablets" element={<TabletList />} />
-                  <Route path="feature-phones" element={<FeaturePhoneList />} />
-                  <Route path="routers" element={<RouterList />} />
+                  <Route path="devices">
+                    <Route path="iphones" element={<IPhoneList />} />
+                    <Route path="tablets" element={<TabletList />} />
+                    <Route path="feature-phones" element={<FeaturePhoneList />} />
+                    <Route path="routers" element={<RouterList />} />
 
+                  </Route>
+
+                  <Route path="masters">
+                    <Route path="employees" element={<EmployeeList />} />
+                    <Route path="areas" element={<AreaList />} />
+                    <Route path="addresses" element={<AddressList />} />
+                  </Route>
+
+                  <Route path="/device-manuals" element={<DeviceManualList />} />
                 </Route>
-
-                <Route path="masters">
-                  <Route path="employees" element={<EmployeeList />} />
-                  <Route path="areas" element={<AreaList />} />
-                  <Route path="addresses" element={<AddressList />} />
-                </Route>
-
-                <Route path="/device-manuals" element={<DeviceManualList />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </DataProvider>
-    </AuthProvider>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </DataProvider>
+      </AuthProvider>
+    </AppLayout>
   );
 }
 

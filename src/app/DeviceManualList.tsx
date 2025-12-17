@@ -386,7 +386,7 @@ export const DeviceManualList = () => {
                 <Table<ManualItem>
                     data={manuals}
                     columns={[
-                        { header: 'タイトル', accessor: 'title', className: 'w-1/3 font-medium text-ink' },
+                        { header: 'タイトル', accessor: 'title', className: 'w-1/3 text-ink' },
                         {
                             header: 'ファイル名',
                             accessor: (item) => (

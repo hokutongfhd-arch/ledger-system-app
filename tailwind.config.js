@@ -48,15 +48,15 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Zen Kaku Gothic New"', 'sans-serif'],
-        display: ['"Space Grotesk"', 'sans-serif'],
+        sans: ['"UD Shin Go"', '"UDShinGoPr6N"', '"UD New Go"', '"Zen Kaku Gothic New"', 'sans-serif'],
+        display: ['"Space Grotesk"', '"UD Shin Go"', 'sans-serif'],
         mono: ['"Space Mono"', 'monospace'],
       },
-      boxShadow: {
-        'offset': '4px 4px 0px 0px #0A0E27',
-        'offset-hover': '6px 6px 0px 0px #0A0E27',
-        'card': '4px 4px 0px 0px #0A0E27', // Alias for offset
-      },
+    },
+    boxShadow: {
+      'offset': '4px 4px 0px 0px #0A0E27',
+      'offset-hover': '6px 6px 0px 0px #0A0E27',
+      'card': '4px 4px 0px 0px #0A0E27', // Alias for offset
     },
   },
   plugins: [],
