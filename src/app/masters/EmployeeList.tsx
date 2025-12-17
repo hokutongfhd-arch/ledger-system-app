@@ -1,4 +1,3 @@
-```
 import { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useData } from '../../features/context/DataContext';
@@ -182,7 +181,7 @@ export const EmployeeList = () => {
     const handleExportCSV = () => {
         const today = new Date();
         const formattedDate = today.toISOString().split('T')[0];
-        const filename = `社員マスタ${ formattedDate }.csv`;
+        const filename = `社員マスタ${formattedDate}.csv`;
 
         const headers = [
             'ID', '社員コード', 'パスワード', '氏名', '氏名カナ', '性別', '生年月日',
@@ -271,7 +270,7 @@ export const EmployeeList = () => {
                 const invalidColumns = Object.keys(firstRow).filter(key => !validHeaders.includes(key));
 
                 if (invalidColumns.length > 0) {
-                    showNotification(`不正なカラムが含まれています: ${ invalidColumns.join(', ') } `, 'alert', undefined, 'エラー');
+                    showNotification(`不正なカラムが含まれています: ${invalidColumns.join(', ')} `, 'alert', undefined, 'エラー');
                     return;
                 }
 
@@ -303,14 +302,14 @@ export const EmployeeList = () => {
                                     const y = value.getFullYear();
                                     const m = String(value.getMonth() + 1).padStart(2, '0');
                                     const d = String(value.getDate()).padStart(2, '0');
-                                    processedValue = `${ y } -${ m } -${ d } `;
+                                    processedValue = `${y} -${m} -${d} `;
                                 } else if (typeof value === 'string') {
                                     const parts = value.split('/');
                                     if (parts.length === 3) {
                                         const y = parts[0];
                                         const m = parts[1].padStart(2, '0');
                                         const d = parts[2].padStart(2, '0');
-                                        processedValue = `${ y } -${ m } -${ d } `;
+                                        processedValue = `${y} -${m} -${d} `;
                                     }
                                 }
                             }
@@ -332,10 +331,10 @@ export const EmployeeList = () => {
                 }
 
                 if (successCount > 0) {
-                    await addLog('employees', 'import', `Excelインポート: ${ successCount } 件追加`);
+                    await addLog('employees', 'import', `Excelインポート: ${successCount} 件追加`);
                 }
 
-                showNotification(`${ successCount } 件のインポートが完了しました。`);
+                showNotification(`${successCount} 件のインポートが完了しました。`);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
@@ -474,7 +473,7 @@ export const EmployeeList = () => {
                     { header: '氏名カナ', accessor: 'nameKana' },
                     {
                         header: '権限', accessor: (item) => (
-                            <span className={`px - 2 py - 1 rounded - full text - xs font - medium ${ item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' } `}>
+                            <span className={`px - 2 py - 1 rounded - full text - xs font - medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'} `}>
                                 {item.role === 'admin' ? '管理者' : 'ユーザー'}
                             </span>
                         )
@@ -618,7 +617,7 @@ export const EmployeeList = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">権限</label>
                                     <span className={`px - 2 py - 1 rounded - full text - xs font - medium inline - block
-                                        ${ detailItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' } `}>
+                                        ${detailItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'} `}>
                                         {detailItem.role === 'admin' ? '管理者' : 'ユーザー'}
                                     </span>
                                 </div>
