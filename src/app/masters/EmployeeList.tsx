@@ -1,9 +1,10 @@
-
+```
 import { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useData } from '../../features/context/DataContext';
+import { Pagination } from '../../components/ui/Pagination';
 import type { Employee } from '../../lib/types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
+import { Plus, Download, Search, Filter, FileSpreadsheet, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
 import { Table } from '../../components/ui/Table';
@@ -181,7 +182,7 @@ export const EmployeeList = () => {
     const handleExportCSV = () => {
         const today = new Date();
         const formattedDate = today.toISOString().split('T')[0];
-        const filename = `社員マスタ${formattedDate}.csv`;
+        const filename = `社員マスタ${ formattedDate }.csv`;
 
         const headers = [
             'ID', '社員コード', 'パスワード', '氏名', '氏名カナ', '性別', '生年月日',
@@ -270,7 +271,7 @@ export const EmployeeList = () => {
                 const invalidColumns = Object.keys(firstRow).filter(key => !validHeaders.includes(key));
 
                 if (invalidColumns.length > 0) {
-                    showNotification(`不正なカラムが含まれています: ${invalidColumns.join(', ')} `, 'alert', undefined, 'エラー');
+                    showNotification(`不正なカラムが含まれています: ${ invalidColumns.join(', ') } `, 'alert', undefined, 'エラー');
                     return;
                 }
 
@@ -302,14 +303,14 @@ export const EmployeeList = () => {
                                     const y = value.getFullYear();
                                     const m = String(value.getMonth() + 1).padStart(2, '0');
                                     const d = String(value.getDate()).padStart(2, '0');
-                                    processedValue = `${y}-${m}-${d}`;
+                                    processedValue = `${ y } -${ m } -${ d } `;
                                 } else if (typeof value === 'string') {
                                     const parts = value.split('/');
                                     if (parts.length === 3) {
                                         const y = parts[0];
                                         const m = parts[1].padStart(2, '0');
                                         const d = parts[2].padStart(2, '0');
-                                        processedValue = `${y}-${m}-${d}`;
+                                        processedValue = `${ y } -${ m } -${ d } `;
                                     }
                                 }
                             }
@@ -331,10 +332,10 @@ export const EmployeeList = () => {
                 }
 
                 if (successCount > 0) {
-                    await addLog('employees', 'import', `Excelインポート: ${successCount} 件追加`);
+                    await addLog('employees', 'import', `Excelインポート: ${ successCount } 件追加`);
                 }
 
-                showNotification(`${successCount} 件のインポートが完了しました。`);
+                showNotification(`${ successCount } 件のインポートが完了しました。`);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
@@ -473,7 +474,7 @@ export const EmployeeList = () => {
                     { header: '氏名カナ', accessor: 'nameKana' },
                     {
                         header: '権限', accessor: (item) => (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                            <span className={`px - 2 py - 1 rounded - full text - xs font - medium ${ item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' } `}>
                                 {item.role === 'admin' ? '管理者' : 'ユーザー'}
                             </span>
                         )
@@ -486,82 +487,21 @@ export const EmployeeList = () => {
             />
 
             {/* Footer with Actions and Pagination */}
-            <div className="flex flex-col xl:flex-row justify-between items-center bg-white p-4 border-t border-gray-200 mt-auto rounded-b-lg gap-4">
-                {/* Left: Result Count */}
-                <div className="flex flex-wrap items-center gap-4 justify-center sm:justify-start">
-                    <span className="text-sm text-gray-600 whitespace-nowrap">
-                        {totalItems} 件中 {startIndex + 1} - {endIndex} を表示
-                    </span>
-                    <button
-                        onClick={handleBulkDelete}
-                        disabled={selectedIds.size === 0}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <Trash2 size={16} />
-                        まとめて削除
-                    </button>
-                </div>
-
-                {/* Right: Pagination Controls */}
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => handlePageChange(1)}
-                            disabled={currentPage === 1}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronsLeft size={20} />
-                        </button>
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
-
-                        <div className="flex items-center gap-2 mx-2">
-                            <input
-                                type="number"
-                                min={1}
-                                max={totalPages}
-                                value={currentPage}
-                                onChange={(e) => handlePageChange(Number(e.target.value))}
-                                className="w-16 border border-gray-300 rounded px-2 py-1 text-center text-sm"
-                            />
-                            <span className="text-sm text-gray-600 whitespace-nowrap">/ {totalPages} ページ</span>
-                        </div>
-
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
-                        <button
-                            onClick={() => handlePageChange(totalPages)}
-                            disabled={currentPage === totalPages}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronsRight size={20} />
-                        </button>
-                    </div>
-
-                    <select
-                        value={pageSize}
-                        onChange={(e) => {
-                            setPageSize(Number(e.target.value));
-                            setCurrentPage(1);
-                        }}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                        {[15, 30, 50, 100].map(size => (
-                            <option key={size} value={size}>{size} 件 / ページ</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                }}
+                selectedCount={selectedIds.size}
+                onBulkDelete={handleBulkDelete}
+            />
 
             <Modal
                 isOpen={isModalOpen}
@@ -677,8 +617,8 @@ export const EmployeeList = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">権限</label>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium inline-block
-                                        ${detailItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                                    <span className={`px - 2 py - 1 rounded - full text - xs font - medium inline - block
+                                        ${ detailItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' } `}>
                                         {detailItem.role === 'admin' ? '管理者' : 'ユーザー'}
                                     </span>
                                 </div>

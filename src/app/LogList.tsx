@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useData } from '../features/context/DataContext';
 import { Table } from '../components/ui/Table';
+import { Pagination } from '../components/ui/Pagination';
 import type { Log } from '../lib/types';
-import { Search, Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Archive, Calendar } from 'lucide-react';
+import { Search, Download, Archive, Calendar } from 'lucide-react';
 import { generateWeekRanges, getWeekRange } from '../lib/utils/dateHelpers';
 
 export const LogList = () => {
@@ -128,6 +129,13 @@ export const LogList = () => {
                     <Archive size={16} />
                     {isArchiveMode ? '最新ログに戻る' : 'アーカイブ'}
                 </button>
+                <button
+                    onClick={handleExportCSV}
+                    className="px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors text-sm shadow-sm border bg-white text-gray-700 border-gray-300 hover:bg-gray-50 ml-4"
+                >
+                    <Download size={16} />
+                    CSV出力
+                </button>
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -188,79 +196,19 @@ export const LogList = () => {
                 ]}
             />
 
-            <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 border-t border-gray-200 mt-auto rounded-b-lg">
-                <div className="flex items-center gap-4 mb-4 sm:mb-0">
-                    <span className="text-sm text-gray-600">
-                        {totalItems} 件中 {startIndex + 1} - {endIndex} を表示
-                    </span>
-                    <button
-                        onClick={handleExportCSV}
-                        className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-md flex items-center gap-2 hover:bg-gray-50 transition-colors text-sm shadow-sm"
-                    >
-                        <Download size={16} />
-                        CSV出力
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => handlePageChange(1)}
-                            disabled={currentPage === 1}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronsLeft size={20} />
-                        </button>
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
-
-                        <div className="flex items-center gap-2 mx-2">
-                            <input
-                                type="number"
-                                min={1}
-                                max={totalPages}
-                                value={currentPage}
-                                onChange={(e) => handlePageChange(Number(e.target.value))}
-                                className="w-16 border border-gray-300 rounded px-2 py-1 text-center text-sm"
-                            />
-                            <span className="text-sm text-gray-600">/ {totalPages} ページ</span>
-                        </div>
-
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
-                        <button
-                            onClick={() => handlePageChange(totalPages)}
-                            disabled={currentPage === totalPages}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronsRight size={20} />
-                        </button>
-                    </div>
-
-                    <select
-                        value={pageSize}
-                        onChange={(e) => {
-                            setPageSize(Number(e.target.value));
-                            setCurrentPage(1);
-                        }}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                        {[15, 30, 50, 100].map(size => (
-                            <option key={size} value={size}>{size} 件 / ページ</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                }}
+            />
         </div>
     );
 };
