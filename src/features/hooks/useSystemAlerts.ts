@@ -12,7 +12,8 @@ export type AlertType =
     | 'duplicate_phone'
     | 'duplicate_employee_code'
     | 'duplicate_area_code'
-    | 'duplicate_address_code';
+    | 'duplicate_address_code'
+    | 'contract_expiring';
 
 export type AlertSource =
     | 'iPhone'
@@ -173,6 +174,43 @@ export const useSystemAlerts = () => {
         checkDuplicates(employees, 'code', 'Employee', '/masters/employees', '社員コード');
         checkDuplicates(areas, 'areaCode', 'Area', '/masters/areas', 'エリアコード');
         checkDuplicates(addresses, 'addressCode', 'Address', '/masters/addresses', '住所コード');
+
+        // 6. Contract Expiration Check
+        const checkExpiry = (item: any, source: AlertSource, path: string) => {
+            if (item.lendDate && item.contractYears) {
+                const years = parseInt(item.contractYears, 10);
+                if (!isNaN(years) && years > 0) {
+                    const lendDate = new Date(item.lendDate);
+                    const expiryDate = new Date(lendDate);
+                    expiryDate.setFullYear(expiryDate.getFullYear() + years);
+
+                    const today = new Date();
+                    // Set time to midnight for accurate day difference
+                    today.setHours(0, 0, 0, 0);
+                    expiryDate.setHours(0, 0, 0, 0);
+
+                    const diffTime = expiryDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays <= 30) {
+                        const isExpired = diffDays < 0;
+                        const dateStr = expiryDate.toLocaleDateString('ja-JP');
+                        result.push({
+                            id: `expiry-${source}-${item.id}`,
+                            type: 'contract_expiring',
+                            source,
+                            message: `契約が${isExpired ? '切れています' : '切れそうです'}。期限: ${dateStr} (${Math.abs(diffDays)}日${isExpired ? '超過' : '後'})`,
+                            recordId: item.id,
+                            path: `${path}?highlight=${item.id}`
+                        });
+                    }
+                }
+            }
+        };
+
+        iPhones.forEach(i => checkExpiry(i, 'iPhone', '/devices/iphones'));
+        featurePhones.forEach(f => checkExpiry(f, 'FeaturePhone', '/devices/feature-phones'));
+        // Note: Tablet and Router do not have lendDate in the current types, so skipping them.
 
         return result;
     }, [tablets, iPhones, featurePhones, routers, employees, areas, addresses]);
