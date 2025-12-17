@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Address } from '../../lib/types';
-
+import { useData } from '../context/DataContext';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 
 interface AddressFormProps {
     initialData?: Address;
@@ -37,6 +38,7 @@ const AddressInputField = ({
 );
 
 export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit, onCancel }) => {
+    const { areas } = useData();
     const [formData, setFormData] = useState<Omit<Address, 'id'>>({
         no: '',
         addressCode: '',
@@ -58,6 +60,17 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         attentionNote: '',
     });
 
+    // Prepare Options for Area
+    // heuristic: Address.area seems to store the Area Name (based on field name 'area' vs 'areaCode')
+    // We map Area Name to value.
+    const areaOptions = useMemo(() => {
+        return areas.map(a => ({
+            label: a.areaName,
+            value: a.areaName,
+            subLabel: a.areaCode
+        }));
+    }, [areas]);
+
     useEffect(() => {
         if (initialData) {
             const { id, ...rest } = initialData;
@@ -67,6 +80,10 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -86,7 +103,15 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                         <AddressInputField label="住所コード" name="addressCode" value={formData.addressCode} onChange={handleChange} required />
                         <AddressInputField label="事業所名" name="officeName" value={formData.officeName} onChange={handleChange} required />
                         <AddressInputField label="事業部" name="division" value={formData.division} onChange={handleChange} />
-                        <AddressInputField label="エリア" name="area" value={formData.area} onChange={handleChange} />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア</label>
+                            <SearchableSelect
+                                options={areaOptions}
+                                value={formData.area}
+                                onChange={(val) => handleSelectChange('area', val)}
+                                placeholder="エリアを検索..."
+                            />
+                        </div>
                     </div>
                 </div>
 

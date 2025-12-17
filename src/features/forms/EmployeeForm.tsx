@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Employee } from '../../lib/types';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 
 interface EmployeeFormProps {
     initialData?: Employee;
@@ -11,6 +13,7 @@ interface EmployeeFormProps {
 
 export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmit, onCancel, isSelfEdit = false }) => {
     const { user } = useAuth();
+    const { areas, addresses } = useData();
     const isAdmin = user?.role === 'admin';
 
     const [formData, setFormData] = useState<Omit<Employee, 'id'>>({
@@ -38,6 +41,23 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         jobType: '',
     });
 
+    // Prepare Options
+    const areaOptions = useMemo(() => {
+        return areas.map(a => ({
+            label: a.areaName,
+            value: a.areaCode,
+            subLabel: a.areaCode
+        }));
+    }, [areas]);
+
+    const addressOptions = useMemo(() => {
+        return addresses.map(a => ({
+            label: a.officeName,
+            value: a.addressCode,
+            subLabel: a.address
+        }));
+    }, [addresses]);
+
     useEffect(() => {
         if (initialData) {
             const { id, ...rest } = initialData;
@@ -47,6 +67,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -197,22 +221,20 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">エリアコード</label>
-                            <input
-                                type="text"
-                                name="areaCode"
+                            <SearchableSelect
+                                options={areaOptions}
                                 value={formData.areaCode}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(val) => handleSelectChange('areaCode', val)}
+                                placeholder="エリアを検索..."
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
-                            <input
-                                type="text"
-                                name="addressCode"
+                            <SearchableSelect
+                                options={addressOptions}
                                 value={formData.addressCode}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(val) => handleSelectChange('addressCode', val)}
+                                placeholder="住所・拠点を検索..."
                             />
                         </div>
                         <div>

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { IPhone } from '../../lib/types';
-
+import { useData } from '../context/DataContext';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 
 interface IPhoneFormProps {
     initialData?: IPhone;
@@ -9,6 +10,7 @@ interface IPhoneFormProps {
 }
 
 export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, onCancel }) => {
+    const { employees, addresses } = useData();
     const [formData, setFormData] = useState<Omit<IPhone, 'id'> & { id?: string }>({
         id: '',
         carrier: '',
@@ -28,6 +30,23 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         contractYears: '',
     });
 
+    // Prepare Options
+    const employeeOptions = useMemo(() => {
+        return employees.map(e => ({
+            label: e.name,
+            value: e.code,
+            subLabel: e.code
+        }));
+    }, [employees]);
+
+    const addressOptions = useMemo(() => {
+        return addresses.map(a => ({
+            label: a.officeName,
+            value: a.addressCode,
+            subLabel: a.address
+        }));
+    }, [addresses]);
+
     useEffect(() => {
         if (initialData) {
             setFormData(initialData);
@@ -36,6 +55,10 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -137,24 +160,22 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
 
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
-                            <input
-                                type="text"
-                                name="employeeId"
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員 (社員コード)</label>
+                            <SearchableSelect
+                                options={employeeOptions}
                                 value={formData.employeeId}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(val) => handleSelectChange('employeeId', val)}
+                                placeholder="社員を検索..."
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
-                            <input
-                                type="text"
-                                name="addressCode"
+                            <label className="block text-sm font-medium text-gray-700 mb-1">住所 (住所コード)</label>
+                            <SearchableSelect
+                                options={addressOptions}
                                 value={formData.addressCode}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(val) => handleSelectChange('addressCode', val)}
+                                placeholder="住所・拠点を検索..."
                             />
                         </div>
 

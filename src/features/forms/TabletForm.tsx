@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Tablet } from '../../lib/types';
-
+import { useData } from '../context/DataContext';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 
 interface TabletFormProps {
     initialData?: Tablet;
@@ -9,6 +10,7 @@ interface TabletFormProps {
 }
 
 export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, onCancel }) => {
+    const { employees, addresses } = useData();
     const [formData, setFormData] = useState<Omit<Tablet, 'id'>>({
         terminalCode: '',
         maker: '',
@@ -23,6 +25,23 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         contractYears: '',
     });
 
+    // Prepare Options
+    const employeeOptions = useMemo(() => {
+        return employees.map(e => ({
+            label: e.name,
+            value: e.code,
+            subLabel: e.code
+        }));
+    }, [employees]);
+
+    const addressOptions = useMemo(() => {
+        return addresses.map(a => ({
+            label: a.officeName,
+            value: a.addressCode,
+            subLabel: a.address
+        }));
+    }, [addresses]);
+
     useEffect(() => {
         if (initialData) {
             const { id, ...rest } = initialData;
@@ -32,6 +51,10 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -123,12 +146,11 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
-                            <input
-                                type="text"
-                                name="addressCode"
+                            <SearchableSelect
+                                options={addressOptions}
                                 value={formData.addressCode}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(val) => handleSelectChange('addressCode', val)}
+                                placeholder="住所・拠点を検索..."
                             />
                         </div>
                         <div>
@@ -143,12 +165,11 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
-                            <input
-                                type="text"
-                                name="employeeCode"
-                                value={formData.employeeCode || ''}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            <SearchableSelect
+                                options={employeeOptions}
+                                value={formData.employeeCode}
+                                onChange={(val) => handleSelectChange('employeeCode', val)}
+                                placeholder="社員を検索..."
                             />
                         </div>
                     </div>

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Router } from '../../lib/types';
+import { useData } from '../context/DataContext';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 
 interface RouterFormProps {
     initialData?: Router;
@@ -8,6 +10,7 @@ interface RouterFormProps {
 }
 
 export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, onCancel }) => {
+    const { employees, addresses } = useData();
     const [formData, setFormData] = useState<Omit<Router, 'id'>>({
         no: '',
         biller: '',
@@ -35,6 +38,23 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         employeeCode: '',
     });
 
+    // Prepare Options
+    const employeeOptions = useMemo(() => {
+        return employees.map(e => ({
+            label: e.name,
+            value: e.code,
+            subLabel: e.code
+        }));
+    }, [employees]);
+
+    const addressOptions = useMemo(() => {
+        return addresses.map(a => ({
+            label: a.officeName,
+            value: a.addressCode,
+            subLabel: a.address
+        }));
+    }, [addresses]);
+
     useEffect(() => {
         if (initialData) {
             const { id, returnDate, notes, ...rest } = initialData;
@@ -55,6 +75,10 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             ...prev,
             [name]: name === 'cost' ? parseInt(value) || 0 : value
         }));
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -134,11 +158,21 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
-                            <input type="text" name="addressCode" value={formData.addressCode} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <SearchableSelect
+                                options={addressOptions}
+                                value={formData.addressCode}
+                                onChange={(val) => handleSelectChange('addressCode', val)}
+                                placeholder="住所・拠点を検索..."
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
-                            <input type="text" name="employeeCode" value={formData.employeeCode} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="社員番号を入力" />
+                            <SearchableSelect
+                                options={employeeOptions}
+                                value={formData.employeeCode}
+                                onChange={(val) => handleSelectChange('employeeCode', val)}
+                                placeholder="社員を検索..."
+                            />
                         </div>
                     </div>
                 </div>
