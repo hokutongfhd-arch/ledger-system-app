@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Trash2, Check, FileText } from 'lucide-react';
 import { useMemos } from '../hooks/useMemos';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 
 interface MemoPadProps {
     employeeCode: string; // Changed from userId to employeeCode
@@ -11,12 +12,40 @@ export const MemoPad: React.FC<MemoPadProps> = ({ employeeCode }) => {
     const [inputText, setInputText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Notification State
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+    }>({
+        isOpen: false,
+        title: '通知',
+        message: '',
+        type: 'alert',
+    });
+
+    const closeNotification = () => {
+        setNotification(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
+        setNotification({
+            isOpen: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
+
     const handleSave = async () => {
         if (!inputText.trim()) return;
         setIsSubmitting(true);
         const success = await addMemo(inputText);
         if (success) {
-            alert('保存されました');
+            showNotification('保存しました');
             setInputText('');
         }
         setIsSubmitting(false);
@@ -26,10 +55,15 @@ export const MemoPad: React.FC<MemoPadProps> = ({ employeeCode }) => {
         setInputText('');
     };
 
-    const handleDelete = async (id: number) => {
-        if (window.confirm('このメモを削除しますか？')) {
-            await deleteMemo(id);
-        }
+    const handleDelete = (id: number) => {
+        showNotification(
+            'このメモを削除しますか？',
+            'confirm',
+            async () => {
+                await deleteMemo(id);
+            },
+            '確認'
+        );
     };
 
     return (
@@ -99,6 +133,15 @@ export const MemoPad: React.FC<MemoPadProps> = ({ employeeCode }) => {
                     )}
                 </div>
             </div>
+
+            <NotificationModal
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                title={notification.title}
+                message={notification.message}
+                type={notification.type}
+                onConfirm={notification.onConfirm}
+            />
         </div>
     );
 };

@@ -5,6 +5,7 @@ import { Table } from '../../components/ui/Table';
 import type { IPhone } from '../../lib/types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 import { IPhoneForm } from '../../features/forms/IPhoneForm';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../../features/context/AuthContext';
@@ -21,6 +22,34 @@ export const IPhoneList = () => {
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+    // Notification State
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+    }>({
+        isOpen: false,
+        title: '通知',
+        message: '',
+        type: 'alert',
+    });
+
+    const closeNotification = () => {
+        setNotification(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
+        setNotification({
+            isOpen: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
+
     const { user } = useAuth(); // Need user for permission check
 
     const handleAdd = () => {
@@ -34,29 +63,44 @@ export const IPhoneList = () => {
     };
 
     const handleDelete = async (item: IPhone) => {
-        if (window.confirm('本当に削除しますか？')) {
-            await deleteIPhone(item.id, true);
-            await addLog('iPhones', 'delete', `iPhone削除: ${item.managementNumber} (${item.employeeId})`);
-        }
+        showNotification(
+            '本当に削除しますか？',
+            'confirm',
+            async () => {
+                try {
+                    await deleteIPhone(item.id, true);
+                    await addLog('iPhones', 'delete', `iPhone削除: ${item.managementNumber} (${item.employeeId})`);
+                } catch (error) {
+                    console.error(error);
+                    showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                }
+            },
+            '確認'
+        );
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
-        if (window.confirm('本当に削除しますか')) {
-            try {
-                // Execute deletions sequentially
-                for (const id of selectedIds) {
-                    await deleteIPhone(id, true);
+        showNotification(
+            '本当に削除しますか',
+            'confirm',
+            async () => {
+                try {
+                    // Execute deletions sequentially
+                    for (const id of selectedIds) {
+                        await deleteIPhone(id, true);
+                    }
+                    await addLog('iPhones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
+                    setSelectedIds(new Set());
+                    showNotification('削除しました');
+                } catch (error) {
+                    console.error("Bulk delete failed", error);
+                    showNotification('一部の削除に失敗しました', 'alert', undefined, 'エラー');
                 }
-                await addLog('iPhones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
-                setSelectedIds(new Set());
-                alert('削除しました');
-            } catch (error) {
-                console.error("Bulk delete failed", error);
-                alert('一部の削除に失敗しました');
-            }
-        }
+            },
+            '確認'
+        );
     };
 
     const handleCheckboxChange = (id: string) => {
@@ -87,7 +131,7 @@ export const IPhoneList = () => {
         try {
             if (editingItem) {
                 await updateIPhone({ ...data, id: editingItem.id }, true);
-                await updateIPhone({ ...data, id: editingItem.id }, true);
+                // No need to update twice.
                 await addLog('iPhones', 'update', `iPhone更新: ${data.managementNumber} (${data.employeeId})`);
                 // Check if this was the highlighted item
                 if (editingItem.id === searchParams.get('highlight')) {
@@ -105,7 +149,7 @@ export const IPhoneList = () => {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            alert('保存に失敗しました。サーバーが起動しているか確認してください。');
+            showNotification('保存に失敗しました。サーバーが起動しているか確認してください。', 'alert', undefined, 'エラー');
         }
     };
 
@@ -202,13 +246,12 @@ export const IPhoneList = () => {
             const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
 
             if (jsonData.length === 0) {
-                alert('ファイルが空です。');
+                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
                 return;
             }
 
             const headers = jsonData[0] as string[];
             const requiredHeaders = [
-
                 'キャリア', '電話番号', '管理番号', '社員コード',
                 '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
                 '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
@@ -216,7 +259,7 @@ export const IPhoneList = () => {
 
             const invalidHeaders = headers.filter(h => !requiredHeaders.includes(h));
             if (invalidHeaders.length > 0) {
-                alert(`不正な列が含まれています: ${invalidHeaders.join(', ')}\nインポートを中止しました。`);
+                showNotification(`不正な列が含まれています: ${invalidHeaders.join(', ')}\nインポートを中止しました。`, 'alert', undefined, 'エラー');
                 return;
             }
 
@@ -230,7 +273,7 @@ export const IPhoneList = () => {
                 if (!row || row.length === 0) continue;
 
                 if (row.length > headers.length) {
-                    alert(`行 ${i + 2} に不正なデータが含まれています (列数が多すぎます)。\nインポートを中止しました。`);
+                    showNotification(`行 ${i + 2} に不正なデータが含まれています (列数が多すぎます)。\nインポートを中止しました。`, 'alert', undefined, 'エラー');
                     hasError = true;
                     break;
                 }
@@ -307,7 +350,7 @@ export const IPhoneList = () => {
                     errorCount++;
                     // Show alert for the first error to help debugging
                     if (errorCount === 1) {
-                        alert(`インポートエラー (行 ${i + 2}): ${error.message || JSON.stringify(error)}`);
+                        showNotification(`インポートエラー (行 ${i + 2}): ${error.message || JSON.stringify(error)}`, 'alert', undefined, 'エラー');
                     }
                 }
             }
@@ -318,7 +361,7 @@ export const IPhoneList = () => {
                 await addLog('iPhones', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
             }
 
-            alert(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
+            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
@@ -634,6 +677,15 @@ export const IPhoneList = () => {
                     </div>
                 )}
             </Modal>
+
+            <NotificationModal
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                title={notification.title}
+                message={notification.message}
+                type={notification.type}
+                onConfirm={notification.onConfirm}
+            />
         </div>
     );
 };

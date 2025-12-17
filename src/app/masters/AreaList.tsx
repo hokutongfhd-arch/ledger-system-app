@@ -7,6 +7,7 @@ import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, C
 import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
 import { AreaForm } from '../../features/forms/AreaForm';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 import { useAuth } from '../../features/context/AuthContext';
 
 export const AreaList = () => {
@@ -24,6 +25,34 @@ export const AreaList = () => {
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+    // Notification State
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+    }>({
+        isOpen: false,
+        title: '通知',
+        message: '',
+        type: 'alert',
+    });
+
+    const closeNotification = () => {
+        setNotification(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
+        setNotification({
+            isOpen: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
+
     const handleAdd = () => {
         setEditingItem(undefined);
         setIsModalOpen(true);
@@ -35,26 +64,41 @@ export const AreaList = () => {
     };
 
     const handleDelete = async (item: Area) => {
-        if (window.confirm('本当に削除しますか？')) {
-            await deleteArea(item.id);
-        }
+        showNotification(
+            '本当に削除しますか？',
+            'confirm',
+            async () => {
+                try {
+                    await deleteArea(item.id);
+                } catch (error) {
+                    console.error(error);
+                    showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                }
+            },
+            '確認'
+        );
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
-        if (window.confirm('本当に削除しますか')) {
-            try {
-                for (const id of selectedIds) {
-                    await deleteArea(id);
+        showNotification(
+            '本当に削除しますか',
+            'confirm',
+            async () => {
+                try {
+                    for (const id of selectedIds) {
+                        await deleteArea(id);
+                    }
+                    setSelectedIds(new Set());
+                    showNotification('削除しました');
+                } catch (error) {
+                    console.error("Bulk delete failed", error);
+                    showNotification('一部の削除に失敗しました', 'alert', undefined, 'エラー');
                 }
-                setSelectedIds(new Set());
-                alert('削除しました');
-            } catch (error) {
-                console.error("Bulk delete failed", error);
-                alert('一部の削除に失敗しました');
-            }
-        }
+            },
+            '確認'
+        );
     };
 
     const handleCheckboxChange = (id: string) => {
@@ -98,7 +142,7 @@ export const AreaList = () => {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            alert('保存に失敗しました。サーバーが起動しているか確認してください。');
+            showNotification('保存に失敗しました。サーバーが起動しているか確認してください。', 'alert', undefined, 'エラー');
         }
     };
 
@@ -184,7 +228,7 @@ export const AreaList = () => {
                 const validHeaders = Object.keys(headerMap);
 
                 if (data.length === 0) {
-                    alert('データがありません。');
+                    showNotification('データがありません。', 'alert', undefined, 'エラー');
                     return;
                 }
 
@@ -192,7 +236,7 @@ export const AreaList = () => {
                 const invalidColumns = Object.keys(firstRow).filter(key => !validHeaders.includes(key));
 
                 if (invalidColumns.length > 0) {
-                    alert(`不正なカラムが含まれています: ${invalidColumns.join(', ')} `);
+                    showNotification(`不正なカラムが含まれています: ${invalidColumns.join(', ')} `, 'alert', undefined, 'エラー');
                     return;
                 }
 
@@ -217,13 +261,13 @@ export const AreaList = () => {
                     await addLog('areas', 'import', `Excelインポート: ${successCount} 件追加`);
                 }
 
-                alert(`${successCount} 件のインポートが完了しました。`);
+                showNotification(`${successCount} 件のインポートが完了しました。`);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
             } catch (error) {
                 console.error('Import error:', error);
-                alert('インポート中にエラーが発生しました。');
+                showNotification('インポート中にエラーが発生しました。', 'alert', undefined, 'エラー');
             }
         };
         reader.readAsBinaryString(file);
@@ -456,6 +500,15 @@ export const AreaList = () => {
                     </div>
                 )}
             </Modal>
+
+            <NotificationModal
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                title={notification.title}
+                message={notification.message}
+                type={notification.type}
+                onConfirm={notification.onConfirm}
+            />
         </div>
     );
 };

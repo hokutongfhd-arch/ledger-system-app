@@ -9,6 +9,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Table } from '../../components/ui/Table';
 import { UserDeviceList } from '../../features/components/UserDeviceList';
 import { EmployeeForm } from '../../features/forms/EmployeeForm';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 
 import { useAuth } from '../../features/context/AuthContext';
 import { toFullWidthKana } from '../../lib/utils/stringUtils';
@@ -26,6 +27,34 @@ export const EmployeeList = () => {
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+    // Notification State
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+    }>({
+        isOpen: false,
+        title: '通知',
+        message: '',
+        type: 'alert',
+    });
+
+    const closeNotification = () => {
+        setNotification(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
+        setNotification({
+            isOpen: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
+
     const handleAdd = () => {
         setEditingItem(undefined);
         setIsModalOpen(true);
@@ -37,31 +66,41 @@ export const EmployeeList = () => {
     };
 
     const handleDelete = async (item: Employee) => {
-        if (window.confirm('本当に削除しますか？')) {
-            try {
-                await deleteEmployee(item.id);
-            } catch (error) {
-                console.error(error);
-                alert('削除に失敗しました。');
-            }
-        }
+        showNotification(
+            '本当に削除しますか？',
+            'confirm',
+            async () => {
+                try {
+                    await deleteEmployee(item.id);
+                } catch (error) {
+                    console.error(error);
+                    showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                }
+            },
+            '確認'
+        );
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
-        if (window.confirm('本当に削除しますか')) {
-            try {
-                for (const id of selectedIds) {
-                    await deleteEmployee(id);
+        showNotification(
+            '本当に削除しますか',
+            'confirm',
+            async () => {
+                try {
+                    for (const id of selectedIds) {
+                        await deleteEmployee(id);
+                    }
+                    setSelectedIds(new Set());
+                    showNotification('削除しました');
+                } catch (error) {
+                    console.error("Bulk delete failed", error);
+                    showNotification('一部の削除に失敗しました', 'alert', undefined, 'エラー');
                 }
-                setSelectedIds(new Set());
-                alert('削除しました');
-            } catch (error) {
-                console.error("Bulk delete failed", error);
-                alert('一部の削除に失敗しました');
-            }
-        }
+            },
+            '確認'
+        );
     };
 
     const handleCheckboxChange = (id: string) => {
@@ -105,7 +144,7 @@ export const EmployeeList = () => {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            alert('保存に失敗しました。サーバーが起動しているか確認してください。');
+            showNotification('保存に失敗しました。サーバーが起動しているか確認してください。', 'alert', undefined, 'エラー');
         }
     };
 
@@ -223,7 +262,7 @@ export const EmployeeList = () => {
                 const validHeaders = Object.keys(headerMap);
 
                 if (data.length === 0) {
-                    alert('データがありません。');
+                    showNotification('データがありません。', 'alert', undefined, 'エラー');
                     return;
                 }
 
@@ -231,7 +270,7 @@ export const EmployeeList = () => {
                 const invalidColumns = Object.keys(firstRow).filter(key => !validHeaders.includes(key));
 
                 if (invalidColumns.length > 0) {
-                    alert(`不正なカラムが含まれています: ${invalidColumns.join(', ')} `);
+                    showNotification(`不正なカラムが含まれています: ${invalidColumns.join(', ')} `, 'alert', undefined, 'エラー');
                     return;
                 }
 
@@ -263,14 +302,14 @@ export const EmployeeList = () => {
                                     const y = value.getFullYear();
                                     const m = String(value.getMonth() + 1).padStart(2, '0');
                                     const d = String(value.getDate()).padStart(2, '0');
-                                    processedValue = `${y} -${m} -${d} `;
+                                    processedValue = `${y}-${m}-${d}`;
                                 } else if (typeof value === 'string') {
                                     const parts = value.split('/');
                                     if (parts.length === 3) {
                                         const y = parts[0];
                                         const m = parts[1].padStart(2, '0');
                                         const d = parts[2].padStart(2, '0');
-                                        processedValue = `${y} -${m} -${d} `;
+                                        processedValue = `${y}-${m}-${d}`;
                                     }
                                 }
                             }
@@ -295,13 +334,13 @@ export const EmployeeList = () => {
                     await addLog('employees', 'import', `Excelインポート: ${successCount} 件追加`);
                 }
 
-                alert(`${successCount} 件のインポートが完了しました。`);
+                showNotification(`${successCount} 件のインポートが完了しました。`);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
             } catch (error) {
                 console.error('Import error:', error);
-                alert('インポート中にエラーが発生しました。');
+                showNotification('インポート中にエラーが発生しました。', 'alert', undefined, 'エラー');
             }
         };
         reader.readAsBinaryString(file);
@@ -434,7 +473,7 @@ export const EmployeeList = () => {
                     { header: '氏名カナ', accessor: 'nameKana' },
                     {
                         header: '権限', accessor: (item) => (
-                            <span className={`px - 2 py - 1 rounded - full text - xs font - medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'} `}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
                                 {item.role === 'admin' ? '管理者' : 'ユーザー'}
                             </span>
                         )
@@ -658,6 +697,15 @@ export const EmployeeList = () => {
                     </div>
                 )}
             </Modal>
+
+            <NotificationModal
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                title={notification.title}
+                message={notification.message}
+                type={notification.type}
+                onConfirm={notification.onConfirm}
+            />
         </div >
     );
 };

@@ -6,6 +6,7 @@ import { Table } from '../../components/ui/Table';
 import type { Tablet } from '../../lib/types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 import { TabletForm } from '../../features/forms/TabletForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
@@ -21,6 +22,34 @@ export const TabletList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // Notification State
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+    }>({
+        isOpen: false,
+        title: '通知',
+        message: '',
+        type: 'alert',
+    });
+
+    const closeNotification = () => {
+        setNotification(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
+        setNotification({
+            isOpen: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
 
     const handleAdd = () => {
         setEditingItem(undefined);
@@ -42,29 +71,44 @@ export const TabletList = () => {
     };
 
     const handleDelete = async (item: Tablet) => {
-        if (window.confirm('本当に削除しますか？')) {
-            await deleteTablet(item.id, true);
-            await addLog('tablets', 'delete', `タブレット削除: ${item.terminalCode} (${item.status})`);
-        }
+        showNotification(
+            '本当に削除しますか？',
+            'confirm',
+            async () => {
+                try {
+                    await deleteTablet(item.id, true);
+                    await addLog('tablets', 'delete', `タブレット削除: ${item.terminalCode} (${item.status})`);
+                } catch (error) {
+                    console.error(error);
+                    showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                }
+            },
+            '確認'
+        );
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
-        if (window.confirm('本当に削除しますか')) {
-            try {
-                // Execute deletions sequentially
-                for (const id of selectedIds) {
-                    await deleteTablet(id, true);
+        showNotification(
+            '本当に削除しますか',
+            'confirm',
+            async () => {
+                try {
+                    // Execute deletions sequentially
+                    for (const id of selectedIds) {
+                        await deleteTablet(id, true);
+                    }
+                    await addLog('tablets', 'delete', `タブレット一括削除: ${selectedIds.size}件`);
+                    setSelectedIds(new Set());
+                    showNotification('削除しました');
+                } catch (error) {
+                    console.error("Bulk delete failed", error);
+                    showNotification('一部の削除に失敗しました', 'alert', undefined, 'エラー');
                 }
-                await addLog('tablets', 'delete', `タブレット一括削除: ${selectedIds.size}件`);
-                setSelectedIds(new Set());
-                alert('削除しました');
-            } catch (error) {
-                console.error("Bulk delete failed", error);
-                alert('一部の削除に失敗しました');
-            }
-        }
+            },
+            '確認'
+        );
     };
 
     const handleCheckboxChange = (id: string) => {
@@ -112,7 +156,7 @@ export const TabletList = () => {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            alert('保存に失敗しました。サーバーが起動しているか確認してください。');
+            showNotification('保存に失敗しました。サーバーが起動しているか確認してください。', 'alert', undefined, 'エラー');
         }
     };
 
@@ -194,41 +238,45 @@ export const TabletList = () => {
 
         const reader = new FileReader();
         reader.onload = async (evt) => {
-            const bstr = evt.target?.result;
-            const wb = XLSX.read(bstr, { type: 'binary' });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+            const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
 
-            if (data.length === 0) {
-                alert('データが見つかりません。');
+            if (jsonData.length === 0) {
+                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
                 return;
             }
 
-            const headerRow = data[0];
+            const headers = jsonData[0] as string[];
             const requiredHeaders = [
                 '端末ＣＤ', 'メーカー', '型番', '事業所CD', '住所コード', '住所', '備考', '過去貸与履歴', '状況', '契約年数', '社員コード'
             ];
 
-            const isValidHeader = requiredHeaders.every((header, index) => headerRow[index] === header);
-            if (!isValidHeader || headerRow.length !== requiredHeaders.length) {
-                alert('フォーマットが正しくありません。カラム名と順序を確認してください。');
+            const invalidHeaders = headers.filter(h => !requiredHeaders.includes(h));
+            if (invalidHeaders.length > 0) {
+                showNotification(`不正な列が含まれています: ${invalidHeaders.join(', ')}\nインポートを中止しました。`, 'alert', undefined, 'エラー');
                 return;
             }
 
+            const rows = jsonData.slice(1);
             let successCount = 0;
             let errorCount = 0;
 
-            for (let i = 1; i < data.length; i++) {
-                const row = data[i];
-                // Strict validation: check if row has more columns than headers
-                if (row.length > requiredHeaders.length) {
-                    alert(`行 ${i + 1}: 不正なデータが含まれています。定義されたカラム以外の列にデータが存在します。`);
-                    return; // Abort entire import
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                if (row.length > headers.length) {
+                    showNotification(`行 ${i + 2} に不正なデータが含まれています (列数が多すぎます)。\nインポートを中止しました。`, 'alert', undefined, 'エラー');
+                    return;
                 }
 
-                // Skip empty rows
-                if (row.length === 0) continue;
+                const rowData: any = {};
+                headers.forEach((header, index) => {
+                    rowData[header] = row[index];
+                });
 
                 const statusMap: { [key: string]: Tablet['status'] } = {
                     '在庫': 'available',
@@ -239,17 +287,17 @@ export const TabletList = () => {
                 };
 
                 const newTablet: Omit<Tablet, 'id'> = {
-                    terminalCode: String(row[0] || ''),
-                    maker: String(row[1] || ''),
-                    modelNumber: String(row[2] || ''),
-                    officeCode: String(row[3] || ''),
-                    addressCode: String(row[4] || ''),
-                    address: String(row[5] || ''),
-                    notes: String(row[6] || ''),
-                    history: String(row[7] || ''),
-                    status: statusMap[String(row[8] || '')] || 'available',
-                    contractYears: normalizeContractYear(String(row[9] || '')),
-                    employeeCode: String(row[10] || '')
+                    terminalCode: String(rowData['端末ＣＤ'] || ''),
+                    maker: String(rowData['メーカー'] || ''),
+                    modelNumber: String(rowData['型番'] || ''),
+                    officeCode: String(rowData['事業所CD'] || ''),
+                    addressCode: String(rowData['住所コード'] || ''),
+                    address: String(rowData['住所'] || ''),
+                    notes: String(rowData['備考'] || ''),
+                    history: String(rowData['過去貸与履歴'] || ''),
+                    status: statusMap[String(rowData['状況'] || '')] || 'available',
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
+                    employeeCode: String(rowData['社員コード'] || '')
                 };
 
                 try {
@@ -265,11 +313,11 @@ export const TabletList = () => {
                 await addLog('tablets', 'import', `Excelインポート: ${successCount}件追加`);
             }
 
-            alert(`インポート完了: 成功 ${successCount}件, 失敗 ${errorCount}件`);
+            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
             // Reset file input
-            e.target.value = '';
+            if (e.target) e.target.value = '';
         };
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
     };
 
     return (
@@ -560,6 +608,15 @@ export const TabletList = () => {
                     </div>
                 )}
             </Modal>
+
+            <NotificationModal
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                title={notification.title}
+                message={notification.message}
+                type={notification.type}
+                onConfirm={notification.onConfirm}
+            />
         </div>
     );
 };

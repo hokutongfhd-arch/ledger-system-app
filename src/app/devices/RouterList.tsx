@@ -6,6 +6,7 @@ import { Table } from '../../components/ui/Table';
 import type { Router } from '../../lib/types';
 import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 import { RouterForm } from '../../features/forms/RouterForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
@@ -21,6 +22,34 @@ export const RouterList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // Notification State
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+    }>({
+        isOpen: false,
+        title: '通知',
+        message: '',
+        type: 'alert',
+    });
+
+    const closeNotification = () => {
+        setNotification(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
+        setNotification({
+            isOpen: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
 
     const handleAdd = () => {
         setEditingItem(undefined);
@@ -42,28 +71,43 @@ export const RouterList = () => {
     };
 
     const handleDelete = async (item: Router) => {
-        if (window.confirm('本当に削除しますか？')) {
-            await deleteRouter(item.id, true);
-            await addLog('routers', 'delete', `モバイルルーター削除: ${item.terminalCode} (${item.simNumber})`);
-        }
+        showNotification(
+            '本当に削除しますか？',
+            'confirm',
+            async () => {
+                try {
+                    await deleteRouter(item.id, true);
+                    await addLog('routers', 'delete', `モバイルルーター削除: ${item.terminalCode} (${item.simNumber})`);
+                } catch (error) {
+                    console.error(error);
+                    showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                }
+            },
+            '確認'
+        );
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
-        if (window.confirm('本当に削除しますか')) {
-            try {
-                for (const id of selectedIds) {
-                    await deleteRouter(id, true);
+        showNotification(
+            '本当に削除しますか',
+            'confirm',
+            async () => {
+                try {
+                    for (const id of selectedIds) {
+                        await deleteRouter(id, true);
+                    }
+                    await addLog('routers', 'delete', `モバイルルーター一括削除: ${selectedIds.size}件`);
+                    setSelectedIds(new Set());
+                    showNotification('削除しました');
+                } catch (error) {
+                    console.error("Bulk delete failed", error);
+                    showNotification('一部の削除に失敗しました', 'alert', undefined, 'エラー');
                 }
-                await addLog('routers', 'delete', `モバイルルーター一括削除: ${selectedIds.size}件`);
-                setSelectedIds(new Set());
-                alert('削除しました');
-            } catch (error) {
-                console.error("Bulk delete failed", error);
-                alert('一部の削除に失敗しました');
-            }
-        }
+            },
+            '確認'
+        );
     };
 
     const handleCheckboxChange = (id: string) => {
@@ -109,7 +153,7 @@ export const RouterList = () => {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            alert('保存に失敗しました。サーバーが起動しているか確認してください。');
+            showNotification('保存に失敗しました。サーバーが起動しているか確認してください。', 'alert', undefined, 'エラー');
         }
     };
 
@@ -219,7 +263,7 @@ export const RouterList = () => {
             const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
 
             if (jsonData.length === 0) {
-                alert('ファイルが空です。');
+                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
                 return;
             }
 
@@ -232,7 +276,7 @@ export const RouterList = () => {
 
             const invalidHeaders = headers.filter(h => !requiredHeaders.includes(h));
             if (invalidHeaders.length > 0) {
-                alert(`不正な列が含まれています: ${invalidHeaders.join(', ')}\nインポートを中止しました。`);
+                showNotification(`不正な列が含まれています: ${invalidHeaders.join(', ')}\nインポートを中止しました。`, 'alert', undefined, 'エラー');
                 return;
             }
 
@@ -246,7 +290,7 @@ export const RouterList = () => {
                 if (!row || row.length === 0) continue;
 
                 if (row.length > headers.length) {
-                    alert(`行 ${i + 2} に不正なデータが含まれています (列数が多すぎます)。\nインポートを中止しました。`);
+                    showNotification(`行 ${i + 2} に不正なデータが含まれています (列数が多すぎます)。\nインポートを中止しました。`, 'alert', undefined, 'エラー');
                     hasError = true;
                     break;
                 }
@@ -298,7 +342,7 @@ export const RouterList = () => {
 
             if (hasError) return;
 
-            alert(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
+            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
@@ -647,6 +691,15 @@ export const RouterList = () => {
                     </div>
                 )}
             </Modal>
+
+            <NotificationModal
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                title={notification.title}
+                message={notification.message}
+                type={notification.type}
+                onConfirm={notification.onConfirm}
+            />
         </div>
     );
 };
