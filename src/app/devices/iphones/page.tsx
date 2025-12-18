@@ -7,7 +7,7 @@ import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
 import type { IPhone } from '../../../features/devices/device.types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 import { IPhoneForm } from '../../../features/forms/IPhoneForm';
@@ -138,7 +138,7 @@ function IPhoneListContent() {
                     for (const id of selectedIds) {
                         await deleteIPhone(id, true);
                     }
-                    await addLog('iphones', 'delete', `iPhone一括削除: ${selectedIds.size}件`, user?.name || '');
+                    await addLog('iphones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
                     setSelectedIds(new Set());
                     showNotification('削除しました');
                 } catch (error) {
@@ -176,13 +176,13 @@ function IPhoneListContent() {
         try {
             if (editingItem) {
                 await updateIPhone({ ...data, id: editingItem.id } as IPhone, true);
-                await addLog('iphones', 'update', `iPhone更新: ${data.managementNumber} (${data.employeeId})`, user?.name || '');
+                await addLog('iphones', 'update', `iPhone更新: ${data.managementNumber} (${data.employeeId})`);
                 if (editingItem.id === searchParams.get('highlight')) {
                     router.replace(pathname + '?' + createQueryString({ highlight: null, field: null }));
                 }
             } else {
                 await addIPhone(data as Omit<IPhone, 'id'>, true);
-                await addLog('iphones', 'add', `iPhone新規登録: ${data.managementNumber} (${data.employeeId})`, user?.name || '');
+                await addLog('iphones', 'add', `iPhone新規登録: ${data.managementNumber} (${data.employeeId})`);
             }
             setIsModalOpen(false);
         } catch (error) {
@@ -362,6 +362,12 @@ function IPhoneListContent() {
                 '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
             ];
 
+            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
+                return;
+            }
+
             const rows = jsonData.slice(1);
             let successCount = 0;
             let errorCount = 0;
@@ -413,7 +419,7 @@ function IPhoneListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('iphones', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`, user?.name || '');
+                await addLog('iphones', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
             }
 
             showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
@@ -513,7 +519,7 @@ function IPhoneListContent() {
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員 (社員コード)</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員名 (社員コード)</label>
                                     <div className="text-gray-900">
                                         {employees.find(e => e.code === detailItem.employeeId)?.name || '-'}
                                         {detailItem.employeeId && ` (${detailItem.employeeId})`}

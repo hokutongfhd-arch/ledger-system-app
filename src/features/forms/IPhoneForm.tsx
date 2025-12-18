@@ -160,7 +160,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
 
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員 (社員コード)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員名 (社員コード)</label>
                             <SearchableSelect
                                 options={employeeOptions}
                                 value={formData.employeeId}

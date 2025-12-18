@@ -160,7 +160,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">所属・勤務情報</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">エリアコード</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア名 (エリアコード)</label>
                             <SearchableSelect
                                 options={areaOptions}
                                 value={formData.areaCode}
@@ -169,7 +169,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">住所 (住所コード)</label>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}

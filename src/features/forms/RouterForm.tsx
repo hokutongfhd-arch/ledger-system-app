@@ -145,7 +145,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員名(社員コード)</label>
                             <SearchableSelect
                                 options={employeeOptions}
                                 value={formData.employeeCode}
@@ -154,7 +154,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">住所(住所コード)</label>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}

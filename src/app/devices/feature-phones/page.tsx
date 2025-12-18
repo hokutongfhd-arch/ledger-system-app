@@ -1,18 +1,16 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
 import type { FeaturePhone } from '../../../features/devices/device.types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 import { FeaturePhoneForm } from '../../../features/forms/FeaturePhoneForm';
-import * as XLSX from 'xlsx';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Layout } from '../../../components/layout/Layout';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
@@ -41,14 +39,12 @@ export default function FeaturePhoneListPage() {
 
 function FeaturePhoneListContent() {
     const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog, employees, addresses } = useData();
-    const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<FeaturePhone | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<FeaturePhone | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
     const [notification, setNotification] = useState<{
@@ -188,7 +184,7 @@ function FeaturePhoneListContent() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所名 (住所コード)</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所(住所コード)</label>
                                     <div className="text-gray-900">
                                         {addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '-'}
                                         {detailItem.addressCode && ` (${detailItem.addressCode})`}

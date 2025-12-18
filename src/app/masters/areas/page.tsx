@@ -67,7 +67,7 @@ function AreaListContent() {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
                 await deleteArea(item.id);
-                await addLog('areas', 'delete', `エリア削除: ${item.areaCode}`, user?.name || '');
+                await addLog('areas', 'delete', `エリア削除: ${item.areaCode}`);
             } catch (error) {
                 showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
             }

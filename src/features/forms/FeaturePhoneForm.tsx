@@ -139,7 +139,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">社員名 (社員コード)</label>
                             <SearchableSelect
                                 options={employeeOptions}
                                 value={formData.employeeId}
@@ -148,7 +148,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所コード</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">住所(住所コード)</label>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}

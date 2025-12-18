@@ -1,19 +1,18 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
 import type { Employee } from '../../../features/employees/employee.types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 import { EmployeeForm } from '../../../features/forms/EmployeeForm';
 import { UserDeviceList } from '../../../features/components/UserDeviceList';
-import * as XLSX from 'xlsx';
-import { toFullWidthKana } from '../../../lib/utils/stringUtils';
+
 import { Layout } from '../../../components/layout/Layout';
 
 type SortKey = 'code' | 'role';
@@ -49,9 +48,7 @@ function EmployeeListContent() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [notification, setNotification] = useState<{
         isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void;
@@ -69,7 +66,7 @@ function EmployeeListContent() {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
                 await deleteEmployee(item.id);
-                await addLog('employees', 'delete', `社員削除: ${item.code}`, user?.name || '');
+                await addLog('employees', 'delete', `社員削除: ${item.code}`);
             } catch (error) {
                 showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
             }
@@ -174,14 +171,79 @@ function EmployeeListContent() {
 
             <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="社員 詳細">
                 {detailItem && (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label className="text-sm text-gray-500">社員コード</label><div>{detailItem.code}</div></div>
-                            <div><label className="text-sm text-gray-500">氏名</label><div>{detailItem.name}</div></div>
+                    <div className="space-y-8">
+                        {/* Basic Info */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label><div className="text-gray-900">{detailItem.code}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">性別</label><div className="text-gray-900">{detailItem.gender || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">氏名</label><div className="text-gray-900">{detailItem.name}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">氏名カナ</label><div className="text-gray-900">{detailItem.nameKana || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">生年月日</label><div className="text-gray-900">{detailItem.birthDate || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">年齢</label><div className="text-gray-900">{detailItem.age || '-'}</div></div>
+                            </div>
                         </div>
-                        <div className="pt-4 border-t border-gray-100">
-                            <h3 className="text-lg font-bold mb-4">貸与デバイス</h3>
-                            <UserDeviceList targetCode={detailItem.code} targetName={detailItem.name} />
+
+                        {/* Work Info */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">所属・勤務情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">エリア名 (エリアコード)</label>
+                                    <div className="text-gray-900">
+                                        {areas.find(a => a.areaCode === detailItem.areaCode)?.areaName || '-'}
+                                        {detailItem.areaCode && ` (${detailItem.areaCode})`}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所 (住所コード)</label>
+                                    <div className="text-gray-900">
+                                        {addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '-'}
+                                        {detailItem.addressCode && ` (${detailItem.addressCode})`}
+                                    </div>
+                                </div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">入社年月日</label><div className="text-gray-900">{detailItem.joinDate || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">勤続年数</label><div className="text-gray-900">{detailItem.yearsOfService || 0}年</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">勤続端数月数</label><div className="text-gray-900">{detailItem.monthsHasuu || 0}ヶ月</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">職種</label><div className="text-gray-900">{detailItem.jobType || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">役付</label><div className="text-gray-900">{detailItem.roleTitle || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">社員区分</label><div className="text-gray-900">{detailItem.employeeType || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">給与区分</label><div className="text-gray-900">{detailItem.salaryType || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">原価区分</label><div className="text-gray-900">{detailItem.costType || '-'}</div></div>
+                            </div>
+                        </div>
+
+                        {/* System Info */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">システム情報</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">権限</label>
+                                    <div className="text-gray-900">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${detailItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                                            {detailItem.role === 'admin' ? '管理者' : 'ユーザー'}
+                                        </span>
+                                    </div>
+                                </div>
+                                {isAdmin && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-500 mb-1">パスワード</label>
+                                        <div className="text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded inline-block">
+                                            {detailItem.password || '(未設定)'}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Other Info (Devices) */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                            <div className="pt-2">
+                                <label className="block text-sm font-bold text-gray-700 mb-3">貸与デバイス</label>
+                                <UserDeviceList targetCode={detailItem.code} targetName={detailItem.name} />
+                            </div>
                         </div>
                     </div>
                 )}

@@ -104,7 +104,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                         <AddressInputField label="事業所名" name="officeName" value={formData.officeName} onChange={handleChange} required />
                         <AddressInputField label="事業部" name="division" value={formData.division} onChange={handleChange} />
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア名 (エリアコード)</label>
                             <SearchableSelect
                                 options={areaOptions}
                                 value={formData.area}

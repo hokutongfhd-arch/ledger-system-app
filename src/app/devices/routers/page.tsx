@@ -1,18 +1,16 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
 import type { Router } from '../../../features/devices/device.types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 import { RouterForm } from '../../../features/forms/RouterForm';
-import * as XLSX from 'xlsx';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Layout } from '../../../components/layout/Layout';
 
 type SortKey = 'terminalCode' | 'carrier' | 'simNumber' | 'actualLenderName' | 'userName' | 'contractYears';
@@ -41,7 +39,6 @@ export default function RouterListPage() {
 
 function RouterListContent() {
     const { routers, addRouter, updateRouter, deleteRouter, addLog, employees, addresses } = useData();
-    const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Router | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Router | undefined>(undefined);
@@ -183,14 +180,14 @@ function RouterListContent() {
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員 (社員コード)</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員名(社員コード)</label>
                                     <div className="text-gray-900">
                                         {employees.find(e => e.code === detailItem.employeeCode)?.name || '-'}
                                         {detailItem.employeeCode && ` (${detailItem.employeeCode})`}
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所 (住所コード)</label>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所(住所コード)</label>
                                     <div className="text-gray-900">
                                         {addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '-'}
                                         {detailItem.addressCode && ` (${detailItem.addressCode})`}
