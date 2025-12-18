@@ -5,12 +5,19 @@ import { useAuth } from '../../features/context/AuthContext';
 import { Pagination } from '../../components/ui/Pagination';
 import { Table } from '../../components/ui/Table';
 import type { Tablet } from '../../lib/types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload } from 'lucide-react';
+import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { NotificationModal } from '../../components/ui/NotificationModal';
 import { TabletForm } from '../../features/forms/TabletForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
+
+type SortKey = 'terminalCode' | 'contractYears' | 'status' | 'officeCode' | 'userName';
+type SortOrder = 'asc' | 'desc';
+interface SortCriterion {
+    key: SortKey;
+    order: SortOrder;
+}
 
 export const TabletList = () => {
     const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees, addresses } = useData();
@@ -23,6 +30,7 @@ export const TabletList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
     // Notification State
     const [notification, setNotification] = useState<{
@@ -174,12 +182,58 @@ export const TabletList = () => {
         )
     );
 
+    const statusSortOrder: Record<string, number> = {
+        'in-use': 0,    // 使用中
+        'backup': 1,    // 予備機
+        'available': 2, // 在庫
+        'broken': 3,    // 故障
+        'repairing': 4, // 修理中
+        'discarded': 5  // 廃棄
+    };
+
+    const sortedData = [...filteredData].sort((a, b) => {
+        for (const criterion of sortCriteria) {
+            const { key, order } = criterion;
+
+            if (key === 'status') {
+                const indexA = statusSortOrder[a.status] ?? 999;
+                const indexB = statusSortOrder[b.status] ?? 999;
+                if (indexA !== indexB) {
+                    return order === 'asc' ? indexA - indexB : indexB - indexA;
+                }
+            } else if (key === 'userName') {
+                const valA = employees.find(e => e.code === a.employeeCode)?.name || '';
+                const valB = employees.find(e => e.code === b.employeeCode)?.name || '';
+                if (valA !== valB) {
+                    if (valA < valB) return order === 'asc' ? -1 : 1;
+                    if (valA > valB) return order === 'asc' ? 1 : -1;
+                }
+            } else if (key === 'contractYears') {
+                const valA = a[key] || '';
+                const valB = b[key] || '';
+                const numA = parseInt(valA.replace(/[^0-9]/g, '')) || 0;
+                const numB = parseInt(valB.replace(/[^0-9]/g, '')) || 0;
+                if (numA !== numB) {
+                    return order === 'asc' ? numA - numB : numB - numA;
+                }
+            } else {
+                const valA = String(a[key as keyof Tablet] || '').toLowerCase();
+                const valB = String(b[key as keyof Tablet] || '').toLowerCase();
+                if (valA !== valB) {
+                    if (valA < valB) return order === 'asc' ? -1 : 1;
+                    if (valA > valB) return order === 'asc' ? 1 : -1;
+                }
+            }
+        }
+        return 0;
+    });
+
     // Pagination Logic
-    const totalItems = filteredData.length;
+    const totalItems = sortedData.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, totalItems);
-    const paginatedData = filteredData.slice(startIndex, endIndex);
+    const paginatedData = sortedData.slice(startIndex, endIndex);
 
     // Check if all items on current page are selected
     const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
@@ -191,6 +245,43 @@ export const TabletList = () => {
     const handlePageChange = (page: number) => {
         const p = Math.max(1, Math.min(page, totalPages));
         setCurrentPage(p);
+    };
+
+    const toggleSort = (key: SortKey) => {
+        setSortCriteria(prev => {
+            const existingIndex = prev.findIndex(c => c.key === key);
+            if (existingIndex === -1) {
+                return [...prev, { key, order: 'asc' }];
+            }
+
+            const existing = prev[existingIndex];
+            if (existing.order === 'asc') {
+                const newCriteria = [...prev];
+                newCriteria[existingIndex] = { ...existing, order: 'desc' };
+                return newCriteria;
+            } else {
+                return prev.filter(c => c.key !== key);
+            }
+        });
+    };
+
+    const getSortIcon = (key: SortKey) => {
+        const criterionIndex = sortCriteria.findIndex(c => c.key === key);
+        if (criterionIndex === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
+
+        const criterion = sortCriteria[criterionIndex];
+        return (
+            <div className="flex items-center gap-0.5 ml-1">
+                {criterion.order === 'asc'
+                    ? <ArrowUp size={14} className="text-blue-600" />
+                    : <ArrowDown size={14} className="text-blue-600" />}
+                {sortCriteria.length > 1 && (
+                    <span className="text-[10px] bg-blue-100 text-blue-600 rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                        {criterionIndex + 1}
+                    </span>
+                )}
+            </div>
+        );
     };
 
     const handleExportCSV = () => {
@@ -406,7 +497,13 @@ export const TabletList = () => {
                         className: "w-10 px-4"
                     },
                     {
-                        header: '端末CD', accessor: (item) => (
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('terminalCode')}>
+                                <span>端末CD</span>
+                                {getSortIcon('terminalCode')}
+                            </div>
+                        ),
+                        accessor: (item) => (
                             <button
                                 onClick={() => setDetailItem(item)}
                                 className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium"
@@ -415,14 +512,41 @@ export const TabletList = () => {
                             </button>
                         )
                     },
-                    { header: '事業所CD', accessor: 'officeCode' },
                     {
-                        header: '使用者名',
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('officeCode')}>
+                                <span>事業所CD</span>
+                                {getSortIcon('officeCode')}
+                            </div>
+                        ),
+                        accessor: 'officeCode'
+                    },
+                    {
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('userName')}>
+                                <span>使用者名</span>
+                                {getSortIcon('userName')}
+                            </div>
+                        ),
                         accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || ''
                     },
-                    { header: '契約年数', accessor: 'contractYears' },
                     {
-                        header: '状況', accessor: (item) => (
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('contractYears')}>
+                                <span>契約年数</span>
+                                {getSortIcon('contractYears')}
+                            </div>
+                        ),
+                        accessor: 'contractYears'
+                    },
+                    {
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('status')}>
+                                <span>状況</span>
+                                {getSortIcon('status')}
+                            </div>
+                        ),
+                        accessor: (item) => (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium 
                             ${item.status === 'available' ? 'bg-blue-100 text-blue-800' :
                                     item.status === 'in-use' ? 'bg-green-100 text-green-800' :

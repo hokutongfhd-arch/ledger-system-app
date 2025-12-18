@@ -309,8 +309,8 @@ const mapLogFromDb = (d: any): Log => ({
 
 const TARGET_NAMES: Record<string, string> = {
     tablets: '勤怠タブレット',
-    iPhones: 'IPhone',
-    iphones: 'IPhone',
+    iPhones: 'iPhone',
+    iphones: 'iPhone',
     featurePhones: 'ガラホ',
     featurephones: 'ガラホ',
     routers: 'モバイルルーター',

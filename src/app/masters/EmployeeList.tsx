@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useData } from '../../features/context/DataContext';
 import { Pagination } from '../../components/ui/Pagination';
 import type { Employee } from '../../lib/types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload } from 'lucide-react';
+import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '../../components/ui/Modal';
 import { Table } from '../../components/ui/Table';
@@ -13,6 +13,13 @@ import { NotificationModal } from '../../components/ui/NotificationModal';
 
 import { useAuth } from '../../features/context/AuthContext';
 import { toFullWidthKana } from '../../lib/utils/stringUtils';
+
+type SortKey = 'code' | 'role';
+type SortOrder = 'asc' | 'desc';
+interface SortCriterion {
+    key: SortKey;
+    order: SortOrder;
+}
 
 export const EmployeeList = () => {
     const { employees, addEmployee, updateEmployee, deleteEmployee, addLog, areas, addresses } = useData(); // Trigger HMR
@@ -26,6 +33,7 @@ export const EmployeeList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
     // Notification State
     const [notification, setNotification] = useState<{
@@ -356,12 +364,42 @@ export const EmployeeList = () => {
         (item.nameKana ? String(item.nameKana).toLowerCase() : '').includes(searchTerm.toLowerCase())
     );
 
+    const sortedEmployees = [...filteredEmployees].sort((a, b) => {
+        for (const criterion of sortCriteria) {
+            const { key, order } = criterion;
+
+            let valA: any;
+            let valB: any;
+
+            if (key === 'role') {
+                // admin (管理者) comes before user (ユーザー) in ascending order
+                valA = a.role === 'admin' ? 0 : 1;
+                valB = b.role === 'admin' ? 0 : 1;
+            } else if (key === 'code') {
+                valA = parseInt(String(a.code).replace(/[^0-9]/g, '')) || 0;
+                valB = parseInt(String(b.code).replace(/[^0-9]/g, '')) || 0;
+            } else {
+                valA = a[key as keyof Employee] || '';
+                valB = b[key as keyof Employee] || '';
+            }
+
+            if (valA !== valB) {
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    return order === 'asc' ? valA - valB : valB - valA;
+                }
+                if (valA < valB) return order === 'asc' ? -1 : 1;
+                if (valA > valB) return order === 'asc' ? 1 : -1;
+            }
+        }
+        return 0;
+    });
+
     // Pagination Logic
-    const totalItems = filteredEmployees.length;
+    const totalItems = sortedEmployees.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, totalItems);
-    const paginatedData = filteredEmployees.slice(startIndex, endIndex);
+    const paginatedData = sortedEmployees.slice(startIndex, endIndex);
 
     const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
 
@@ -372,6 +410,43 @@ export const EmployeeList = () => {
     const handlePageChange = (page: number) => {
         const p = Math.max(1, Math.min(page, totalPages));
         setCurrentPage(p);
+    };
+
+    const toggleSort = (key: SortKey) => {
+        setSortCriteria(prev => {
+            const existingIndex = prev.findIndex(c => c.key === key);
+            if (existingIndex === -1) {
+                return [...prev, { key, order: 'asc' }];
+            }
+
+            const existing = prev[existingIndex];
+            if (existing.order === 'asc') {
+                const newCriteria = [...prev];
+                newCriteria[existingIndex] = { ...existing, order: 'desc' };
+                return newCriteria;
+            } else {
+                return prev.filter(c => c.key !== key);
+            }
+        });
+    };
+
+    const getSortIcon = (key: SortKey) => {
+        const criterionIndex = sortCriteria.findIndex(c => c.key === key);
+        if (criterionIndex === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
+
+        const criterion = sortCriteria[criterionIndex];
+        return (
+            <div className="flex items-center gap-0.5 ml-1">
+                {criterion.order === 'asc'
+                    ? <ArrowUp size={14} className="text-blue-600" />
+                    : <ArrowDown size={14} className="text-blue-600" />}
+                {sortCriteria.length > 1 && (
+                    <span className="text-[10px] bg-blue-100 text-blue-600 rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                        {criterionIndex + 1}
+                    </span>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -460,7 +535,13 @@ export const EmployeeList = () => {
                         className: "w-10 px-4"
                     },
                     {
-                        header: '社員コード', accessor: (item) => (
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('code')}>
+                                <span>社員コード</span>
+                                {getSortIcon('code')}
+                            </div>
+                        ),
+                        accessor: (item) => (
                             <button
                                 onClick={() => setDetailItem(item)}
                                 className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium"
@@ -472,8 +553,14 @@ export const EmployeeList = () => {
                     { header: '氏名', accessor: 'name' },
                     { header: '氏名カナ', accessor: 'nameKana' },
                     {
-                        header: '権限', accessor: (item) => (
-                            <span className={`px - 2 py - 1 rounded - full text - xs font - medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'} `}>
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('role')}>
+                                <span>権限</span>
+                                {getSortIcon('role')}
+                            </div>
+                        ),
+                        accessor: (item) => (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
                                 {item.role === 'admin' ? '管理者' : 'ユーザー'}
                             </span>
                         )

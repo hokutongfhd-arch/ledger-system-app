@@ -3,7 +3,7 @@ import { useData } from '../features/context/DataContext';
 import { Table } from '../components/ui/Table';
 import { Pagination } from '../components/ui/Pagination';
 import type { Log } from '../lib/types';
-import { Search, Download, Archive, Calendar } from 'lucide-react';
+import { Search, Download, Archive, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { generateWeekRanges, getWeekRange } from '../lib/utils/dateHelpers';
 
 export const LogList = () => {
@@ -11,6 +11,7 @@ export const LogList = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
 
     // Archive Logic
     const [isArchiveMode, setIsArchiveMode] = useState(false);
@@ -74,11 +75,18 @@ export const LogList = () => {
         )
     );
 
-    const totalItems = filteredLogs.length;
+    const sortedLogs = [...filteredLogs].sort((a, b) => {
+        if (sortOrder === 'default') return 0;
+        const timeA = new Date(a.timestamp).getTime();
+        const timeB = new Date(b.timestamp).getTime();
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+
+    const totalItems = sortedLogs.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, totalItems);
-    const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+    const paginatedLogs = sortedLogs.slice(startIndex, endIndex);
 
     // Reset to page 1 if filter changes
     if (currentPage > totalPages && totalPages > 0) {
@@ -88,6 +96,16 @@ export const LogList = () => {
     const handlePageChange = (page: number) => {
         const p = Math.max(1, Math.min(page, totalPages));
         setCurrentPage(p);
+    };
+
+    const toggleSort = () => {
+        setSortOrder(prev => (prev === 'default' ? 'asc' : prev === 'asc' ? 'desc' : 'default'));
+    };
+
+    const getSortIcon = () => {
+        if (sortOrder === 'asc') return <ArrowUp size={14} className="ml-1 text-blue-600" />;
+        if (sortOrder === 'desc') return <ArrowDown size={14} className="ml-1 text-blue-600" />;
+        return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
     };
 
     const handleExportCSV = () => {
@@ -173,11 +191,22 @@ export const LogList = () => {
                 data={paginatedLogs}
                 columns={[
                     {
-                        header: '日時',
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={toggleSort}>
+                                <span>日時</span>
+                                {getSortIcon()}
+                            </div>
+                        ),
                         accessor: (item) => new Date(item.timestamp).toLocaleString('ja-JP')
                     },
                     { header: 'ユーザー', accessor: 'user' },
-                    { header: '対象', accessor: 'target' },
+                    {
+                        header: '対象',
+                        accessor: (item) => {
+                            const t = item.target.toLowerCase();
+                            return (t === 'iphone' || t === 'iphones') ? 'iPhone' : item.target;
+                        }
+                    },
                     {
                         header: '操作',
                         accessor: (item) => (

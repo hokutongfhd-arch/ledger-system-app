@@ -4,13 +4,20 @@ import { useData } from '../../features/context/DataContext';
 import { Pagination } from '../../components/ui/Pagination';
 import { Table } from '../../components/ui/Table';
 import type { FeaturePhone } from '../../lib/types';
-import { Plus, Download, Search, Filter, FileSpreadsheet, Upload } from 'lucide-react';
+import { Plus, Download, Search, Filter, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { NotificationModal } from '../../components/ui/NotificationModal';
 import { FeaturePhoneForm } from '../../features/forms/FeaturePhoneForm';
 import { useAuth } from '../../features/context/AuthContext';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../lib/utils/stringUtils';
+
+type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
+type SortOrder = 'asc' | 'desc';
+interface SortCriterion {
+    key: SortKey;
+    order: SortOrder;
+}
 
 export const FeaturePhoneList = () => {
     const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog, employees, addresses } = useData();
@@ -22,6 +29,7 @@ export const FeaturePhoneList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
     // Notification State
     const [notification, setNotification] = useState<{
@@ -172,12 +180,41 @@ export const FeaturePhoneList = () => {
         )
     );
 
+    const sortedData = [...filteredData].sort((a, b) => {
+        for (const criterion of sortCriteria) {
+            const { key, order } = criterion;
+
+            let valA: any;
+            let valB: any;
+
+            if (key === 'userName') {
+                valA = employees.find(e => e.code === a.employeeId)?.name || '';
+                valB = employees.find(e => e.code === b.employeeId)?.name || '';
+            } else {
+                valA = a[key as keyof FeaturePhone] || '';
+                valB = b[key as keyof FeaturePhone] || '';
+            }
+
+            if (key === 'contractYears') {
+                const numA = parseInt(String(valA).replace(/[^0-9]/g, '')) || 0;
+                const numB = parseInt(String(valB).replace(/[^0-9]/g, '')) || 0;
+                if (numA !== numB) {
+                    return order === 'asc' ? numA - numB : numB - numA;
+                }
+            } else if (valA !== valB) {
+                if (valA < valB) return order === 'asc' ? -1 : 1;
+                if (valA > valB) return order === 'asc' ? 1 : -1;
+            }
+        }
+        return 0;
+    });
+
     // Pagination Logic
-    const totalItems = filteredData.length;
+    const totalItems = sortedData.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, totalItems);
-    const paginatedData = filteredData.slice(startIndex, endIndex);
+    const paginatedData = sortedData.slice(startIndex, endIndex);
 
     if (currentPage > totalPages && totalPages > 0) {
         setCurrentPage(1);
@@ -186,6 +223,43 @@ export const FeaturePhoneList = () => {
     const handlePageChange = (page: number) => {
         const p = Math.max(1, Math.min(page, totalPages));
         setCurrentPage(p);
+    };
+
+    const toggleSort = (key: SortKey) => {
+        setSortCriteria(prev => {
+            const existingIndex = prev.findIndex(c => c.key === key);
+            if (existingIndex === -1) {
+                return [...prev, { key, order: 'asc' }];
+            }
+
+            const existing = prev[existingIndex];
+            if (existing.order === 'asc') {
+                const newCriteria = [...prev];
+                newCriteria[existingIndex] = { ...existing, order: 'desc' };
+                return newCriteria;
+            } else {
+                return prev.filter(c => c.key !== key);
+            }
+        });
+    };
+
+    const getSortIcon = (key: SortKey) => {
+        const criterionIndex = sortCriteria.findIndex(c => c.key === key);
+        if (criterionIndex === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
+
+        const criterion = sortCriteria[criterionIndex];
+        return (
+            <div className="flex items-center gap-0.5 ml-1">
+                {criterion.order === 'asc'
+                    ? <ArrowUp size={14} className="text-blue-600" />
+                    : <ArrowDown size={14} className="text-blue-600" />}
+                {sortCriteria.length > 1 && (
+                    <span className="text-[10px] bg-blue-100 text-blue-600 rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                        {criterionIndex + 1}
+                    </span>
+                )}
+            </div>
+        );
     };
 
     const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
@@ -420,7 +494,13 @@ export const FeaturePhoneList = () => {
                         className: "w-10 px-4"
                     },
                     {
-                        header: '管理番号', accessor: (item) => (
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('managementNumber')}>
+                                <span>管理番号</span>
+                                {getSortIcon('managementNumber')}
+                            </div>
+                        ),
+                        accessor: (item) => (
                             <button
                                 onClick={() => setDetailItem(item)}
                                 className="text-blue-600 hover:text-blue-800 hover:underline text-left font-medium whitespace-nowrap"
@@ -429,15 +509,60 @@ export const FeaturePhoneList = () => {
                             </button>
                         )
                     },
-                    { header: '機種名', accessor: 'modelName' },
-                    { header: '電話番号', accessor: 'phoneNumber' },
                     {
-                        header: '使用者名',
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('modelName')}>
+                                <span>機種名</span>
+                                {getSortIcon('modelName')}
+                            </div>
+                        ),
+                        accessor: 'modelName'
+                    },
+                    {
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('phoneNumber')}>
+                                <span>電話番号</span>
+                                {getSortIcon('phoneNumber')}
+                            </div>
+                        ),
+                        accessor: 'phoneNumber'
+                    },
+                    {
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('userName')}>
+                                <span>使用者名</span>
+                                {getSortIcon('userName')}
+                            </div>
+                        ),
                         accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || ''
                     },
-                    { header: 'キャリア', accessor: 'carrier' },
-                    { header: '貸与日', accessor: 'lendDate' },
-                    { header: '契約年数', accessor: 'contractYears' },
+                    {
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('carrier')}>
+                                <span>キャリア</span>
+                                {getSortIcon('carrier')}
+                            </div>
+                        ),
+                        accessor: 'carrier'
+                    },
+                    {
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('lendDate')}>
+                                <span>貸与日</span>
+                                {getSortIcon('lendDate')}
+                            </div>
+                        ),
+                        accessor: 'lendDate'
+                    },
+                    {
+                        header: (
+                            <div className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => toggleSort('contractYears')}>
+                                <span>契約年数</span>
+                                {getSortIcon('contractYears')}
+                            </div>
+                        ),
+                        accessor: 'contractYears'
+                    },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
