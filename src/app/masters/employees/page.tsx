@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
@@ -41,6 +41,8 @@ export default function EmployeeListPage() {
 
 function EmployeeListContent() {
     const { employees, addEmployee, updateEmployee, deleteEmployee, addLog, areas, addresses } = useData();
+    const searchParams = useSearchParams();
+    const highlightId = searchParams.get('highlight');
     const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Employee | undefined>(undefined);
@@ -141,6 +143,7 @@ function EmployeeListContent() {
 
             <Table<Employee>
                 data={paginatedData}
+                rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
                 columns={[
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('code')}>社員コード{getSortIcon('code')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.code}</button> },
                     { header: '氏名', accessor: 'name' },

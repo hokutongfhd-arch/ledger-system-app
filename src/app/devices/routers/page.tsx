@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
@@ -39,13 +39,15 @@ export default function RouterListPage() {
 
 function RouterListContent() {
     const { routers, addRouter, updateRouter, deleteRouter, addLog, employees, addresses } = useData();
+    const searchParams = useSearchParams();
+    const highlightId = searchParams.get('highlight');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Router | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Router | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
     const [notification, setNotification] = useState<{
@@ -135,6 +137,7 @@ function RouterListContent() {
 
             <Table<Router>
                 data={paginatedData}
+                rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
                 columns={[
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>通信キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },

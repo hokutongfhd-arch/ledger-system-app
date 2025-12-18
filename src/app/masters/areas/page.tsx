@@ -41,6 +41,8 @@ export default function AreaListPage() {
 function AreaListContent() {
     const { areas, addArea, updateArea, deleteArea, addLog } = useData();
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const highlightId = searchParams.get('highlight');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Area | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Area | undefined>(undefined);
@@ -138,6 +140,7 @@ function AreaListContent() {
 
             <Table<Area>
                 data={paginatedData}
+                rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
                 columns={[
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('areaCode')}>エリアコード{getSortIcon('areaCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.areaCode}</button> },
                     { header: 'エリア名', accessor: 'areaName' },
