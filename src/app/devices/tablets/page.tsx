@@ -39,6 +39,24 @@ export default function TabletListPage() {
     );
 }
 
+const statusMap: Record<string, string> = {
+    'in-use': '使用中',
+    'backup': '予備機',
+    'available': '在庫',
+    'broken': '故障',
+    'repairing': '修理中',
+    'discarded': '廃棄',
+};
+
+const statusColorMap: Record<string, string> = {
+    'in-use': 'bg-green-100 text-green-800',
+    'backup': 'bg-purple-100 text-purple-800',
+    'available': 'bg-blue-100 text-blue-800',
+    'broken': 'bg-red-100 text-red-800',
+    'repairing': 'bg-yellow-100 text-yellow-800',
+    'discarded': 'bg-gray-100 text-gray-800',
+};
+
 function TabletListContent() {
     const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees, addresses } = useData();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -166,8 +184,8 @@ function TabletListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: 'contractYears' },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('status')}>状況{getSortIcon('status')}</div>, accessor: (item) => (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'in-use' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                                {item.status}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColorMap[item.status] || 'bg-gray-100 text-gray-800'}`}>
+                                {statusMap[item.status] || item.status}
                             </span>
                         )
                     },
@@ -196,7 +214,7 @@ function TabletListContent() {
                                 <div><label className="block text-sm font-medium text-gray-500 mb-1">端末CD</label><div className="text-gray-900">{detailItem.terminalCode}</div></div>
                                 <div><label className="block text-sm font-medium text-gray-500 mb-1">メーカー</label><div className="text-gray-900">{detailItem.maker || '-'}</div></div>
                                 <div><label className="block text-sm font-medium text-gray-500 mb-1">型番</label><div className="text-gray-900">{detailItem.modelNumber}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">状況</label><div className="text-gray-900">{detailItem.status}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">状況</label><div className="text-gray-900">{statusMap[detailItem.status] || detailItem.status}</div></div>
                                 <div><label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label><div className="text-gray-900">{detailItem.contractYears || '-'}</div></div>
                             </div>
                         </div>
