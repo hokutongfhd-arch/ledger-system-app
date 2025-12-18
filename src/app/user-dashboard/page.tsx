@@ -1,22 +1,42 @@
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../features/context/AuthContext';
-import { useSystemAlerts } from '../features/hooks/useSystemAlerts';
-import { AlertCircle, ChevronRight } from 'lucide-react';
-import { UserProfileCard } from '../features/components/UserProfileCard';
-import { UserDeviceList } from '../features/components/UserDeviceList';
-import { MemoPad } from '../features/components/MemoPad';
+'use client';
 
-export const UserDashboard = () => {
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../features/context/AuthContext';
+import { useSystemAlerts } from '../../features/hooks/useSystemAlerts';
+import { AlertCircle, ChevronRight } from 'lucide-react';
+import { UserProfileCard } from '../../features/components/UserProfileCard';
+import { UserDeviceList } from '../../features/components/UserDeviceList';
+import { MemoPad } from '../../features/components/MemoPad';
+import { useEffect } from 'react';
+import { Layout } from '../../components/layout/Layout';
+
+export default function UserDashboardPage() {
+    const { user } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!user) router.push('/login');
+    }, [user, router]);
+
+    if (!user) return null;
+
+    return (
+        <Layout>
+            <UserDashboardContent />
+        </Layout>
+    );
+}
+
+function UserDashboardContent() {
     const { user } = useAuth();
     const alerts = useSystemAlerts();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     // Filter alerts for the current user (Employee record)
-    // We strictly check for alerts linked to the user's ID
     const myAlerts = user ? alerts.filter(a => a.recordId === user.id && (a.type === 'unregistered_area' || a.type === 'unregistered_address')) : [];
 
     const handleAlertClick = (path: string) => {
-        navigate(path);
+        router.push(path);
     };
 
     return (
@@ -100,4 +120,4 @@ export const UserDashboard = () => {
             </div>
         </div>
     );
-};
+}

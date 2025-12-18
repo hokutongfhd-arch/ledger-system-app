@@ -1,7 +1,7 @@
 
 import { useData } from '../context/DataContext';
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 interface AddressDeviceListProps {
     addressCode: string;
@@ -9,12 +9,12 @@ interface AddressDeviceListProps {
 
 export const AddressDeviceList: React.FC<AddressDeviceListProps> = ({ addressCode }) => {
     const { iPhones, featurePhones, routers, tablets, employees } = useData();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     if (!addressCode) return null;
 
     const handleDeviceClick = (path: string, id: string) => {
-        navigate(`${path}?highlight=${id}`);
+        router.push(`${path}?highlight=${id}`);
     };
 
     // Filter devices assigned to the target address

@@ -1,10 +1,12 @@
-
-import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../../features/context/AuthContext';
 import { LogOut } from 'lucide-react';
 
-export const Layout = () => {
+interface LayoutProps {
+    children: React.ReactNode;
+}
+
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const { user, logout } = useAuth();
 
     return (
@@ -36,7 +38,7 @@ export const Layout = () => {
                     </div>
                 </header>
                 <main className="flex-1 p-10 overflow-x-hidden">
-                    <Outlet />
+                    {children}
                 </main>
             </div>
         </div>

@@ -1,23 +1,25 @@
+'use client';
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../features/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../features/context/AuthContext';
 import { Database } from 'lucide-react';
 
-export const Login = () => {
+export default function LoginPage() {
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const user = await login(code, password);
         if (user) {
             if (user.role === 'admin') {
-                navigate('/');
+                router.push('/');
             } else {
-                navigate('/user-dashboard');
+                router.push('/user-dashboard');
             }
         } else {
             setError('社員番号またはパスワードが間違っています');
@@ -27,7 +29,6 @@ export const Login = () => {
     return (
         <div className="min-h-screen bg-paper flex items-center justify-center font-sans text-ink selection:bg-accent-electric selection:text-ink">
             <div className="bg-white p-10 w-full max-w-md border-2 border-ink shadow-offset relative">
-                {/* Decorative Elements */}
                 <div className="absolute top-0 left-0 w-full h-2 bg-ink"></div>
                 <div className="absolute top-0 right-0 -mr-2 -mt-2 w-8 h-8 bg-accent-electric border-2 border-ink z-10"></div>
 
@@ -82,9 +83,7 @@ export const Login = () => {
                         Access System
                     </button>
                 </form>
-
-
             </div>
         </div>
     );
-};
+}

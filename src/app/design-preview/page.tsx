@@ -1,9 +1,9 @@
+'use client';
 
-import { SidebarPreview } from '../components/layout/SidebarPreview';
+import { SidebarPreview } from '../../components/layout/SidebarPreview';
 import { Search, Calendar, ChevronDown, MoreHorizontal, ArrowUpRight } from 'lucide-react';
 
-
-export const DesignPreview = () => {
+export default function DesignPreviewPage() {
     return (
         <div className="flex h-screen overflow-hidden bg-gradient-to-br from-pulsar-bg-start to-pulsar-bg-end font-sans">
             <SidebarPreview />
@@ -209,4 +209,4 @@ export const DesignPreview = () => {
             </div>
         </div>
     );
-};
+}

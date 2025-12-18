@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Tablet, IPhone, FeaturePhone, Router, Employee, Area, Address, Log, DeviceStatus } from '../../lib/types';
 import { useAuth } from './AuthContext';

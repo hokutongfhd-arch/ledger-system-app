@@ -1,27 +1,30 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { LayoutDashboard, User, Smartphone, Tablet, Router as RouterIcon, Database, FileText, Phone, Bell } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../features/context/AuthContext';
 import { useData } from '../../features/context/DataContext';
 
-const SidebarItem = ({ to, icon: Icon, label, indent = false }: { to: string; icon: any; label: string; indent?: boolean }) => (
-    <NavLink
-        to={to}
-        className={({ isActive }) =>
-            clsx(
+const SidebarItem = ({ to, icon: Icon, label, indent = false }: { to: string; icon: any; label: string; indent?: boolean }) => {
+    const pathname = usePathname();
+    const isActive = pathname === to;
+
+    return (
+        <Link
+            href={to}
+            className={clsx(
                 'flex items-center gap-4 px-6 py-3 text-sm font-medium transition-all duration-300 border-l-4 group relative overflow-hidden',
                 isActive
                     ? 'border-accent-electric bg-ink text-white'
                     : 'border-transparent text-ink hover:bg-gray-100 hover:border-ink',
                 indent && 'pl-10'
-            )
-        }
-    >
-        <Icon size={18} className="relative z-10" />
-        <span className="font-display tracking-wide relative z-10">{label}</span>
-    </NavLink>
-);
+            )}
+        >
+            <Icon size={18} className="relative z-10" />
+            <span className="font-display tracking-wide relative z-10">{label}</span>
+        </Link>
+    );
+};
 
 const SidebarSection = ({ label, children }: { label?: string; children: React.ReactNode }) => (
     <div className="mb-8">

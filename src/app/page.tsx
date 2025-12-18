@@ -1,15 +1,38 @@
-import { useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react';
 import { useData } from '../features/context/DataContext';
+import { useAuth } from '../features/context/AuthContext';
 import { DonutChart } from '../components/ui/DonutChart';
 import { useSystemAlerts, type AlertSource } from '../features/hooks/useSystemAlerts';
 import { SegmentedDonutChart } from '../components/ui/SegmentedDonutChart';
 import { AlertCircle, ChevronRight } from 'lucide-react';
+import { Layout } from '../components/layout/Layout';
 
-export const Dashboard = () => {
+export default function DashboardPage() {
+    const { user } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+        }
+    }, [user, router]);
+
+    if (!user) return null;
+
+    return (
+        <Layout>
+            <DashboardContent />
+        </Layout>
+    );
+}
+
+function DashboardContent() {
     const { tablets, iPhones, featurePhones, routers } = useData();
     const alerts = useSystemAlerts();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     // 1. iPhone Logic
     const iPhoneTotal = iPhones.length;
@@ -35,13 +58,13 @@ export const Dashboard = () => {
 
     // Theme Colors
     const COLORS: Record<AlertSource, string> = {
-        'iPhone': '#00F0FF', // Electric
-        'FeaturePhone': '#7C3AED', // Violet
-        'Tablet': '#3B82F6', // Blue
-        'Router': '#FF6B6B', // Coral
-        'Employee': '#10B981', // Emerald
-        'Area': '#F59E0B', // Amber
-        'Address': '#EC4899'  // Pink
+        'iPhone': '#00F0FF',
+        'FeaturePhone': '#7C3AED',
+        'Tablet': '#3B82F6',
+        'Router': '#FF6B6B',
+        'Employee': '#10B981',
+        'Area': '#F59E0B',
+        'Address': '#EC4899'
     };
 
     const alertSegments = Object.entries(alertCounts).map(([source, count]) => ({
@@ -86,7 +109,7 @@ export const Dashboard = () => {
     }, [alerts, selectedSources, sortBy]);
 
     const handleAlertClick = (path: string) => {
-        navigate(path);
+        router.push(path);
     };
 
     const getAlertColor = (source: AlertSource) => COLORS[source] || '#94A3B8';
@@ -103,30 +126,29 @@ export const Dashboard = () => {
                         title="iPhone"
                         total={iPhoneTotal}
                         used={iPhoneUsed}
-                        color="#00F0FF" // Electric Cyan
+                        color="#00F0FF"
                     />
                     <DonutChart
                         title="ガラホ"
                         total={featurePhoneTotal}
                         used={featurePhoneUsed}
-                        color="#7C3AED" // Violet
+                        color="#7C3AED"
                     />
                     <DonutChart
                         title="モバイルルーター"
                         total={routerTotal}
                         used={routerUsed}
-                        color="#FF6B6B" // Coral
+                        color="#FF6B6B"
                     />
                     <DonutChart
                         title="勤怠タブレット"
                         total={tabletTotal}
                         used={tabletUsed}
-                        color="#3B82F6" // Blue
+                        color="#3B82F6"
                     />
                 </div>
             </div>
 
-            {/* Alert Section */}
             <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-text-main flex items-center gap-3">
                     <AlertCircle className="text-accent-coral" />
@@ -134,8 +156,7 @@ export const Dashboard = () => {
                 </h2>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left: Chart */}
-                    <div className="lg:col-span-1 card flex items-center justify-center p-8 bg-background-paper border border-border shadow-card rounded-2xl">
+                    <div className="lg:col-span-1 flex items-center justify-center p-8 bg-background-paper border border-border shadow-card rounded-2xl">
                         <SegmentedDonutChart
                             title="アラート総数"
                             segments={alertSegments}
@@ -143,8 +164,7 @@ export const Dashboard = () => {
                         />
                     </div>
 
-                    {/* Right: List */}
-                    <div className="lg:col-span-2 card bg-background-paper border border-border shadow-card rounded-2xl p-0 overflow-hidden flex flex-col max-h-[600px]">
+                    <div className="lg:col-span-2 bg-background-paper border border-border shadow-card rounded-2xl p-0 overflow-hidden flex flex-col max-h-[600px]">
                         <div className="p-4 border-b border-border bg-background-subtle flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div className="flex items-center gap-4">
                                 <h3 className="font-bold text-text-main whitespace-nowrap">アラート一覧 ({filteredAndSortedAlerts.length}件)</h3>
@@ -158,7 +178,6 @@ export const Dashboard = () => {
                                 </select>
                             </div>
 
-                            {/* Checkboxes - 2 Rows */}
                             <div className="grid grid-cols-4 gap-x-4 gap-y-2 justify-end w-fit ml-auto">
                                 <label className="flex items-center gap-1.5 cursor-pointer hover:bg-black/5 px-2 py-0.5 rounded transition-colors text-sm">
                                     <input
@@ -233,4 +252,4 @@ export const Dashboard = () => {
             </div>
         </div>
     );
-};
+}

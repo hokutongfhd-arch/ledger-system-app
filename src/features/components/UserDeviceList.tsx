@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 interface UserDeviceListProps {
     targetCode?: string;
@@ -13,10 +13,10 @@ interface UserDeviceListProps {
 export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targetName }) => {
     const { user } = useAuth();
     const { iPhones, featurePhones, routers, tablets } = useData();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const handleDeviceClick = (path: string, id: string) => {
-        navigate(`${path}?highlight=${id}`);
+        router.push(`${path}?highlight=${id}`);
     };
 
     // Determine target user to display

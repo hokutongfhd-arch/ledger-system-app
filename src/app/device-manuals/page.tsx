@@ -1,16 +1,20 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
-import { useData } from '../features/context/DataContext';
-import { PageHeader } from '../components/ui/PageHeader';
-import { Pagination } from '../components/ui/Pagination';
+import { useData } from '../../features/context/DataContext';
+import { useAuth } from '../../features/context/AuthContext';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Pagination } from '../../components/ui/Pagination';
 import { Download, Plus, Upload, X, FileText, Trash2 } from 'lucide-react';
-import { ActionButton } from '../components/ui/ActionButton';
-import { Modal } from '../components/ui/Modal';
-import { supabase } from '../lib/supabaseClient';
+import { ActionButton } from '../../components/ui/ActionButton';
+import { Modal } from '../../components/ui/Modal';
+import { supabase } from '../../lib/supabaseClient';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, TouchSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
+import { Layout } from '../../components/layout/Layout';
 
 interface ManualFile {
     name: string;
@@ -168,8 +172,24 @@ const DraggableRow = ({
     );
 };
 
-export const DeviceManualList = () => {
-    // Initial mock data
+export default function ManualListPage() {
+    const { user } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!user) router.push('/login');
+    }, [user, router]);
+
+    if (!user) return null;
+
+    return (
+        <Layout>
+            <DeviceManualListContent />
+        </Layout>
+    );
+}
+
+const DeviceManualListContent = () => {
     const [manuals, setManuals] = useState<ManualItem[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
@@ -219,7 +239,6 @@ export const DeviceManualList = () => {
         })
     );
 
-    // Sensors for row-level sorting (Long press for 100ms)
     const rowSensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -246,7 +265,6 @@ export const DeviceManualList = () => {
     };
 
     const handleDragEnd = async (event: DragEndEvent, itemId: string) => {
-        // Delay resetting isDraggingRef to prevent immediate click after drag
         setTimeout(() => {
             isDraggingRef.current = false;
         }, 200);
@@ -264,12 +282,10 @@ export const DeviceManualList = () => {
             if (oldIndex !== -1 && newIndex !== -1) {
                 const newFiles = arrayMove(item.files, oldIndex, newIndex);
 
-                // Optimistic UI update
                 const newManuals = [...manuals];
                 newManuals[itemIndex] = { ...item, files: newFiles };
                 setManuals(newManuals);
 
-                // Update DB
                 try {
                     const { error } = await supabase
                         .from('device_manuals')
@@ -298,9 +314,8 @@ export const DeviceManualList = () => {
                 const activeItemId = fragments[oldIndex].itemId;
                 const overItemId = fragments[newIndex].itemId;
 
-                if (activeItemId === overItemId) return; // Same item fragments
+                if (activeItemId === overItemId) return;
 
-                // Get original manuals order
                 const oldManualIndex = manuals.findIndex(m => m.id === activeItemId);
                 const newManualIndex = manuals.findIndex(m => m.id === overItemId);
 
@@ -308,12 +323,6 @@ export const DeviceManualList = () => {
                     const newManuals = arrayMove(manuals, oldManualIndex, newManualIndex);
                     setManuals(newManuals);
 
-                    // Perspective Persistence: Use timestamp trick
-                    // We want to update the dragged item's updated_at to be between its new neighbors
-                    // To simplify, let's just swap or set to current time if moved to top.
-                    // For now, update the DB with current timestamp to move to top, 
-                    // or we could implement a proper sort_order if the schema supported it.
-                    // Here we'll just update updated_at of the moved item.
                     try {
                         const { error } = await supabase
                             .from('device_manuals')
@@ -329,12 +338,11 @@ export const DeviceManualList = () => {
         }
     };
 
-    const [isAppModalOpen, setIsAddModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [title, setTitle] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [dragActive, setDragActive] = useState(false);
 
-    // Alert Modal State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
 
@@ -400,13 +408,10 @@ export const DeviceManualList = () => {
         let hasError = false;
 
         try {
-            // 現在の対象レコードを特定
             let targetItem = manuals.find(item => item.title === title);
             let currentFiles: ManualFile[] = targetItem ? [...targetItem.files] : [];
 
             for (const file of selectedFiles) {
-                // データベース全体、または現在のアイテム内での重複チェック
-                // 仕様: データベース全体で同名のファイルがあればスキップ
                 const isDuplicate = manuals.some(item => item.files.some(f => f.name === file.name));
 
                 if (isDuplicate) {
@@ -414,7 +419,6 @@ export const DeviceManualList = () => {
                     continue;
                 }
 
-                // 1. Upload file to Supabase Storage
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                 const filePath = `${fileName}`;
@@ -429,7 +433,6 @@ export const DeviceManualList = () => {
                     continue;
                 }
 
-                // 2. Get Public URL
                 const { data: { publicUrl } } = supabase.storage
                     .from('manuals')
                     .getPublicUrl(filePath);
@@ -444,9 +447,7 @@ export const DeviceManualList = () => {
             }
 
             if (registeredFiles.length > 0) {
-                // 3. Update DB (Final state after processing all selected files)
                 if (targetItem) {
-                    // Update existing record
                     const { error: dbError } = await supabase
                         .from('device_manuals')
                         .update({
@@ -457,7 +458,6 @@ export const DeviceManualList = () => {
 
                     if (dbError) throw dbError;
                 } else {
-                    // Insert new record
                     const { error: dbError } = await supabase
                         .from('device_manuals')
                         .insert({
@@ -469,10 +469,8 @@ export const DeviceManualList = () => {
                     if (dbError) throw dbError;
                 }
 
-                // 4. Refresh List
                 await fetchManuals();
 
-                // Log the action
                 for (const fileName of registeredFiles) {
                     await addLog('manuals', 'add', `ファイル追加: ${fileName} (${title})`);
                 }
@@ -515,14 +513,12 @@ export const DeviceManualList = () => {
             const newFiles = item.files.filter((_, index) => index !== fileIndex);
 
             if (newFiles.length === 0) {
-                // Delete record if no files left
                 const { error } = await supabase
                     .from('device_manuals')
                     .delete()
                     .eq('id', itemId);
                 if (error) throw error;
             } else {
-                // Update record with remaining files
                 const { error } = await supabase
                     .from('device_manuals')
                     .update({
@@ -535,7 +531,6 @@ export const DeviceManualList = () => {
 
             fetchManuals();
 
-            // Log the action (find item title for details)
             const deletedFileName = item.files[fileIndex]?.name || '不明なファイル';
             await addLog('manuals', 'delete', `ファイル削除: ${deletedFileName} (${item.title})`);
 
@@ -545,7 +540,6 @@ export const DeviceManualList = () => {
         }
     };
 
-    // Pagination Logic: ファイル数ベースで計算
     const allFilesFlattened = manuals.flatMap(item =>
         item.files.map((file, index) => ({
             ...file,
@@ -561,18 +555,14 @@ export const DeviceManualList = () => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, totalItems);
 
-    // 現在のページに含まれるファイルのリスト
     const paginatedFiles = allFilesFlattened.slice(startIndex, endIndex);
 
-    // ファイルのリストをタイトルごとにグループ化（TitleFragmentの作成）
     const fragments: TitleFragment[] = [];
     paginatedFiles.forEach((file) => {
         const lastFragment = fragments[fragments.length - 1];
         if (lastFragment && lastFragment.itemId === file.itemId) {
-            // 同じタイトルの継続なら既存のフラグメントに追加
             lastFragment.files.push({ name: file.name, url: file.url, originalIndex: file.originalIndex });
         } else {
-            // 新しいタイトル、または別のタイトルの後の同じタイトルの場合は新フラグメント
             fragments.push({
                 id: `${file.itemId}-${file.originalIndex}`,
                 itemId: file.itemId,
@@ -591,7 +581,7 @@ export const DeviceManualList = () => {
     return (
         <div className="space-y-4 h-full flex flex-col">
             <PageHeader
-                title="機器一覧"
+                title="マニュアル管理"
                 actions={
                     <ActionButton onClick={() => setIsAddModalOpen(true)} icon={Plus} variant="primary">
                         ファイル追加
@@ -637,7 +627,7 @@ export const DeviceManualList = () => {
                                 {fragments.length === 0 && (
                                     <tr>
                                         <td colSpan={3} className="px-6 py-10 text-center text-ink-lighter italic">
-                                            表示する機器がありません
+                                            表示するマニュアルがありません
                                         </td>
                                     </tr>
                                 )}
@@ -666,7 +656,7 @@ export const DeviceManualList = () => {
             </div>
 
             <Modal
-                isOpen={isAppModalOpen}
+                isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 title="ファイル追加"
             >
@@ -760,7 +750,6 @@ export const DeviceManualList = () => {
                 </div>
             </Modal>
 
-            {/* Error/Alert Modal */}
             <Modal
                 isOpen={isAlertOpen}
                 onClose={() => setIsAlertOpen(false)}
