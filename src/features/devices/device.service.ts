@@ -82,6 +82,7 @@ export const deviceService = {
         notes: s(d.notes),
         returnDate: s(d.return_date),
         modelName: s(d.model_name),
+        status: '貸出中',
         contractYears: s(d.contract_years),
     }),
     mapFeaturePhoneToDb: (t: Partial<FeaturePhone>) => ({
