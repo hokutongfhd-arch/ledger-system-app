@@ -126,7 +126,11 @@ function EmployeeListContent() {
     };
 
     const handleImportClick = () => {
-        document.getElementById('fileInput')?.click();
+        const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = '';
+            fileInput.click();
+        }
     };
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
