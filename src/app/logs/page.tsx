@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../features/context/DataContext';
 import { useAuth } from '../../features/context/AuthContext';
@@ -56,6 +56,7 @@ function LogListContent() {
     const handleArchiveToggle = async () => {
         const newMode = !isArchiveMode;
         setIsArchiveMode(newMode);
+        setCurrentPage(1); // Reset to page 1
         if (newMode && weekOptions.length > 0) {
             setSelectedWeekLabel(weekOptions[0].label);
             await fetchLogRange(weekOptions[0].start.toISOString(), weekOptions[0].end.toISOString());
@@ -67,6 +68,7 @@ function LogListContent() {
 
     const handleWeekSelect = async (label: string) => {
         setSelectedWeekLabel(label);
+        setCurrentPage(1); // Reset to page 1
         const range = weekOptions.find(w => w.label === label);
         if (range) await fetchLogRange(range.start.toISOString(), range.end.toISOString());
     };
@@ -124,11 +126,24 @@ function LogListContent() {
                     { header: 'ユーザー', accessor: 'user' },
                     { header: '対象', accessor: (item) => (item.target.toLowerCase() === 'iphone' || item.target.toLowerCase() === 'iphones') ? 'iPhone' : item.target },
                     {
-                        header: '操作', accessor: (item) => (
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${item.action === 'add' ? 'bg-emerald-50 text-emerald-500' : 'bg-blue-50 text-blue-500'}`}>
-                                {item.action === 'add' ? '追加' : '更新'}
-                            </span>
-                        )
+                        header: '操作', accessor: (item) => {
+                            let label = '更新';
+                            let className = 'bg-blue-50 text-blue-500';
+
+                            if (item.action === 'add' || item.action === 'import') {
+                                label = '追加';
+                                className = 'bg-emerald-50 text-emerald-500';
+                            } else if (item.action === 'delete') {
+                                label = '削除';
+                                className = 'bg-red-50 text-red-500';
+                            }
+
+                            return (
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${className}`}>
+                                    {label}
+                                </span>
+                            );
+                        }
                     },
                     { header: '詳細', accessor: 'details' },
                 ]}

@@ -7,11 +7,13 @@ import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
 import type { FeaturePhone } from '../../../features/devices/device.types';
-import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 import { FeaturePhoneForm } from '../../../features/forms/FeaturePhoneForm';
 import { Layout } from '../../../components/layout/Layout';
+import * as XLSX from 'xlsx';
+import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -118,11 +120,164 @@ function FeaturePhoneListContent() {
         );
     };
 
+    const handleExportCSV = () => {
+        const headers = [
+            '管理番号', '機種名', '電話番号', 'キャリア', '契約年数',
+            '社員コード', '住所コード', '貸与日', '負担先会社', '受領書提出日', '返却日', '備考'
+        ];
+        const csvContent = [
+            headers.join(','),
+            ...filteredData.map(item => [
+                item.managementNumber,
+                item.modelName,
+                item.phoneNumber,
+                item.carrier,
+                item.contractYears || '',
+                item.employeeId,
+                item.addressCode,
+                item.lendDate,
+                item.costCompany || '',
+                item.receiptDate,
+                item.returnDate,
+                `"${item.notes}"`
+            ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `feature_phone_list_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    };
+
+    const handleDownloadTemplate = () => {
+        const headers = [
+            '管理番号', '機種名', '電話番号', 'キャリア', '契約年数',
+            '社員コード', '住所コード', '貸与日', '負担先会社', '受領書提出日', '返却日', '備考'
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, 'ガラホエクセルフォーマット.xlsx');
+    };
+
+    const handleImportClick = () => {
+        document.getElementById('fileInput')?.click();
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
+
+            if (jsonData.length === 0) {
+                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
+                return;
+            }
+
+            const headers = jsonData[0] as string[];
+            const requiredHeaders = [
+                '管理番号', '機種名', '電話番号', 'キャリア', '契約年数',
+                '社員コード', '住所コード', '貸与日', '負担先会社', '受領書提出日', '返却日', '備考'
+            ];
+
+            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
+                return;
+            }
+
+            const rows = jsonData.slice(1);
+
+            // Data bounds validation
+            const validColumnCount = requiredHeaders.length;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                // Check for data outside defined columns
+                if (row.length > validColumnCount) {
+                    const extraData = row.slice(validColumnCount);
+                    const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
+                    if (hasExtraData) {
+                        showNotification('定義された列の外側にデータが存在します。ファイルを確認してください。', 'alert', undefined, 'インポートエラー');
+                        return;
+                    }
+                }
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                const rowData: any = {};
+                headers.forEach((header, index) => {
+                    rowData[header] = row[index];
+                });
+
+                const formatDate = (val: any) => {
+                    if (!val) return '';
+                    if (typeof val === 'number') {
+                        const date = new Date((val - 25569) * 86400 * 1000);
+                        return date.toISOString().split('T')[0];
+                    }
+                    return String(val).trim().replace(/\//g, '-');
+                };
+
+                const newFeaturePhone: Omit<FeaturePhone, 'id'> = {
+                    carrier: String(rowData['キャリア'] || ''),
+                    phoneNumber: String(rowData['電話番号'] || ''),
+                    managementNumber: String(rowData['管理番号'] || ''),
+                    employeeId: String(rowData['社員コード'] || ''),
+                    addressCode: String(rowData['住所コード'] || ''),
+                    lendDate: formatDate(rowData['貸与日']),
+                    receiptDate: formatDate(rowData['受領書提出日']),
+                    notes: String(rowData['備考'] || ''),
+                    returnDate: formatDate(rowData['返却日']),
+                    modelName: String(rowData['機種名'] || ''),
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
+                    costCompany: String(rowData['負担先会社'] || ''),
+                    status: '貸出準備中'
+                };
+
+                if (newFeaturePhone.employeeId) newFeaturePhone.status = '貸出中';
+
+                try {
+                    await addFeaturePhone(newFeaturePhone, true);
+                    successCount++;
+                } catch (error) {
+                    errorCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                await addLog('featurePhones', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+            }
+
+            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
+            if (event.target) event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
     return (
         <div className="space-y-4 h-full flex flex-col">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-2xl font-bold text-text-main">ガラホ管理台帳</h1>
                 <div className="flex gap-2">
+                    <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
+                    <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
+                    <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>
                 </div>
             </div>

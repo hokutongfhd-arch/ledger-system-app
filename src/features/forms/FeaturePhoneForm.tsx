@@ -25,6 +25,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         modelName: '',
         notes: '',
         contractYears: '',
+        status: '貸出準備中',
     });
 
     // Prepare Options

@@ -126,6 +126,7 @@ const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
     notes: s(d.notes),
     returnDate: s(d.return_date),
     modelName: s(d.model_name),
+    status: d.employee_code ? '貸出中' : '貸出準備中',
     contractYears: s(d.contract_years),
 });
 

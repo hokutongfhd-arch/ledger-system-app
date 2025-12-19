@@ -291,27 +291,27 @@ function IPhoneListContent() {
 
     const handleExportCSV = () => {
         const headers = [
-            'キャリア', '電話番号', '管理番号', '社員コード',
-            '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
-            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
+            'ID', '管理番号', '電話番号', '機種名', 'キャリア', '契約年数',
+            '社員コード', '住所コード', '貸与日', '受領書提出日', '返却日',
+            'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考'
         ];
         const csvContent = [
             headers.join(','),
             ...filteredData.map(item => [
-                item.carrier,
-                item.phoneNumber,
+                item.id,
                 item.managementNumber,
+                item.phoneNumber,
+                item.modelName,
+                item.carrier,
+                item.contractYears || '',
                 item.employeeId,
                 item.addressCode,
-                item.smartAddressId,
-                item.smartAddressPw,
                 item.lendDate,
                 item.receiptDate,
-                `"${item.notes}"`,
                 item.returnDate,
-                item.modelName,
-                item.id,
-                item.contractYears || ''
+                item.smartAddressId,
+                item.smartAddressPw,
+                `"${item.notes}"`
             ].join(','))
         ].join('\n');
 
@@ -324,9 +324,9 @@ function IPhoneListContent() {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            'キャリア', '電話番号', '管理番号', '社員コード',
-            '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
-            '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
+            'ID', '管理番号', '電話番号', '機種名', 'キャリア', '契約年数',
+            '社員コード', '住所コード', '貸与日', '受領書提出日', '返却日',
+            'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考'
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
@@ -357,9 +357,9 @@ function IPhoneListContent() {
 
             const headers = jsonData[0] as string[];
             const requiredHeaders = [
-                'キャリア', '電話番号', '管理番号', '社員コード',
-                '住所コード', 'SMARTアドレス帳ID', 'SMARTアドレス帳PW',
-                '貸与日', '受領書提出日', '備考1', '返却日', '機種名', 'ID', '契約年数'
+                'ID', '管理番号', '電話番号', '機種名', 'キャリア', '契約年数',
+                '社員コード', '住所コード', '貸与日', '受領書提出日', '返却日',
+                'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考'
             ];
 
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
@@ -369,6 +369,23 @@ function IPhoneListContent() {
             }
 
             const rows = jsonData.slice(1);
+
+            // Data bounds validation
+            const validColumnCount = requiredHeaders.length;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                // Check for data outside defined columns
+                if (row.length > validColumnCount) {
+                    const extraData = row.slice(validColumnCount);
+                    const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
+                    if (hasExtraData) {
+                        showNotification('定義された列の外側にデータが存在します。ファイルを確認してください。', 'alert', undefined, 'インポートエラー');
+                        return;
+                    }
+                }
+            }
+
             let successCount = 0;
             let errorCount = 0;
 
@@ -400,7 +417,7 @@ function IPhoneListContent() {
                     smartAddressPw: String(rowData['SMARTアドレス帳PW'] || ''),
                     lendDate: formatDate(rowData['貸与日']),
                     receiptDate: formatDate(rowData['受領書提出日']),
-                    notes: String(rowData['備考1'] || ''),
+                    notes: String(rowData['備考'] || ''),
                     returnDate: formatDate(rowData['返却日']),
                     modelName: String(rowData['機種名'] || ''),
                     status: '貸出準備中',

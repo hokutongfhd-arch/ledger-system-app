@@ -48,6 +48,7 @@ export interface FeaturePhone {
     notes: string;
     returnDate: string;
     modelName: string;
+    status: '貸出中' | '返却済み' | '貸出準備中';
     contractYears?: string;
 }
 
