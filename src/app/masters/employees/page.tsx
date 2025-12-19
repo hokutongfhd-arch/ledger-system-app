@@ -420,9 +420,8 @@ function EmployeeListContent() {
 
                         {/* Other Info (Devices) */}
                         <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">貸与デバイス</h3>
                             <div className="pt-2">
-                                <label className="block text-sm font-bold text-gray-700 mb-3">貸与デバイス</label>
                                 <UserDeviceList targetCode={detailItem.code} targetName={detailItem.name} />
                             </div>
                         </div>

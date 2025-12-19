@@ -48,10 +48,6 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-text-main font-display border-l-4 border-accent-electric pl-4">
-                貸与デバイス一覧
-            </h2>
-
             <div className="grid grid-cols-1 gap-6">
                 {/* iPhone Section */}
                 {myIPhones.length > 0 && (

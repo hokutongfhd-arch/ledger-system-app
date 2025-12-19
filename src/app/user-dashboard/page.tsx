@@ -61,6 +61,9 @@ function UserDashboardContent() {
 
                 {/* Right Column: Assigned Devices */}
                 <div className="w-full lg:w-2/3">
+                    <h2 className="text-2xl font-bold text-text-main font-display border-l-4 border-accent-electric pl-4 mb-6">
+                        貸与デバイス一覧
+                    </h2>
                     <UserDeviceList />
                 </div>
             </div>

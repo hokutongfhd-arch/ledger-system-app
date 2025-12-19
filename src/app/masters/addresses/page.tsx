@@ -411,8 +411,8 @@ function AddressListContent() {
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t border-gray-100">
-                            <h3 className="text-lg font-bold mb-4">貸与デバイス</h3>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">貸与デバイス</h3>
                             <AddressDeviceList addressCode={detailItem.addressCode} />
                         </div>
                     </div>

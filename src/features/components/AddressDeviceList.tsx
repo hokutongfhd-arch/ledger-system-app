@@ -35,9 +35,6 @@ export const AddressDeviceList: React.FC<AddressDeviceListProps> = ({ addressCod
 
     return (
         <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-800 border-l-4 border-blue-500 pl-4">
-                貸与デバイス一覧
-            </h2>
 
             <div className="grid grid-cols-1 gap-6">
                 {/* iPhone Section */}

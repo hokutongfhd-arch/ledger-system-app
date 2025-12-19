@@ -530,8 +530,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) throw error;
             if (data) setLogs(data.map(mapLogFromDb));
-        } catch (error) {
-            console.error('Failed to fetch log range:', error);
+        } catch (error: any) {
+            console.error('Failed to fetch log range:', error.message || JSON.stringify(error));
         }
     }, []);
 
