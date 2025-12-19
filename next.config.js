@@ -21,7 +21,6 @@ const nextConfig = {
     turbopack: {
         root: '.',
     },
-    distDir: 'dist',
 };
 
 export default nextConfig;
