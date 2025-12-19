@@ -1,17 +1,18 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
 import type { Address } from '../../../features/addresses/address.types';
-import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 import { AddressForm } from '../../../features/forms/AddressForm';
 import { AddressDeviceList } from '../../../features/components/AddressDeviceList';
+import * as XLSX from 'xlsx';
 
 import { Layout } from '../../../components/layout/Layout';
 
@@ -51,6 +52,9 @@ function AddressListContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
 
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
 
@@ -65,6 +69,156 @@ function AddressListContent() {
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
     const handleEdit = (item: Address) => { setEditingItem(item); setIsModalOpen(true); };
+
+    const headers = ['No.', '住所コード', '事業所名', '事業部', 'エリアコード', 'TEL', 'FAX', '〒', '住所', '区分', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '備考', '注意書き'];
+
+    const handleExportCSV = () => {
+        const csvContent = [
+            headers.join(','),
+            ...filteredData.map(item => {
+                const areaCode = areas.find(a => a.areaName === item.area)?.areaCode || '';
+                return [
+                    item.no || '',
+                    item.addressCode || '',
+                    item.officeName || '',
+                    item.division || '',
+                    areaCode,
+                    item.tel || '',
+                    item.fax || '',
+                    item.zipCode || '',
+                    item.address || '',
+                    item.type || '',
+                    item.mainPerson || '',
+                    item.branchNumber || '',
+                    item.specialNote || '',
+                    item.labelName || '',
+                    item.labelZip || '',
+                    item.labelAddress || '',
+                    item.notes || '',
+                    item.attentionNote || ''
+                ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `address_list_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    };
+
+    const handleDownloadTemplate = () => {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, '住所マスタエクセルフォーマット.xlsx');
+    };
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
+
+            if (jsonData.length === 0) {
+                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
+                return;
+            }
+
+            const fileHeaders = jsonData[0] as string[];
+            const missingHeaders = headers.filter(h => !fileHeaders.includes(h));
+            if (missingHeaders.length > 0) {
+                showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
+                return;
+            }
+
+            const rows = jsonData.slice(1);
+
+            // Data bounds validation
+            const validColumnCount = headers.length;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                if (row.length > validColumnCount) {
+                    const extraData = row.slice(validColumnCount);
+                    const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
+                    if (hasExtraData) {
+                        showNotification('定義された列の外側にデータが存在します。ファイルを確認してください。', 'alert', undefined, 'インポートエラー');
+                        return;
+                    }
+                }
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                const rowData: any = {};
+                fileHeaders.forEach((header, index) => {
+                    rowData[header] = row[index];
+                });
+
+                // Address Code Check (Simple validation)
+                if (!rowData['住所コード']) {
+                    errorCount++;
+                    continue;
+                }
+
+                const areaCode = String(rowData['エリアコード'] || '');
+                const matchedArea = areas.find(a => a.areaCode === areaCode);
+                const areaName = matchedArea ? matchedArea.areaName : '';
+
+                const newAddress: Omit<Address, 'id'> = {
+                    no: String(rowData['No.'] || ''),
+                    addressCode: String(rowData['住所コード'] || ''),
+                    officeName: String(rowData['事業所名'] || ''),
+                    division: String(rowData['事業部'] || ''),
+                    area: areaName,
+                    tel: String(rowData['TEL'] || ''),
+                    fax: String(rowData['FAX'] || ''),
+                    zipCode: String(rowData['〒'] || ''),
+                    address: String(rowData['住所'] || ''),
+                    type: String(rowData['区分'] || ''),
+                    mainPerson: String(rowData['主担当'] || ''),
+                    branchNumber: String(rowData['枝番'] || ''),
+                    specialNote: String(rowData['※'] || ''),
+                    labelName: String(rowData['宛名ラベル用'] || ''),
+                    labelZip: String(rowData['宛名ラベル用〒'] || ''),
+                    labelAddress: String(rowData['宛名ラベル用住所'] || ''),
+                    notes: String(rowData['備考'] || ''),
+                    attentionNote: String(rowData['注意書き'] || '')
+                };
+
+                try {
+                    await addAddress(newAddress, true);
+                    successCount++;
+                } catch (error) {
+                    errorCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                await addLog('addresses', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+            }
+
+            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
+            if (event.target) event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    };
 
     const handleDelete = async (item: Address) => {
         showNotification('本当に削除しますか？', 'confirm', async () => {
@@ -135,6 +289,10 @@ function AddressListContent() {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-text-main">住所マスタ</h1>
                 <div className="flex gap-2">
+                    <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
+                    <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
+                    <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
+                    <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>
                 </div>
             </div>

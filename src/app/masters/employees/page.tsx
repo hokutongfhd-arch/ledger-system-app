@@ -7,10 +7,11 @@ import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
 import type { Employee } from '../../../features/employees/employee.types';
-import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 import { EmployeeForm } from '../../../features/forms/EmployeeForm';
+import * as XLSX from 'xlsx';
 import { UserDeviceList } from '../../../features/components/UserDeviceList';
 
 import { Layout } from '../../../components/layout/Layout';
@@ -75,6 +76,175 @@ function EmployeeListContent() {
         });
     };
 
+    const handleExportCSV = () => {
+        const headers = [
+            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+        ];
+        const csvContent = [
+            headers.join(','),
+            ...filteredData.map(item => [
+                item.code,
+                item.gender || '',
+                item.name,
+                item.nameKana || '',
+                item.birthDate || '',
+                item.age || '',
+                item.areaCode || '',
+                item.addressCode || '',
+                item.joinDate || '',
+                item.yearsOfService || '',
+                item.monthsHasuu || '',
+                item.jobType || '',
+                item.roleTitle || '',
+                item.employeeType || '',
+                item.salaryType || '',
+                item.costType || '',
+                item.role === 'admin' ? '管理者' : 'ユーザー',
+                item.password || ''
+            ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `employee_list_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    };
+
+    const handleDownloadTemplate = () => {
+        const headers = [
+            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, '社員マスタエクセルフォーマット.xlsx');
+    };
+
+    const handleImportClick = () => {
+        document.getElementById('fileInput')?.click();
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
+
+            if (jsonData.length === 0) {
+                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
+                return;
+            }
+
+            const headers = jsonData[0] as string[];
+            const requiredHeaders = [
+                '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+                'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+                '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+            ];
+
+            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
+                return;
+            }
+
+            const rows = jsonData.slice(1);
+
+            // Data bounds validation
+            const validColumnCount = requiredHeaders.length;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                // Check for data outside defined columns
+                if (row.length > validColumnCount) {
+                    const extraData = row.slice(validColumnCount);
+                    const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
+                    if (hasExtraData) {
+                        showNotification('定義された列の外側にデータが存在します。ファイルを確認してください。', 'alert', undefined, 'インポートエラー');
+                        return;
+                    }
+                }
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                const rowData: any = {};
+                headers.forEach((header, index) => {
+                    rowData[header] = row[index];
+                });
+
+                const formatDate = (val: any) => {
+                    if (!val) return '';
+                    if (typeof val === 'number') {
+                        const date = new Date((val - 25569) * 86400 * 1000);
+                        return date.toISOString().split('T')[0];
+                    }
+                    return String(val).trim().replace(/\//g, '-');
+                };
+
+                const parseNumber = (val: any) => {
+                    const parsed = parseInt(String(val || ''));
+                    return isNaN(parsed) ? 0 : parsed;
+                };
+
+                const newEmployee: Omit<Employee, 'id'> & { id?: string } = {
+                    code: String(rowData['社員コード'] || ''),
+                    gender: String(rowData['性別'] || ''),
+                    name: String(rowData['氏名'] || ''),
+                    nameKana: String(rowData['氏名カナ'] || ''),
+                    birthDate: formatDate(rowData['生年月日']),
+                    age: parseNumber(rowData['年齢']),
+                    areaCode: String(rowData['エリアコード'] || ''),
+                    addressCode: String(rowData['住所コード'] || ''),
+                    joinDate: formatDate(rowData['入社年月日']),
+                    yearsOfService: parseNumber(rowData['勤続年数']),
+                    monthsHasuu: parseNumber(rowData['勤続端数月数']),
+                    jobType: String(rowData['職種'] || ''),
+                    roleTitle: String(rowData['役付'] || ''),
+                    employeeType: String(rowData['社員区分'] || ''),
+                    salaryType: String(rowData['給与区分'] || ''),
+                    costType: String(rowData['原価区分'] || ''),
+                    role: String(rowData['権限'] || '') === '管理者' ? 'admin' : 'user',
+                    password: String(rowData['パスワード'] || ''),
+                    companyNo: '',
+                    departmentCode: '',
+                    email: ''
+                };
+
+                try {
+                    await addEmployee(newEmployee as Omit<Employee, 'id'>);
+                    successCount++;
+                } catch (error) {
+                    errorCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                await addLog('employees', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+            }
+
+            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
+            if (event.target) event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
     const filteredData = employees.filter(item =>
         [item.code, item.name, item.nameKana].some(val => String(val || '').toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -130,6 +300,10 @@ function EmployeeListContent() {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-text-main">社員マスタ</h1>
                 <div className="flex gap-2">
+                    <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
+                    <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
+                    <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     {isAdmin && <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>}
                 </div>
             </div>
