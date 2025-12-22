@@ -2,59 +2,82 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useData } from '../../../features/context/DataContext';
-import { useAuth } from '../../../features/context/AuthContext';
-import { Pagination } from '../../../components/ui/Pagination';
-import { Table } from '../../../components/ui/Table';
-import type { Router } from '../../../features/devices/device.types';
+import { useData } from '../../../../features/context/DataContext';
+import { useAuth } from '../../../../features/context/AuthContext';
+import { Pagination } from '../../../../components/ui/Pagination';
+import { Table } from '../../../../components/ui/Table';
+import type { Tablet } from '../../../../features/devices/device.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
-import { Modal } from '../../../components/ui/Modal';
-import { NotificationModal } from '../../../components/ui/NotificationModal';
-import { RouterForm } from '../../../features/forms/RouterForm';
-import { Layout } from '../../../components/layout/Layout';
+import { Modal } from '../../../../components/ui/Modal';
+import { NotificationModal } from '../../../../components/ui/NotificationModal';
+import { TabletForm } from '../../../../features/forms/TabletForm';
 import * as XLSX from 'xlsx';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
+import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 
-type SortKey = 'terminalCode' | 'carrier' | 'simNumber' | 'actualLenderName' | 'userName' | 'contractYears';
+type SortKey = 'terminalCode' | 'contractYears' | 'status' | 'officeCode' | 'userName';
 type SortOrder = 'asc' | 'desc';
 interface SortCriterion {
     key: SortKey;
     order: SortOrder;
 }
 
-export default function RouterListPage() {
+export default function TabletListPage() {
     const { user } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        if (!user) router.push('/login');
+        if (!user) {
+            router.push('/login');
+        }
     }, [user, router]);
 
     if (!user) return null;
 
-    return (
-        <Layout>
-            <RouterListContent />
-        </Layout>
-    );
+    return <TabletListContent />;
 }
 
-function RouterListContent() {
-    const { routers, addRouter, updateRouter, deleteRouter, addLog, employees, addresses } = useData();
+const statusMap: Record<string, string> = {
+    'in-use': '使用中',
+    'backup': '予備機',
+    'available': '在庫',
+    'broken': '故障',
+    'repairing': '修理中',
+    'discarded': '廃棄',
+};
+
+const statusColorMap: Record<string, string> = {
+    'in-use': 'bg-green-100 text-green-800',
+    'backup': 'bg-purple-100 text-purple-800',
+    'available': 'bg-blue-100 text-blue-800',
+    'broken': 'bg-red-100 text-red-800',
+    'repairing': 'bg-yellow-100 text-yellow-800',
+    'discarded': 'bg-gray-100 text-gray-800',
+};
+
+function TabletListContent() {
+    const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees, addresses } = useData();
     const searchParams = useSearchParams();
     const highlightId = searchParams.get('highlight');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<Router | undefined>(undefined);
-    const [detailItem, setDetailItem] = useState<Router | undefined>(undefined);
+    const [editingItem, setEditingItem] = useState<Tablet | undefined>(undefined);
+    const [detailItem, setDetailItem] = useState<Tablet | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
-
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
     const [notification, setNotification] = useState<{
-        isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void;
-    }>({ isOpen: false, title: '通知', message: '', type: 'alert' });
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+    }>({
+        isOpen: false,
+        title: '通知',
+        message: '',
+        type: 'alert',
+    });
 
     const closeNotification = () => setNotification(prev => ({ ...prev, isOpen: false }));
     const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
@@ -62,41 +85,55 @@ function RouterListContent() {
     };
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
-    const handleEdit = (item: Router) => { setEditingItem(item); setIsModalOpen(true); };
+    const handleEdit = (item: Tablet) => { setEditingItem(item); setIsModalOpen(true); };
 
-    const handleDelete = async (item: Router) => {
+    const handleDelete = async (item: Tablet) => {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
-                await deleteRouter(item.id, true);
-                await addLog('routers', 'delete', `ルーター削除: ${item.terminalCode}`);
+                await deleteTablet(item.id, true);
+                await addLog('tablets', 'delete', `タブレット削除: ${item.terminalCode}`);
             } catch (error) {
                 showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
             }
         });
     };
 
-    const filteredData = routers.filter(item =>
+    const filteredData = tablets.filter(item =>
         Object.values(item).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase()))
     );
+
+    const statusSortOrder: Record<string, number> = {
+        'in-use': 0, 'backup': 1, 'available': 2, 'broken': 3, 'repairing': 4, 'discarded': 5
+    };
 
     const sortedData = [...filteredData].sort((a, b) => {
         for (const criterion of sortCriteria) {
             const { key, order } = criterion;
-            let valA: any = key === 'userName' ? (employees.find(e => e.code === a.employeeCode)?.name || '') : a[key as keyof Router];
-            let valB: any = key === 'userName' ? (employees.find(e => e.code === b.employeeCode)?.name || '') : b[key as keyof Router];
-
-            if (key === 'contractYears') {
-                const numA = parseInt(String(valA || '').replace(/[^0-9]/g, '')) || 0;
-                const numB = parseInt(String(valB || '').replace(/[^0-9]/g, '')) || 0;
+            if (key === 'status') {
+                const indexA = statusSortOrder[a.status] ?? 999;
+                const indexB = statusSortOrder[b.status] ?? 999;
+                if (indexA !== indexB) return order === 'asc' ? indexA - indexB : indexB - indexA;
+            } else if (key === 'userName') {
+                const valA = employees.find(e => e.code === a.employeeCode)?.name || '';
+                const valB = employees.find(e => e.code === b.employeeCode)?.name || '';
+                if (valA !== valB) return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            } else if (key === 'contractYears') {
+                const numA = parseInt(String(a.contractYears || '').replace(/[^0-9]/g, '')) || 0;
+                const numB = parseInt(String(b.contractYears || '').replace(/[^0-9]/g, '')) || 0;
                 if (numA !== numB) return order === 'asc' ? numA - numB : numB - numA;
-            } else if (valA !== valB) {
-                return order === 'asc' ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+            } else {
+                const valA = String(a[key as keyof Tablet] || '').toLowerCase();
+                const valB = String(b[key as keyof Tablet] || '').toLowerCase();
+                if (valA !== valB) return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
             }
         }
         return 0;
     });
 
-    const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const totalItems = sortedData.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
 
     const toggleSort = (key: SortKey) => {
         setSortCriteria(prev => {
@@ -123,36 +160,21 @@ function RouterListContent() {
 
     const handleExportCSV = () => {
         const headers = [
-            'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番',
-            '通信容量', '端末CD', '社員コード', '住所コード', '実貸与先',
-            '実貸与先名', '会社', 'IPアドレス', 'サブネットマスク', '開始IP',
-            '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)'
+            '端末CD', 'メーカー', '型番', '状況', '契約年数',
+            '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
         ];
         const csvContent = [
             headers.join(','),
             ...filteredData.map(item => [
-                item.no || '',
-                item.contractStatus || '',
-                item.contractYears || '',
-                item.carrier || '',
-                item.modelNumber || '',
-                item.simNumber || '',
-                item.dataCapacity || '',
                 item.terminalCode,
+                item.maker || '',
+                item.modelNumber,
+                statusMap[item.status] || item.status,
+                item.contractYears || '',
                 item.employeeCode || '',
                 item.addressCode || '',
-                item.actualLender || '',
-                item.actualLenderName || '',
-                item.company || '',
-                item.ipAddress || '',
-                item.subnetMask || '',
-                item.startIp || '',
-                item.endIp || '',
-                item.biller || '',
-                item.cost || '',
-                item.costTransfer || '',
-                item.costBearer || '',
-                `"${item.lendingHistory || ''}"`,
+                item.officeCode || '',
+                `"${item.history || ''}"`,
                 `"${item.notes || ''}"`
             ].join(','))
         ].join('\n');
@@ -160,21 +182,19 @@ function RouterListContent() {
         const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `router_list_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `tablet_list_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
     };
 
     const handleDownloadTemplate = () => {
         const headers = [
-            'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番',
-            '通信容量', '端末CD', '社員コード', '住所コード', '実貸与先',
-            '実貸与先名', '会社', 'IPアドレス', 'サブネットマスク', '開始IP',
-            '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)'
+            '端末CD', 'メーカー', '型番', '状況', '契約年数',
+            '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'モバイルルーターエクセルフォーマット.xlsx');
+        XLSX.writeFile(wb, 'タブレットエクセルフォーマット.xlsx');
     };
 
     const handleImportClick = () => {
@@ -204,10 +224,8 @@ function RouterListContent() {
 
             const headers = jsonData[0] as string[];
             const requiredHeaders = [
-                'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番',
-                '通信容量', '端末CD', '社員コード', '住所コード', '実貸与先',
-                '実貸与先名', '会社', 'IPアドレス', 'サブネットマスク', '開始IP',
-                '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)'
+                '端末CD', 'メーカー', '型番', '状況', '契約年数',
+                '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
             ];
 
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
@@ -215,6 +233,11 @@ function RouterListContent() {
                 showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
                 return;
             }
+
+            const reverseStatusMap: Record<string, string> = Object.entries(statusMap).reduce((acc, [key, value]) => {
+                acc[value] = key;
+                return acc;
+            }, {} as Record<string, string>);
 
             const rows = jsonData.slice(1);
 
@@ -246,35 +269,25 @@ function RouterListContent() {
                     rowData[header] = row[index];
                 });
 
-                const newRouter: Omit<Router, 'id'> = {
-                    no: String(rowData['No.'] || ''),
-                    contractStatus: String(rowData['契約状況'] || ''),
-                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
-                    carrier: String(rowData['通信キャリア'] || ''),
-                    modelNumber: String(rowData['機種型番'] || ''),
-                    simNumber: String(rowData['SIM電番'] || ''),
-                    dataCapacity: String(rowData['通信容量'] || ''),
+                const statusValue = String(rowData['状況'] || '');
+                const status = reverseStatusMap[statusValue] || 'available';
+
+                const newTablet: Omit<Tablet, 'id'> = {
                     terminalCode: String(rowData['端末CD'] || ''),
+                    maker: String(rowData['メーカー'] || ''),
+                    modelNumber: String(rowData['型番'] || ''),
+                    status: status as any, // Cast to TabletStatus
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     employeeCode: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['住所コード'] || ''),
-                    actualLender: String(rowData['実貸与先'] || ''),
-                    actualLenderName: String(rowData['実貸与先名'] || ''),
-                    company: String(rowData['会社'] || ''),
-                    ipAddress: String(rowData['IPアドレス'] || ''),
-                    subnetMask: String(rowData['サブネットマスク'] || ''),
-                    startIp: String(rowData['開始IP'] || ''),
-                    endIp: String(rowData['終了IP'] || ''),
-                    biller: String(rowData['請求元'] || ''),
-                    cost: parseInt(String(rowData['費用'] || '').replace(/[^0-9]/g, '')) || 0,
-                    costTransfer: String(rowData['費用振替'] || ''),
-                    costBearer: String(rowData['負担先'] || ''),
-                    lendingHistory: String(rowData['貸与履歴'] || ''),
-                    notes: String(rowData['備考(返却日)'] || ''),
-                    returnDate: '',
+                    officeCode: String(rowData['事業所CD'] || ''),
+                    history: String(rowData['過去貸与履歴'] || ''),
+                    notes: String(rowData['備考'] || ''),
+                    address: '',
                 };
 
                 try {
-                    await addRouter(newRouter, true);
+                    await addTablet(newTablet, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
@@ -282,7 +295,7 @@ function RouterListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('routers', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                await addLog('tablets', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
             }
 
             showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
@@ -294,7 +307,7 @@ function RouterListContent() {
     return (
         <div className="space-y-4 h-full flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-2xl font-bold text-text-main">ルーター管理台帳</h1>
+                <h1 className="text-2xl font-bold text-text-main">タブレット管理台帳</h1>
                 <div className="flex gap-2">
                     <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
@@ -311,52 +324,54 @@ function RouterListContent() {
                 </div>
             </div>
 
-            <Table<Router>
+            <Table<Tablet>
                 data={paginatedData}
                 rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
                 columns={[
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>通信キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('simNumber')}>SIM電番{getSortIcon('simNumber')}</div>, accessor: 'simNumber' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('actualLenderName')}>実貸与先名{getSortIcon('actualLenderName')}</div>, accessor: 'actualLenderName' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('officeCode')}>事業所CD{getSortIcon('officeCode')}</div>, accessor: 'officeCode' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('userName')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: 'contractYears' },
+                    {
+                        header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('status')}>状況{getSortIcon('status')}</div>, accessor: (item) => (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColorMap[item.status] || 'bg-gray-100 text-gray-800'}`}>
+                                {statusMap[item.status] || item.status}
+                            </span>
+                        )
+                    },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
             />
 
-            <Pagination currentPage={currentPage} totalPages={Math.ceil(sortedData.length / pageSize)} totalItems={sortedData.length} startIndex={(currentPage - 1) * pageSize} endIndex={Math.min(currentPage * pageSize, sortedData.length)} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+            <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} startIndex={startIndex} endIndex={startIndex + paginatedData.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ルーター 編集' : 'ルーター 新規登録'}>
-                <RouterForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateRouter({ ...data, id: editingItem.id } as Router, true);
-                    else await addRouter(data as Omit<Router, 'id'>, true);
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'タブレット 編集' : 'タブレット 新規登録'}>
+                <TabletForm initialData={editingItem} onSubmit={async (data) => {
+                    if (editingItem) await updateTablet({ ...data, id: editingItem.id } as Tablet, true);
+                    else await addTablet(data as Omit<Tablet, 'id'>, true);
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 
-            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="ルーター 詳細">
+            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="タブレット 詳細">
                 {detailItem && (
                     <div className="space-y-8">
                         {/* Basic Info */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">No.</label><div className="text-gray-900">{detailItem.no || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">契約状況</label><div className="text-gray-900">{detailItem.contractStatus || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label><div className="text-gray-900">{detailItem.contractYears || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">通信キャリア</label><div className="text-gray-900">{detailItem.carrier || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">機種型番</label><div className="text-gray-900">{detailItem.modelNumber || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">SIM電番</label><div className="text-gray-900">{detailItem.simNumber || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">通信容量</label><div className="text-gray-900">{detailItem.dataCapacity || '-'}</div></div>
                                 <div><label className="block text-sm font-medium text-gray-500 mb-1">端末CD</label><div className="text-gray-900">{detailItem.terminalCode}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">メーカー</label><div className="text-gray-900">{detailItem.maker || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">型番</label><div className="text-gray-900">{detailItem.modelNumber}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">状況</label><div className="text-gray-900">{statusMap[detailItem.status] || detailItem.status}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label><div className="text-gray-900">{detailItem.contractYears || '-'}</div></div>
                             </div>
                         </div>
 
-                        {/* User Info */}
+                        {/* Location / User Info */}
                         <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
+                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">場所・使用者</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">社員名(社員コード)</label>
@@ -372,31 +387,7 @@ function RouterListContent() {
                                         {detailItem.addressCode && ` (${detailItem.addressCode})`}
                                     </div>
                                 </div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">実貸与先</label><div className="text-gray-900">{detailItem.actualLender || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">実貸与先名</label><div className="text-gray-900">{detailItem.actualLenderName || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">会社</label><div className="text-gray-900">{detailItem.company || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Network Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">ネットワーク情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">IPアドレス</label><div className="text-gray-900">{detailItem.ipAddress || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">サブネットマスク</label><div className="text-gray-900">{detailItem.subnetMask || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">開始IP</label><div className="text-gray-900">{detailItem.startIp || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">終了IP</label><div className="text-gray-900">{detailItem.endIp || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Cost Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">費用・管理情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">請求元</label><div className="text-gray-900">{detailItem.biller || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">費用</label><div className="text-gray-900">{detailItem.cost ? `¥${detailItem.cost.toLocaleString()}` : '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">費用振替</label><div className="text-gray-900">{detailItem.costTransfer || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">負担先</label><div className="text-gray-900">{detailItem.costBearer || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">事業所CD</label><div className="text-gray-900">{detailItem.officeCode || '-'}</div></div>
                             </div>
                         </div>
 
@@ -404,8 +395,8 @@ function RouterListContent() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
                             <div className="grid grid-cols-1 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">貸与履歴</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.lendingHistory || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">備考(返却日)</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">過去貸与履歴</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.history || '-'}</div></div>
+                                <div><label className="block text-sm font-medium text-gray-500 mb-1">備考</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div></div>
                             </div>
                         </div>
                     </div>

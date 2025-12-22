@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import '../index.css';
 import { DataProvider } from '../features/context/DataContext';
 import { AuthProvider } from '../features/context/AuthContext';
-import { AppLayout } from '../components/ui/AppLayout';
 import { Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -21,15 +20,13 @@ export default function RootLayout({
     return (
         <html lang="ja" suppressHydrationWarning={true}>
             <body className={inter.className}>
-                <AppLayout>
-                    <AuthProvider>
-                        <DataProvider>
-                            <Suspense fallback={<div className="flex items-center justify-center h-screen">読み込み中...</div>}>
-                                {children}
-                            </Suspense>
-                        </DataProvider>
-                    </AuthProvider>
-                </AppLayout>
+                <AuthProvider>
+                    <DataProvider>
+                        <Suspense fallback={<div className="flex items-center justify-center h-screen">読み込み中...</div>}>
+                            {children}
+                        </Suspense>
+                    </DataProvider>
+                </AuthProvider>
             </body>
         </html>
     );

@@ -2,19 +2,17 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { useData } from '../../../features/context/DataContext';
-import { useAuth } from '../../../features/context/AuthContext';
-import { Pagination } from '../../../components/ui/Pagination';
-import { Table } from '../../../components/ui/Table';
-import type { Address } from '../../../features/addresses/address.types';
+import { useData } from '../../../../features/context/DataContext';
+import { useAuth } from '../../../../features/context/AuthContext';
+import { Pagination } from '../../../../components/ui/Pagination';
+import { Table } from '../../../../components/ui/Table';
+import type { Address } from '../../../../features/addresses/address.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
-import { Modal } from '../../../components/ui/Modal';
-import { NotificationModal } from '../../../components/ui/NotificationModal';
-import { AddressForm } from '../../../features/forms/AddressForm';
-import { AddressDeviceList } from '../../../features/components/AddressDeviceList';
+import { Modal } from '../../../../components/ui/Modal';
+import { NotificationModal } from '../../../../components/ui/NotificationModal';
+import { AddressForm } from '../../../../features/forms/AddressForm';
+import { AddressDeviceList } from '../../../../features/components/AddressDeviceList';
 import * as XLSX from 'xlsx';
-
-import { Layout } from '../../../components/layout/Layout';
 
 type SortKey = 'addressCode' | 'tel' | 'fax' | 'zipCode';
 type SortOrder = 'asc' | 'desc';
@@ -33,11 +31,7 @@ export default function AddressListPage() {
 
     if (!user) return null;
 
-    return (
-        <Layout>
-            <AddressListContent />
-        </Layout>
-    );
+    return <AddressListContent />;
 }
 
 function AddressListContent() {

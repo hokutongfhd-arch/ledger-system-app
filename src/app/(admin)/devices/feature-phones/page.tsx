@@ -2,18 +2,17 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useData } from '../../../features/context/DataContext';
-import { useAuth } from '../../../features/context/AuthContext';
-import { Pagination } from '../../../components/ui/Pagination';
-import { Table } from '../../../components/ui/Table';
-import type { FeaturePhone } from '../../../features/devices/device.types';
+import { useData } from '../../../../features/context/DataContext';
+import { useAuth } from '../../../../features/context/AuthContext';
+import { Pagination } from '../../../../components/ui/Pagination';
+import { Table } from '../../../../components/ui/Table';
+import type { FeaturePhone } from '../../../../features/devices/device.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
-import { Modal } from '../../../components/ui/Modal';
-import { NotificationModal } from '../../../components/ui/NotificationModal';
-import { FeaturePhoneForm } from '../../../features/forms/FeaturePhoneForm';
-import { Layout } from '../../../components/layout/Layout';
+import { Modal } from '../../../../components/ui/Modal';
+import { NotificationModal } from '../../../../components/ui/NotificationModal';
+import { FeaturePhoneForm } from '../../../../features/forms/FeaturePhoneForm';
 import * as XLSX from 'xlsx';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
+import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -32,11 +31,7 @@ export default function FeaturePhoneListPage() {
 
     if (!user) return null;
 
-    return (
-        <Layout>
-            <FeaturePhoneListContent />
-        </Layout>
-    );
+    return <FeaturePhoneListContent />;
 }
 
 function FeaturePhoneListContent() {

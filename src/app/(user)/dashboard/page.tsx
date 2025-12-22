@@ -8,7 +8,7 @@ import { UserProfileCard } from '../../features/components/UserProfileCard';
 import { UserDeviceList } from '../../features/components/UserDeviceList';
 import { MemoPad } from '../../features/components/MemoPad';
 import { useEffect } from 'react';
-import { Layout } from '../../components/layout/Layout';
+
 
 export default function UserDashboardPage() {
     const { user } = useAuth();
@@ -21,9 +21,7 @@ export default function UserDashboardPage() {
     if (!user) return null;
 
     return (
-        <Layout>
-            <UserDashboardContent />
-        </Layout>
+        <UserDashboardContent />
     );
 }
 

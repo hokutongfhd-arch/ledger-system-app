@@ -1,13 +1,22 @@
-import { Sidebar } from './Sidebar';
+'use client';
+
+import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../features/context/AuthContext';
 import { LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-interface LayoutProps {
+export default function AdminLayout({
+    children,
+}: {
     children: React.ReactNode;
-}
-
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+}) {
     const { user, logout } = useAuth();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        await logout();
+        router.push('/login');
+    };
 
     return (
         <div className="flex min-h-screen bg-paper font-sans selection:bg-accent-electric selection:text-ink">
@@ -29,7 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <p className="text-ink-light text-xs tracking-wider uppercase">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>
                         </div>
                         <button
-                            onClick={logout}
+                            onClick={handleLogout}
                             className="p-2 border-2 border-transparent hover:border-ink hover:bg-accent-electric transition-all duration-300 rounded-none group"
                             title="Log Out"
                         >
@@ -43,4 +52,4 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
         </div>
     );
-};
+}

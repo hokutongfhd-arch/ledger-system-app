@@ -3,18 +3,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
-import { useData } from '../../features/context/DataContext';
-import { useAuth } from '../../features/context/AuthContext';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { Pagination } from '../../components/ui/Pagination';
+import { useData } from '@/features/context/DataContext';
+import { useAuth } from '@/features/context/AuthContext';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Pagination } from '@/components/ui/Pagination';
 import { Download, Plus, Upload, X, FileText, Trash2 } from 'lucide-react';
-import { ActionButton } from '../../components/ui/ActionButton';
-import { Modal } from '../../components/ui/Modal';
-import { supabase } from '../../lib/supabaseClient';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { Modal } from '@/components/ui/Modal';
+import { supabase } from '@/lib/supabaseClient';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, TouchSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Layout } from '../../components/layout/Layout';
+
 
 interface ManualFile {
     name: string;
@@ -183,9 +183,7 @@ export default function ManualListPage() {
     if (!user) return null;
 
     return (
-        <Layout>
-            <DeviceManualListContent />
-        </Layout>
+        <DeviceManualListContent />
     );
 }
 

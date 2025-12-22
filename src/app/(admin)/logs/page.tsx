@@ -2,14 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useData } from '../../features/context/DataContext';
-import { useAuth } from '../../features/context/AuthContext';
-import { Pagination } from '../../components/ui/Pagination';
-import { Table } from '../../components/ui/Table';
-import type { Log } from '../../features/logs/log.types';
+import { useData } from '../../../features/context/DataContext';
+import { useAuth } from '../../../features/context/AuthContext';
+import { Pagination } from '../../../components/ui/Pagination';
+import { Table } from '../../../components/ui/Table';
+import type { Log } from '../../../features/logs/log.types';
 import { Search, Download, Archive, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
-import { generateWeekRanges, getWeekRange } from '../../lib/utils/dateHelpers';
-import { Layout } from '../../components/layout/Layout';
+import { generateWeekRanges, getWeekRange } from '../../../lib/utils/dateHelpers';
+
 
 export default function LogListPage() {
     const { user } = useAuth();
@@ -22,9 +22,7 @@ export default function LogListPage() {
     if (!user) return null;
 
     return (
-        <Layout>
-            <LogListContent />
-        </Layout>
+        <LogListContent />
     );
 }
 

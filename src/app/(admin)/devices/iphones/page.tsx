@@ -2,18 +2,17 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useState, useCallback, useEffect } from 'react';
-import { useData } from '../../../features/context/DataContext';
-import { useAuth } from '../../../features/context/AuthContext';
-import { Pagination } from '../../../components/ui/Pagination';
-import { Table } from '../../../components/ui/Table';
-import type { IPhone } from '../../../features/devices/device.types';
+import { useData } from '../../../../features/context/DataContext';
+import { useAuth } from '../../../../features/context/AuthContext';
+import { Pagination } from '../../../../components/ui/Pagination';
+import { Table } from '../../../../components/ui/Table';
+import type { IPhone } from '../../../../features/devices/device.types';
 import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
-import { Modal } from '../../../components/ui/Modal';
-import { NotificationModal } from '../../../components/ui/NotificationModal';
-import { IPhoneForm } from '../../../features/forms/IPhoneForm';
+import { Modal } from '../../../../components/ui/Modal';
+import { NotificationModal } from '../../../../components/ui/NotificationModal';
+import { IPhoneForm } from '../../../../features/forms/IPhoneForm';
 import * as XLSX from 'xlsx';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
-import { Layout } from '../../../components/layout/Layout';
+import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -34,11 +33,7 @@ export default function IPhoneListPage() {
 
     if (!user) return null;
 
-    return (
-        <Layout>
-            <IPhoneListContent />
-        </Layout>
-    );
+    return <IPhoneListContent />;
 }
 
 function IPhoneListContent() {

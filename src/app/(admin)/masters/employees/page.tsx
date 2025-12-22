@@ -2,19 +2,17 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useData } from '../../../features/context/DataContext';
-import { useAuth } from '../../../features/context/AuthContext';
-import { Pagination } from '../../../components/ui/Pagination';
-import { Table } from '../../../components/ui/Table';
-import type { Employee } from '../../../features/employees/employee.types';
+import { useData } from '../../../../features/context/DataContext';
+import { useAuth } from '../../../../features/context/AuthContext';
+import { Pagination } from '../../../../components/ui/Pagination';
+import { Table } from '../../../../components/ui/Table';
+import type { Employee } from '../../../../features/employees/employee.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
-import { Modal } from '../../../components/ui/Modal';
-import { NotificationModal } from '../../../components/ui/NotificationModal';
-import { EmployeeForm } from '../../../features/forms/EmployeeForm';
+import { Modal } from '../../../../components/ui/Modal';
+import { NotificationModal } from '../../../../components/ui/NotificationModal';
+import { EmployeeForm } from '../../../../features/forms/EmployeeForm';
 import * as XLSX from 'xlsx';
-import { UserDeviceList } from '../../../features/components/UserDeviceList';
-
-import { Layout } from '../../../components/layout/Layout';
+import { UserDeviceList } from '../../../../features/components/UserDeviceList';
 
 type SortKey = 'code' | 'role';
 type SortOrder = 'asc' | 'desc';
@@ -33,11 +31,7 @@ export default function EmployeeListPage() {
 
     if (!user) return null;
 
-    return (
-        <Layout>
-            <EmployeeListContent />
-        </Layout>
-    );
+    return <EmployeeListContent />;
 }
 
 function EmployeeListContent() {

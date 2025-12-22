@@ -2,17 +2,16 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { useData } from '../../../features/context/DataContext';
-import { useAuth } from '../../../features/context/AuthContext';
-import { Pagination } from '../../../components/ui/Pagination';
-import { Table } from '../../../components/ui/Table';
-import type { Area } from '../../../features/areas/area.types';
+import { useData } from '../../../../features/context/DataContext';
+import { useAuth } from '../../../../features/context/AuthContext';
+import { Pagination } from '../../../../components/ui/Pagination';
+import { Table } from '../../../../components/ui/Table';
+import type { Area } from '../../../../features/areas/area.types';
 import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
-import { Modal } from '../../../components/ui/Modal';
-import { NotificationModal } from '../../../components/ui/NotificationModal';
-import { AreaForm } from '../../../features/forms/AreaForm';
+import { Modal } from '../../../../components/ui/Modal';
+import { NotificationModal } from '../../../../components/ui/NotificationModal';
+import { AreaForm } from '../../../../features/forms/AreaForm';
 import * as XLSX from 'xlsx';
-import { Layout } from '../../../components/layout/Layout';
 
 type SortKey = 'areaCode';
 type SortOrder = 'asc' | 'desc';
@@ -31,11 +30,7 @@ export default function AreaListPage() {
 
     if (!user) return null;
 
-    return (
-        <Layout>
-            <AreaListContent />
-        </Layout>
-    );
+    return <AreaListContent />;
 }
 
 function AreaListContent() {

@@ -2,18 +2,18 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
-import { useData } from '../features/context/DataContext';
-import { useAuth } from '../features/context/AuthContext';
-import { DonutChart } from '../components/ui/DonutChart';
-import { useSystemAlerts, type AlertSource } from '../features/hooks/useSystemAlerts';
-import { SegmentedDonutChart } from '../components/ui/SegmentedDonutChart';
+import { useData } from '../../features/context/DataContext';
+import { useAuth } from '../../features/context/AuthContext';
+import { DonutChart } from '../../components/ui/DonutChart';
+import { useSystemAlerts, type AlertSource } from '../../features/hooks/useSystemAlerts';
+import { SegmentedDonutChart } from '../../components/ui/SegmentedDonutChart';
 import { AlertCircle, ChevronRight } from 'lucide-react';
-import { Layout } from '../components/layout/Layout';
 
 export default function DashboardPage() {
     const { user } = useAuth();
     const router = useRouter();
 
+    // Client-side redirection backup (Middleware handles main protection)
     useEffect(() => {
         if (!user) {
             router.push('/login');
@@ -22,11 +22,7 @@ export default function DashboardPage() {
 
     if (!user) return null;
 
-    return (
-        <Layout>
-            <DashboardContent />
-        </Layout>
-    );
+    return <DashboardContent />;
 }
 
 function DashboardContent() {
