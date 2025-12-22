@@ -11,6 +11,7 @@ import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadshee
 import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { AddressForm } from '../../../../features/forms/AddressForm';
+import { AddressDetailModal } from '../../../../features/addresses/components/AddressDetailModal';
 import { AddressDeviceList } from '../../../../features/components/AddressDeviceList';
 import * as XLSX from 'xlsx';
 import { useToast } from '../../../../features/context/ToastContext';
@@ -332,90 +333,12 @@ function AddressListContent() {
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 
-            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="住所 詳細">
-                {detailItem && (
-                    <div className="space-y-8">
-                        {/* Basic Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">No.</label><div className="text-gray-900">{detailItem.no || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">住所コード</label><div className="text-gray-900">{detailItem.addressCode}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">事業所名</label><div className="text-gray-900">{detailItem.officeName}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">事業部</label><div className="text-gray-900">{detailItem.division || '-'}</div></div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">エリア名 (エリアコード)</label>
-                                    <div className="text-gray-900">
-                                        {detailItem.area || '-'}
-                                        {(() => {
-                                            const matchedArea = areas.find(a => a.areaName === detailItem.area);
-                                            return matchedArea ? ` (${matchedArea.areaCode})` : '';
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Contact Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">連絡先情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">ＴＥＬ</label><div className="text-gray-900">{detailItem.tel || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">ＦＡＸ</label><div className="text-gray-900">{detailItem.fax || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">〒</label><div className="text-gray-900">{detailItem.zipCode || '-'}</div></div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所</label>
-                                    <div className="text-gray-900">{detailItem.address}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Detailed Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">詳細情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">区分</label><div className="text-gray-900">{detailItem.type || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">主担当</label><div className="text-gray-900">{detailItem.mainPerson || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">枝番</label><div className="text-gray-900">{detailItem.branchNumber || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">※</label><div className="text-gray-900">{detailItem.specialNote || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Label Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">宛名ラベル情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">宛名ラベル用</label><div className="text-gray-900">{detailItem.labelName || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">宛名ラベル用〒</label><div className="text-gray-900">{detailItem.labelZip || '-'}</div></div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">宛名ラベル用住所</label>
-                                    <div className="text-gray-900">{detailItem.labelAddress || '-'}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Others */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">備考</label>
-                                    <div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div>
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">注意書き</label>
-                                    <div className="text-gray-900 whitespace-pre-wrap">{detailItem.attentionNote || '-'}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">貸与デバイス</h3>
-                            <AddressDeviceList addressCode={detailItem.addressCode} />
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <AddressDetailModal
+                isOpen={!!detailItem}
+                onClose={() => setDetailItem(undefined)}
+                item={detailItem}
+                areas={areas}
+            />
 
             <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
         </div>

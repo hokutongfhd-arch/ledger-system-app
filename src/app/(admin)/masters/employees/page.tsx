@@ -11,6 +11,7 @@ import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadshee
 import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { EmployeeForm } from '../../../../features/forms/EmployeeForm';
+import { EmployeeDetailModal } from '../../../../features/employees/components/EmployeeDetailModal';
 import * as XLSX from 'xlsx';
 import { UserDeviceList } from '../../../../features/components/UserDeviceList';
 import { useToast } from '../../../../features/context/ToastContext';
@@ -348,84 +349,14 @@ function EmployeeListContent() {
                 }} onCancel={() => setIsModalOpen(false)} isSelfEdit={editingItem?.id === user?.id} />
             </Modal>
 
-            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="社員 詳細">
-                {detailItem && (
-                    <div className="space-y-8">
-                        {/* Basic Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">社員コード</label><div className="text-gray-900">{detailItem.code}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">性別</label><div className="text-gray-900">{detailItem.gender || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">氏名</label><div className="text-gray-900">{detailItem.name}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">氏名カナ</label><div className="text-gray-900">{detailItem.nameKana || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">生年月日</label><div className="text-gray-900">{detailItem.birthDate || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">年齢</label><div className="text-gray-900">{detailItem.age || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Work Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">所属・勤務情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">エリア名 (エリアコード)</label>
-                                    <div className="text-gray-900">
-                                        {areas.find(a => a.areaCode === detailItem.areaCode)?.areaName || '-'}
-                                        {detailItem.areaCode && ` (${detailItem.areaCode})`}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所 (住所コード)</label>
-                                    <div className="text-gray-900">
-                                        {addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '-'}
-                                        {detailItem.addressCode && ` (${detailItem.addressCode})`}
-                                    </div>
-                                </div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">入社年月日</label><div className="text-gray-900">{detailItem.joinDate || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">勤続年数</label><div className="text-gray-900">{detailItem.yearsOfService || 0}年</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">勤続端数月数</label><div className="text-gray-900">{detailItem.monthsHasuu || 0}ヶ月</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">職種</label><div className="text-gray-900">{detailItem.jobType || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">役付</label><div className="text-gray-900">{detailItem.roleTitle || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">社員区分</label><div className="text-gray-900">{detailItem.employeeType || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">給与区分</label><div className="text-gray-900">{detailItem.salaryType || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">原価区分</label><div className="text-gray-900">{detailItem.costType || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* System Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">システム情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">権限</label>
-                                    <div className="text-gray-900">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${detailItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
-                                            {detailItem.role === 'admin' ? '管理者' : 'ユーザー'}
-                                        </span>
-                                    </div>
-                                </div>
-                                {isAdmin && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-500 mb-1">パスワード</label>
-                                        <div className="text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded inline-block">
-                                            {detailItem.password || '(未設定)'}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Other Info (Devices) */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">貸与デバイス</h3>
-                            <div className="pt-2">
-                                <UserDeviceList targetCode={detailItem.code} targetName={detailItem.name} />
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <EmployeeDetailModal
+                isOpen={!!detailItem}
+                onClose={() => setDetailItem(undefined)}
+                item={detailItem}
+                areas={areas}
+                addresses={addresses}
+                isAdmin={isAdmin}
+            />
 
             <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
         </div>

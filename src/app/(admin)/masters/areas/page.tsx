@@ -11,6 +11,7 @@ import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, Ar
 import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { AreaForm } from '../../../../features/forms/AreaForm';
+import { AreaDetailModal } from '../../../../features/areas/components/AreaDetailModal';
 import * as XLSX from 'xlsx';
 import { useToast } from '../../../../features/context/ToastContext';
 
@@ -274,16 +275,11 @@ function AreaListContent() {
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 
-            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="エリア 詳細">
-                {detailItem && (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label className="text-sm text-gray-500">エリアコード</label><div>{detailItem.areaCode}</div></div>
-                            <div><label className="text-sm text-gray-500">エリア名</label><div>{detailItem.areaName}</div></div>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <AreaDetailModal
+                isOpen={!!detailItem}
+                onClose={() => setDetailItem(undefined)}
+                item={detailItem}
+            />
 
             <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
         </div>
