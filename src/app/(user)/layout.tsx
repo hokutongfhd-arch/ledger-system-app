@@ -35,7 +35,7 @@ export default function UserLayout({
                     <div className="flex items-center gap-6">
                         <div className="text-right">
                             <p className="font-bold text-ink text-sm font-display tracking-tight">{user?.name}</p>
-                            <p className="text-ink-light text-xs tracking-wider uppercase">User</p>
+                            <p className="text-ink-light text-xs tracking-wider uppercase">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>
                         </div>
                         <button
                             onClick={handleLogout}

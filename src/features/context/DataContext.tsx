@@ -182,7 +182,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     terminal_code: t.terminalCode,
     model_number: t.modelNumber,
     carrier: t.carrier,
-    cost: String(t.cost),
+    cost: t.cost ? Number(t.cost) : 0,
     cost_transfer: t.costTransfer,
     data_limit: t.dataCapacity,
     sim_number: t.simNumber,
@@ -228,17 +228,18 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     profileImage: localStorage.getItem(`profile_image_${d.id}`) || '',
 });
 
-const mapEmployeeToDb = (t: Partial<Employee>) => ({
+const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     employee_code: t.code,
+    auth_id: t.auth_id,
     password: t.password,
     name: t.name,
     name_kana: t.nameKana,
     gender: t.gender,
     birthday: t.birthDate,
     join_date: t.joinDate,
-    age_at_month_end: String(t.age),
-    years_in_service: String(t.yearsOfService),
-    months_in_service: String(t.monthsHasuu),
+    age_at_month_end: t.age ? Number(t.age) : 0,
+    years_in_service: t.yearsOfService ? Number(t.yearsOfService) : 0,
+    months_in_service: t.monthsHasuu ? Number(t.monthsHasuu) : 0,
     employee_class: t.employeeType,
     salary_class: t.salaryType,
     cost_class: t.costType,
@@ -454,9 +455,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 showToast('登録しました', 'success');
             }
         } catch (error: any) {
-            console.error(`Failed to add item to ${table}:`, error);
+            console.error(`Failed to add item to ${table}:`, JSON.stringify(error, null, 2));
             if (!skipToast) {
-                showToast('登録に失敗しました', 'error', error.message);
+                showToast('登録に失敗しました', 'error', error?.message || '不明なエラー');
             }
             throw error;
         }
@@ -537,7 +538,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const deleteRouter = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('routers', id, setRouters, skipLog, skipToast);
 
 
-    const addEmployee = (item: Omit<Employee, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('employees', item, mapEmployeeToDb, mapEmployeeFromDb, setEmployees, skipLog, skipToast);
+    const addEmployee = async (item: Omit<Employee, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            // 1. Create Auth User via API
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item),
+            });
+
+            if (!response.ok) {
+                const errRes = await response.json();
+                console.error('Auth Registration Failed:', errRes);
+                if (!skipToast) showToast('Authユーザー作成に失敗しましたが、DB登録を試みます', 'warning');
+            } else {
+                const authResult = await response.json();
+                if (authResult.userId) {
+                    (item as any).auth_id = authResult.userId;
+                    await logAction('employees', 'add', `Authユーザー作成: ${authResult.userId}`);
+                }
+            }
+        } catch (e) {
+            console.error('Registration API Error:', e);
+        }
+
+        // 2. Insert into DB (now includes auth_id if successful)
+        return addItem('employees', item, mapEmployeeToDb, mapEmployeeFromDb, setEmployees, skipLog, skipToast);
+    };
     const updateEmployee = async (item: Employee, skipLog: boolean = false, skipToast: boolean = false) => {
         // Intercept to save profile image to localStorage
         if (item.profileImage) {
