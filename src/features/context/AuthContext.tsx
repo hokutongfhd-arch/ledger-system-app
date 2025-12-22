@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabaseClient';
 interface AuthContextType {
     user: Employee | null;
     login: (employeeCode: string, password: string) => Promise<Employee | null>;
-    logout: () => void;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,61 +45,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const login = async (employeeCode: string, password: string) => {
         try {
-            // Initial Setup Admin Backdoor
-            if (employeeCode === '999999' && password === '999999') {
-                const adminUser: Employee = {
-                    id: '999999',
-                    code: '999999',
-                    name: 'Initial Admin',
-                    nameKana: 'イニシャル アドミン',
-                    email: 'admin@example.com',
-                    role: 'admin',
-                    companyNo: '',
-                    departmentCode: '',
-                    gender: '',
-                    birthDate: '',
-                    joinDate: '',
-                    age: 0,
-                    yearsOfService: 0,
-                    monthsHasuu: 0,
-                    employeeType: '',
-                    salaryType: '',
-                    costType: '',
-                    areaCode: '',
-                    addressCode: '',
-                    roleTitle: '',
-                    jobType: '',
-                };
-                setUser(adminUser);
-                return adminUser;
-            }
+            // Supabase Auth Login (Pseudo-Email Strategy)
+            const email = `${employeeCode}@ledger-system.local`;
 
-            // Supabase Login (using employees table)
-            const { data, error } = await supabase
-                .from('employees')
-                .select('*')
-                .eq('employee_code', employeeCode)
-                .maybeSingle();
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-            if (error) {
-                console.error('Login fetch error:', error);
+            if (authError) {
+                console.warn('Auth Login Failed:', authError.message);
                 return null;
             }
 
-            if (data && data.password === password) {
-                const employee = mapEmployeeFromDb(data);
+            if (!authData.session) {
+                return null;
+            }
+
+            // Fetch Employee Profile linked to this Auth User
+            const { data: employeeData, error: dbError } = await supabase
+                .from('employees')
+                .select('*')
+                .eq('auth_id', authData.session.user.id)
+                .single();
+
+            // Fallback: If auth_id link is missing (during migration gap), try matching by code
+            // This is a safety net but ideally auth_id should be populated.
+            if (dbError || !employeeData) {
+                console.warn('Profile not found via auth_id, trying code fallback...');
+                const { data: fallbackData, error: fallbackError } = await supabase
+                    .from('employees')
+                    .select('*')
+                    .eq('employee_code', employeeCode)
+                    .single();
+
+                if (fallbackError || !fallbackData) {
+                    console.error('Login failed: Profile not found.');
+                    await supabase.auth.signOut(); // Force logout if no profile
+                    return null;
+                }
+
+                const employee = mapEmployeeFromDb(fallbackData);
                 setUser(employee);
                 return employee;
             }
 
-            return null;
+            const employee = mapEmployeeFromDb(employeeData);
+            setUser(employee);
+            return employee;
+
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('Login unexpected error:', error);
             return null;
         }
     };
 
-    const logout = () => setUser(null);
+    const logout = async () => {
+        await supabase.auth.signOut();
+        setUser(null);
+    };
 
     return (
         <AuthContext.Provider value={{ user, login, logout }}>

@@ -13,6 +13,7 @@ import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { RouterForm } from '../../../../features/forms/RouterForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
+import { RouterDetailModal } from '../../../../features/devices/components/RouterDetailModal';
 
 type SortKey = 'terminalCode' | 'carrier' | 'simNumber' | 'actualLenderName' | 'userName' | 'contractYears';
 type SortOrder = 'asc' | 'desc';
@@ -331,81 +332,13 @@ function RouterListContent() {
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 
-            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="ルーター 詳細">
-                {detailItem && (
-                    <div className="space-y-8">
-                        {/* Basic Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">No.</label><div className="text-gray-900">{detailItem.no || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">契約状況</label><div className="text-gray-900">{detailItem.contractStatus || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label><div className="text-gray-900">{detailItem.contractYears || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">通信キャリア</label><div className="text-gray-900">{detailItem.carrier || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">機種型番</label><div className="text-gray-900">{detailItem.modelNumber || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">SIM電番</label><div className="text-gray-900">{detailItem.simNumber || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">通信容量</label><div className="text-gray-900">{detailItem.dataCapacity || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">端末CD</label><div className="text-gray-900">{detailItem.terminalCode}</div></div>
-                            </div>
-                        </div>
-
-                        {/* User Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員名(社員コード)</label>
-                                    <div className="text-gray-900">
-                                        {employees.find(e => e.code === detailItem.employeeCode)?.name || '-'}
-                                        {detailItem.employeeCode && ` (${detailItem.employeeCode})`}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所(住所コード)</label>
-                                    <div className="text-gray-900">
-                                        {addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '-'}
-                                        {detailItem.addressCode && ` (${detailItem.addressCode})`}
-                                    </div>
-                                </div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">実貸与先</label><div className="text-gray-900">{detailItem.actualLender || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">実貸与先名</label><div className="text-gray-900">{detailItem.actualLenderName || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">会社</label><div className="text-gray-900">{detailItem.company || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Network Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">ネットワーク情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">IPアドレス</label><div className="text-gray-900">{detailItem.ipAddress || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">サブネットマスク</label><div className="text-gray-900">{detailItem.subnetMask || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">開始IP</label><div className="text-gray-900">{detailItem.startIp || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">終了IP</label><div className="text-gray-900">{detailItem.endIp || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Cost Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">費用・管理情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">請求元</label><div className="text-gray-900">{detailItem.biller || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">費用</label><div className="text-gray-900">{detailItem.cost ? `¥${detailItem.cost.toLocaleString()}` : '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">費用振替</label><div className="text-gray-900">{detailItem.costTransfer || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">負担先</label><div className="text-gray-900">{detailItem.costBearer || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Others */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
-                            <div className="grid grid-cols-1 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">貸与履歴</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.lendingHistory || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">備考(返却日)</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div></div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <RouterDetailModal
+                isOpen={!!detailItem}
+                onClose={() => setDetailItem(undefined)}
+                item={detailItem}
+                employees={employees}
+                addresses={addresses}
+            />
 
             <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
         </div>

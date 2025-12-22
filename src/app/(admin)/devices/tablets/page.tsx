@@ -13,6 +13,7 @@ import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { TabletForm } from '../../../../features/forms/TabletForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
+import { TabletDetailModal } from '../../../../features/devices/components/TabletDetailModal';
 
 type SortKey = 'terminalCode' | 'contractYears' | 'status' | 'officeCode' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -354,54 +355,13 @@ function TabletListContent() {
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 
-            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="タブレット 詳細">
-                {detailItem && (
-                    <div className="space-y-8">
-                        {/* Basic Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">端末CD</label><div className="text-gray-900">{detailItem.terminalCode}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">メーカー</label><div className="text-gray-900">{detailItem.maker || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">型番</label><div className="text-gray-900">{detailItem.modelNumber}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">状況</label><div className="text-gray-900">{statusMap[detailItem.status] || detailItem.status}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label><div className="text-gray-900">{detailItem.contractYears || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Location / User Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">場所・使用者</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員名(社員コード)</label>
-                                    <div className="text-gray-900">
-                                        {employees.find(e => e.code === detailItem.employeeCode)?.name || '-'}
-                                        {detailItem.employeeCode && ` (${detailItem.employeeCode})`}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所(住所コード)</label>
-                                    <div className="text-gray-900">
-                                        {addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '-'}
-                                        {detailItem.addressCode && ` (${detailItem.addressCode})`}
-                                    </div>
-                                </div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">事業所CD</label><div className="text-gray-900">{detailItem.officeCode || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Others */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
-                            <div className="grid grid-cols-1 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">過去貸与履歴</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.history || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">備考</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div></div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <TabletDetailModal
+                isOpen={!!detailItem}
+                onClose={() => setDetailItem(undefined)}
+                item={detailItem}
+                employees={employees}
+                addresses={addresses}
+            />
 
             <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
         </div>

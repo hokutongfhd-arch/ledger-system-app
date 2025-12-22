@@ -13,6 +13,7 @@ import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { IPhoneForm } from '../../../../features/forms/IPhoneForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
+import { IPhoneDetailModal } from '../../../../features/devices/components/IPhoneDetailModal';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -514,58 +515,13 @@ function IPhoneListContent() {
                 <IPhoneForm initialData={editingItem} onSubmit={handleSubmit} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 
-            <Modal isOpen={!!detailItem} onClose={() => setDetailItem(undefined)} title="iPhone 詳細">
-                {detailItem && (
-                    <div className="space-y-8">
-                        {/* Basic Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">ID</label><div className="text-gray-900">{detailItem.id}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">管理番号</label><div className="text-gray-900">{detailItem.managementNumber}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">電話番号</label><div className="text-gray-900">{detailItem.phoneNumber}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">機種名</label><div className="text-gray-900">{detailItem.modelName || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">キャリア</label><div className="text-gray-900">{detailItem.carrier || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">契約年数</label><div className="text-gray-900">{detailItem.contractYears || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* User Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">社員名 (社員コード)</label>
-                                    <div className="text-gray-900">
-                                        {employees.find(e => e.code === detailItem.employeeId)?.name || '-'}
-                                        {detailItem.employeeId && ` (${detailItem.employeeId})`}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">住所 (住所コード)</label>
-                                    <div className="text-gray-900">
-                                        {addresses.find(a => a.addressCode === detailItem.addressCode)?.officeName || '-'}
-                                        {detailItem.addressCode && ` (${detailItem.addressCode})`}
-                                    </div>
-                                </div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">貸与日</label><div className="text-gray-900">{detailItem.lendDate || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">受領書提出日</label><div className="text-gray-900">{detailItem.receiptDate || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">返却日</label><div className="text-gray-900">{detailItem.returnDate || '-'}</div></div>
-                            </div>
-                        </div>
-
-                        {/* Additional Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">SMARTアドレス帳ID</label><div className="text-gray-900">{detailItem.smartAddressId || '-'}</div></div>
-                                <div><label className="block text-sm font-medium text-gray-500 mb-1">SMARTアドレス帳PW</label><div className="text-gray-900">{detailItem.smartAddressPw || '-'}</div></div>
-                                <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-500 mb-1">備考</label><div className="text-gray-900 whitespace-pre-wrap">{detailItem.notes || '-'}</div></div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <IPhoneDetailModal
+                isOpen={!!detailItem}
+                onClose={() => setDetailItem(undefined)}
+                item={detailItem}
+                employees={employees}
+                addresses={addresses}
+            />
 
             <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
         </div>
