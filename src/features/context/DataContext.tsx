@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
+import { logService } from '../logs/log.service';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -304,41 +305,7 @@ const mapAddressToDb = (t: Partial<Address>) => ({
     caution: t.attentionNote,
 });
 
-// Map audit_logs DB schema to frontend Log interface
-const mapLogFromDb = (d: any): Log => {
-    // Map Audit Action to Frontend Action
-    const actionMap: Record<string, 'add' | 'update' | 'delete' | 'import' | 'login' | 'logout' | 'error'> = {
-        'CREATE': 'add', 'add': 'add',
-        'UPDATE': 'update', 'update': 'update',
-        'DELETE': 'delete', 'delete': 'delete',
-        'IMPORT': 'import', 'import': 'import',
-        'LOGIN_SUCCESS': 'login',
-        'LOGOUT': 'logout',
-        'LOGIN_FAILURE': 'error',
-    };
-    const action = actionMap[d.action_type] || 'update';
-
-    // Target Mapping
-    const targetMap: Record<string, string> = {
-        'tablet': '勤怠タブレット',
-        'iphone': 'iPhone',
-        'feature_phone': 'ガラホ',
-        'router': 'モバイルルーター',
-        'employee': '社員マスタ',
-        'area': 'エリアマスタ',
-        'address': '住所マスタ',
-    };
-    const target = targetMap[d.target_type] || d.target_type;
-
-    return {
-        id: s(d.id),
-        timestamp: s(d.occurred_at),
-        user: s(d.actor_name) || s(d.actor_employee_code) || 'System',
-        target: target,
-        action: action,
-        details: s(d.metadata?.message) || JSON.stringify(d.metadata) || '',
-    };
-};
+// Local mapLogFromDb removed in favor of logService.mapLogFromDb
 
 const TARGET_MAP: Record<string, TargetType> = {
     tablets: 'tablet',
@@ -389,7 +356,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (e.data) setEmployees(e.data.map(mapEmployeeFromDb));
             if (a.data) setAreas(a.data.map(mapAreaFromDb));
             if (ad.data) setAddresses(ad.data.map(mapAddressFromDb));
-            if (logData) setLogs(logData.map(mapLogFromDb));
+            if (logData) setLogs(logData.map(logService.mapLogFromDb));
 
         } catch (error) {
             console.error('Failed to fetch data from Supabase:', error);
@@ -422,8 +389,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: 'temp-' + Date.now(),
                 timestamp: new Date().toISOString(),
                 user: user?.name || 'Unknown',
-                target: TARGET_MAP[endpoint.toLowerCase()] ? mapLogFromDb({ target_type: TARGET_MAP[endpoint.toLowerCase()] }).target : endpoint,
+                actorName: user?.name || 'Unknown',
+                actorEmployeeCode: user?.code || '',
+                target: TARGET_MAP[endpoint.toLowerCase()] ? logService.mapLogFromDb({ target_type: TARGET_MAP[endpoint.toLowerCase()] }).target : endpoint,
+                targetRaw: endpoint,
+                targetId: '',
                 action,
+                actionRaw: actionType,
+                result: 'success',
+                metadata: { details },
+                ipAddress: '',
                 details: details,
             };
             setLogs(prev => [tempLog, ...prev]);
@@ -620,7 +595,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .order('occurred_at', { ascending: false });
 
             if (error) throw error;
-            if (data) setLogs(data.map(mapLogFromDb));
+            if (data) setLogs(data.map(logService.mapLogFromDb));
         } catch (error: any) {
             console.error('Failed to fetch log range:', error.message || JSON.stringify(error));
         }
