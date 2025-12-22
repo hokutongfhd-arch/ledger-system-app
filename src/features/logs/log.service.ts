@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient';
-import type { Log } from './log.types';
+import type { Log } from '../../lib/types';
 
 const s = (val: any) => (val === null || val === undefined) ? '' : String(val);
 
