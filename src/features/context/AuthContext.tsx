@@ -7,6 +7,7 @@ import { logger } from '../../lib/logger';
 
 interface AuthContextType {
     user: Employee | null;
+    isLoading: boolean;
     login: (employeeCode: string, password: string) => Promise<Employee | null>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -44,6 +45,45 @@ const mapEmployeeFromDb = (d: any): Employee => ({
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<Employee | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const refreshUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        try {
+            // Re-fetch profile
+            const { data: employeeData } = await supabase
+                .from('employees')
+                .select('*')
+                .eq('auth_id', session.user.id)
+                .single();
+
+            if (employeeData) {
+                const employee = mapEmployeeFromDb(employeeData);
+                setUser(employee);
+            }
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+        }
+    };
+
+    // Initialize session on mount
+    React.useEffect(() => {
+        const initSession = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    await refreshUser();
+                }
+            } catch (error) {
+                console.error('Session init error:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        initSession();
+    }, []);
 
     const login = async (employeeCode: string, password: string) => {
         try {
@@ -156,29 +196,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
     };
 
-    const refreshUser = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        try {
-            // Re-fetch profile
-            const { data: employeeData } = await supabase
-                .from('employees')
-                .select('*')
-                .eq('auth_id', session.user.id)
-                .single();
-
-            if (employeeData) {
-                const employee = mapEmployeeFromDb(employeeData);
-                setUser(employee);
-            }
-        } catch (error) {
-            console.error('Failed to refresh user:', error);
-        }
-    };
-
     return (
-        <AuthContext.Provider value={{ user, login, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, login, logout, refreshUser, isLoading }}>
             {children}
         </AuthContext.Provider>
     );

@@ -52,7 +52,7 @@ export const useAuditDashboard = () => {
                 .from('audit_logs')
                 .select('*', { count: 'exact', head: true })
                 .gte('occurred_at', subHours(now, 24).toISOString())
-                .eq('action', 'LOGIN_FAILURE')
+                .eq('action_type', 'LOGIN_FAILURE')
                 .eq('result', 'failure'); // Redundant but safe
 
             if (kpiError) console.error('KPI fetch error', kpiError);

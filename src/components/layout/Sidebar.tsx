@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, User, Smartphone, Tablet, Router as RouterIcon, Database, FileText, Phone, Bell } from 'lucide-react';
+import { LayoutDashboard, User, Smartphone, Tablet, Router as RouterIcon, Database, FileText, Phone, Bell, Activity } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../features/context/AuthContext';
 import { useData } from '../../features/context/DataContext';
@@ -86,6 +86,9 @@ export const Sidebar = () => {
 
                 <SidebarSection label="SYSTEM">
                     <SidebarItem to="/dashboard" icon={User} label="My Page" />
+                    {user?.role === 'admin' && (
+                        <SidebarItem to="/audit-dashboard" icon={Activity} label="Audit Dashboard" />
+                    )}
                 </SidebarSection>
             </div>
 

@@ -5,17 +5,38 @@ import { useAuth } from '../../features/context/AuthContext';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAnomalyMonitor } from '../../features/audit/useAnomalyMonitor';
+import { useEffect } from 'react';
 
 export default function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const { user, logout } = useAuth();
+    const { user, logout, isLoading } = useAuth();
     const router = useRouter();
 
     // Start background anomaly monitoring
     useAnomalyMonitor();
+
+    // Protect Route: If not loading and not user, redirect (and don't render)
+    // Actually, middleware handles redirect, but client needs to handle display state.
+    useEffect(() => {
+        if (!isLoading && !user) {
+            router.push('/login');
+        }
+    }, [isLoading, user, router]);
+
+    if (isLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-paper">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-accent-electric"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null; // Don't render content while redirecting
+    }
 
     const handleLogout = async () => {
         await logout();

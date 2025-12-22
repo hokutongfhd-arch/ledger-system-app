@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '../index.css';
+import { Toaster } from 'react-hot-toast';
 import { DataProvider } from '../features/context/DataContext';
 import { AuthProvider } from '../features/context/AuthContext';
 import { ToastProvider } from '../features/context/ToastContext';
@@ -23,6 +24,7 @@ export default function RootLayout({
         <html lang="ja" suppressHydrationWarning={true}>
             <body className={inter.className}>
                 <GlobalErrorBoundary>
+                    <Toaster position="top-right" />
                     <ToastProvider>
                         <AuthProvider>
                             <DataProvider>

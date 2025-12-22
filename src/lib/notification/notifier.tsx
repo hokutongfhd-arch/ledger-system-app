@@ -1,5 +1,6 @@
-
 import toast from 'react-hot-toast';
+import Link from 'next/link';
+import { X } from 'lucide-react';
 
 interface AnomalyNotificationOptions {
     actionLabel?: string;
@@ -28,35 +29,48 @@ export const notifier = {
     anomaly: (message: string, options?: AnomalyNotificationOptions) => {
         toast(
             (t) => (
-                <div className= "flex flex-col gap-2 min-w-[200px]" >
-                <span className="font-bold text-red-600 flex items-center gap-2" >
+                <div className="flex flex-col gap-2 min-w-[280px] relative pr-6">
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="absolute -top-1 -right-1 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <X size={16} />
+                    </button>
+                    <span className="font-bold text-red-600 flex items-center gap-2">
                         ⚠ 異常検知
-    </span>
-    < span className = "text-sm text-gray-800" >
-        { message }
-        </span>
-{
-    options?.actionHref && (
-        <a
-                            href={ options.actionHref }
-    onClick = {() => toast.dismiss(t.id)
-}
-className = "text-xs bg-red-50 text-red-600 px-2 py-1.5 rounded border border-red-200 text-center hover:bg-red-100 transition-colors font-medium mt-1"
-    >
-    { options.actionLabel || '詳細を確認' }
-    </a>
+                    </span>
+                    <span className="text-sm text-gray-800 leading-relaxed">
+                        {message}
+                    </span>
+                    {options?.actionHref && (
+                        <Link
+                            href={options.actionHref}
+                            onClick={() => toast.dismiss(t.id)}
+                            className="text-xs bg-red-50 text-red-600 px-3 py-2 rounded border border-red-200 text-center hover:bg-red-100 transition-colors font-medium mt-2 flex items-center justify-center"
+                        >
+                            {options.actionLabel || '詳細を確認'}
+                        </Link>
                     )}
-</div>
+                </div>
             ),
-{
-    duration: 6000,
-        position: 'top-right',
-            style: {
-        border: '1px solid #fee2e2',
-            borderLeft: '4px solid #dc2626',
-                background: '#fff',
+            {
+                duration: Infinity, // User must dismiss or click action (Requirement: "until pressed") - User actually said "re-display not done even if screen transitioned", effectively making it persistent until handled is safer? 
+                // Wait, user said "If I press close, it disappears."
+                // I'll keep 6000 or make it longer? User complained "realtime check" was slow.
+                // Let's set duration to a bit longer or Infinity to ensure they see it?
+                // Actually user said "notifications disappear only when x is pressed".
+                // "notifications disappear only when x is pressed" -> implied by "when x button is attached and pressed, notification disappears"
+                // Let's stick to a long duration or Infinity. I'll use Infinity to be safe so they definitely see it.
+                duration: Infinity,
+                position: 'top-right',
+                style: {
+                    border: '1px solid #fee2e2',
+                    borderLeft: '4px solid #dc2626',
+                    background: '#fff',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    padding: '16px',
                 },
-}
+            }
         );
     }
 };

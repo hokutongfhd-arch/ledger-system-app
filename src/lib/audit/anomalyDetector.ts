@@ -25,7 +25,7 @@ export function detectAnomaly(recentLogs: Log[]): AnomalyEvent[] {
     // 1. LOGIN_BRUTE_FORCE Check
     // Group login failures by employee code
     const loginFailures = recentLogs.filter(
-        log => log.action === 'LOGIN_FAILURE' // Assuming this is the action name in logs
+        log => log.actionRaw === 'LOGIN_FAILURE'
     );
 
     const failuresByEmployee = loginFailures.reduce((acc, log) => {
@@ -66,7 +66,7 @@ export function detectAnomaly(recentLogs: Log[]): AnomalyEvent[] {
     // 3. BULK_UPDATE Check
     // High volume of updates in short time
     const updates = recentLogs.filter(log =>
-        ['UPDATE', 'DELETE'].includes(log.action)
+        ['UPDATE', 'DELETE'].includes(log.actionRaw)
     );
 
     if (updates.length >= RULES.BULK_UPDATE.threshold) {
