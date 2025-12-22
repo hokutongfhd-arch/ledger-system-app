@@ -9,7 +9,8 @@ export const UserProfileCard = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Get current user data from DataContext (which includes localStorage persistence)
-    const displayUser = employees.find(e => e.id === user?.id);
+    // Fallback to auth user if not found in global list (e.g. RLS filtering or loading)
+    const displayUser = employees.find(e => e.id === user?.id) || user;
 
     if (!displayUser) return null;
 
