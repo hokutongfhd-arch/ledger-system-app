@@ -63,10 +63,10 @@ function RouterListContent() {
     const handleDelete = async (item: Router) => {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
-                await deleteRouter(item.id, true);
-                await addLog('routers', 'delete', `ルーター削除: ${item.terminalCode}`);
+                await deleteRouter(item.id, false, false);
+                // Log and Toast handled by DataContext
             } catch (error) {
-                showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                // DataContext handles error toast
             }
         });
     };
@@ -270,7 +270,7 @@ function RouterListContent() {
                 };
 
                 try {
-                    await addRouter(newRouter, true);
+                    await addRouter(newRouter, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
@@ -326,8 +326,8 @@ function RouterListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ルーター 編集' : 'ルーター 新規登録'}>
                 <RouterForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateRouter({ ...data, id: editingItem.id } as Router, true);
-                    else await addRouter(data as Omit<Router, 'id'>, true);
+                    if (editingItem) await updateRouter({ ...data, id: editingItem.id } as Router);
+                    else await addRouter(data as Omit<Router, 'id'>);
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

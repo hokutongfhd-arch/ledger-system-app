@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import '../index.css';
 import { DataProvider } from '../features/context/DataContext';
 import { AuthProvider } from '../features/context/AuthContext';
+import { ToastProvider } from '../features/context/ToastContext';
 import { Suspense } from 'react';
 import { GlobalErrorBoundary } from '../components/error/GlobalErrorBoundary';
 
@@ -22,13 +23,15 @@ export default function RootLayout({
         <html lang="ja" suppressHydrationWarning={true}>
             <body className={inter.className}>
                 <GlobalErrorBoundary>
-                    <AuthProvider>
-                        <DataProvider>
-                            <Suspense fallback={<div className="flex items-center justify-center h-screen">読み込み中...</div>}>
-                                {children}
-                            </Suspense>
-                        </DataProvider>
-                    </AuthProvider>
+                    <ToastProvider>
+                        <AuthProvider>
+                            <DataProvider>
+                                <Suspense fallback={<div className="flex items-center justify-center h-screen">読み込み中...</div>}>
+                                    {children}
+                                </Suspense>
+                            </DataProvider>
+                        </AuthProvider>
+                    </ToastProvider>
                 </GlobalErrorBoundary>
             </body>
         </html>

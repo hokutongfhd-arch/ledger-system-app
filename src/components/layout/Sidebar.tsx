@@ -85,7 +85,7 @@ export const Sidebar = () => {
                 </SidebarSection>
 
                 <SidebarSection label="SYSTEM">
-                    <SidebarItem to="/user-dashboard" icon={User} label="My Page" />
+                    <SidebarItem to="/dashboard" icon={User} label="My Page" />
                 </SidebarSection>
             </div>
 

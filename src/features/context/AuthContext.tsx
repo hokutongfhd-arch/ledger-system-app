@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { Employee } from '../../lib/types';
 import { supabase } from '../../lib/supabaseClient';
+import { logger } from '../../lib/logger';
 
 interface AuthContextType {
     user: Employee | null;
@@ -55,6 +56,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (authError) {
                 console.warn('Auth Login Failed:', authError.message);
+                await logger.error({
+                    action: 'LOGIN_FAILURE',
+                    targetType: 'auth',
+                    message: 'Supabase Auth Sign-In Failed',
+                    actor: { employeeCode }
+                }, authError.message);
                 return null;
             }
 
@@ -82,25 +89,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (fallbackError || !fallbackData) {
                     console.error('Login failed: Profile not found.');
                     await supabase.auth.signOut(); // Force logout if no profile
+                    await logger.error({
+                        action: 'LOGIN_FAILURE',
+                        targetType: 'auth',
+                        message: 'Profile not found after Auth Success',
+                        actor: { authId: authData.session.user.id, employeeCode }
+                    });
                     return null;
                 }
 
                 const employee = mapEmployeeFromDb(fallbackData);
                 setUser(employee);
+                await logger.info({
+                    action: 'LOGIN_SUCCESS',
+                    targetType: 'auth',
+                    actor: { authId: authData.session.user.id, employeeCode: employee.code, name: employee.name }
+                });
                 return employee;
             }
 
             const employee = mapEmployeeFromDb(employeeData);
             setUser(employee);
+            await logger.info({
+                action: 'LOGIN_SUCCESS',
+                targetType: 'auth',
+                actor: { authId: authData.session.user.id, employeeCode: employee.code, name: employee.name }
+            });
             return employee;
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login unexpected error:', error);
+            await logger.error({
+                action: 'LOGIN_FAILURE',
+                targetType: 'auth',
+                message: 'Unexpected Error during Login',
+                actor: { employeeCode }
+            }, error);
             return null;
         }
     };
 
     const logout = async () => {
+        if (user) {
+            await logger.info({
+                action: 'LOGOUT',
+                targetType: 'auth',
+                actor: { employeeCode: user.code, name: user.name }
+            });
+        }
         await supabase.auth.signOut();
         setUser(null);
     };

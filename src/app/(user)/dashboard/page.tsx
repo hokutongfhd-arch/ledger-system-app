@@ -1,12 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../features/context/AuthContext';
-import { useSystemAlerts } from '../../features/hooks/useSystemAlerts';
+import { useAuth } from '../../../features/context/AuthContext';
+import { useSystemAlerts } from '../../../features/hooks/useSystemAlerts';
 import { AlertCircle, ChevronRight } from 'lucide-react';
-import { UserProfileCard } from '../../features/components/UserProfileCard';
-import { UserDeviceList } from '../../features/components/UserDeviceList';
-import { MemoPad } from '../../features/components/MemoPad';
+import { UserProfileCard } from '../../../features/components/UserProfileCard';
+import { UserDeviceList } from '../../../features/components/UserDeviceList';
+import { MemoPad } from '../../../features/components/MemoPad';
 import { useEffect } from 'react';
 
 

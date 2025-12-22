@@ -13,6 +13,7 @@ import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { EmployeeForm } from '../../../../features/forms/EmployeeForm';
 import * as XLSX from 'xlsx';
 import { UserDeviceList } from '../../../../features/components/UserDeviceList';
+import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'code' | 'role';
 type SortOrder = 'asc' | 'desc';
@@ -51,6 +52,8 @@ function EmployeeListContent() {
         isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void;
     }>({ isOpen: false, title: '通知', message: '', type: 'alert' });
 
+    const { showToast } = useToast();
+
     const closeNotification = () => setNotification(prev => ({ ...prev, isOpen: false }));
     const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
         setNotification({ isOpen: true, title, message, type, onConfirm });
@@ -63,9 +66,9 @@ function EmployeeListContent() {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
                 await deleteEmployee(item.id);
-                await addLog('employees', 'delete', `社員削除: ${item.code}`);
+                // DataContext handles logging and toast
             } catch (error) {
-                showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                // DataContext handles error toast
             }
         });
     };
@@ -226,7 +229,7 @@ function EmployeeListContent() {
                 };
 
                 try {
-                    await addEmployee(newEmployee as Omit<Employee, 'id'>);
+                    await addEmployee(newEmployee as Omit<Employee, 'id'>, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
@@ -235,9 +238,10 @@ function EmployeeListContent() {
 
             if (successCount > 0) {
                 await addLog('employees', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'success');
+            } else {
+                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'info');
             }
-
-            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);

@@ -46,7 +46,7 @@ export async function middleware(req: NextRequest) {
     if (isAdminPath && role !== 'admin') {
         // Redirect unauthorized user to user dashboard
         const redirectUrl = req.nextUrl.clone();
-        redirectUrl.pathname = '/user-dashboard'; // Adjust if valid user path differs
+        redirectUrl.pathname = '/dashboard'; // Adjust if valid user path differs
         return NextResponse.redirect(redirectUrl);
     }
 
@@ -60,7 +60,7 @@ export async function middleware(req: NextRequest) {
     // 5. Already Logged In -> Login Page Access
     if (path === '/login') {
         const redirectUrl = req.nextUrl.clone();
-        redirectUrl.pathname = role === 'admin' ? '/' : '/user-dashboard';
+        redirectUrl.pathname = role === 'admin' ? '/' : '/dashboard';
         return NextResponse.redirect(redirectUrl);
     }
 

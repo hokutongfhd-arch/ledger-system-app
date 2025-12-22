@@ -45,7 +45,7 @@ export const useSystemAlerts = () => {
         const areaCodes = new Set(areas.map(a => a.areaCode));
 
         // Helper to check frequencies
-        const checkDuplicates = (items: any[], key: string, source: AlertSource, path: string, label: string) => {
+        const checkDuplicates = (items: Record<string, any>[], key: string, source: AlertSource, path: string, label: string) => {
             const counts: Record<string, string[]> = {};
             items.forEach(item => {
                 const val = String(item[key] || '').trim();

@@ -12,6 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { AreaForm } from '../../../../features/forms/AreaForm';
 import * as XLSX from 'xlsx';
+import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'areaCode';
 type SortOrder = 'asc' | 'desc';
@@ -51,6 +52,8 @@ function AreaListContent() {
     const [notification, setNotification] = useState<{
         isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void;
     }>({ isOpen: false, title: '通知', message: '', type: 'alert' });
+
+    const { showToast } = useToast();
 
     const closeNotification = () => setNotification(prev => ({ ...prev, isOpen: false }));
     const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
@@ -153,7 +156,7 @@ function AreaListContent() {
                 };
 
                 try {
-                    await addArea(newArea, true);
+                    await addArea(newArea, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
@@ -162,9 +165,10 @@ function AreaListContent() {
 
             if (successCount > 0) {
                 await addLog('areas', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'success');
+            } else {
+                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'info');
             }
-
-            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
@@ -174,9 +178,9 @@ function AreaListContent() {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
                 await deleteArea(item.id);
-                await addLog('areas', 'delete', `エリア削除: ${item.areaCode}`);
+                // DataContext handles logging and toast
             } catch (error) {
-                showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                // DataContext handles error toast
             }
         });
     };
@@ -265,7 +269,7 @@ function AreaListContent() {
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'エリア 編集' : 'エリア 新規登録'}>
                 <AreaForm initialData={editingItem} onSubmit={async (data) => {
                     if (editingItem) await updateArea({ ...data, id: editingItem.id } as Area);
-                    else await addArea(data as Omit<Area, 'id'>, true);
+                    else await addArea(data as Omit<Area, 'id'>);
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

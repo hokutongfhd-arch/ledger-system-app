@@ -19,7 +19,7 @@ export default function LoginPage() {
             if (user.role === 'admin') {
                 router.push('/');
             } else {
-                router.push('/user-dashboard');
+                router.push('/dashboard');
             }
         } else {
             setError('社員番号またはパスワードが間違っています');

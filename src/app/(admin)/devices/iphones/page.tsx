@@ -112,11 +112,10 @@ function IPhoneListContent() {
             'confirm',
             async () => {
                 try {
-                    await deleteIPhone(item.id, true);
-                    await addLog('iphones', 'delete', `iPhone削除: ${item.managementNumber} (${item.employeeId})`);
+                    await deleteIPhone(item.id); // Defaults are false, false (Log=Yes, Toast=Yes)
                 } catch (error) {
                     console.error(error);
-                    showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                    // DataContext handles error toast
                 }
             },
             '確認'
@@ -132,7 +131,7 @@ function IPhoneListContent() {
             async () => {
                 try {
                     for (const id of selectedIds) {
-                        await deleteIPhone(id, true);
+                        await deleteIPhone(id, true, true);
                     }
                     await addLog('iphones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
                     setSelectedIds(new Set());
@@ -171,19 +170,16 @@ function IPhoneListContent() {
     const handleSubmit = async (data: Omit<IPhone, 'id'> & { id?: string }) => {
         try {
             if (editingItem) {
-                await updateIPhone({ ...data, id: editingItem.id } as IPhone, true);
-                await addLog('iphones', 'update', `iPhone更新: ${data.managementNumber} (${data.employeeId})`);
+                await updateIPhone({ ...data, id: editingItem.id } as IPhone);
                 if (editingItem.id === searchParams.get('highlight')) {
                     router.replace(pathname + '?' + createQueryString({ highlight: null, field: null }));
                 }
             } else {
-                await addIPhone(data as Omit<IPhone, 'id'>, true);
-                await addLog('iphones', 'add', `iPhone新規登録: ${data.managementNumber} (${data.employeeId})`);
+                await addIPhone(data as Omit<IPhone, 'id'>);
             }
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            showNotification('保存に失敗しました。', 'alert', undefined, 'エラー');
         }
     };
 
@@ -428,7 +424,7 @@ function IPhoneListContent() {
                 if (newIPhone.employeeId) newIPhone.status = '貸出中';
 
                 try {
-                    await addIPhone(newIPhone as Omit<IPhone, 'id'>, true);
+                    await addIPhone(newIPhone as Omit<IPhone, 'id'>, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;

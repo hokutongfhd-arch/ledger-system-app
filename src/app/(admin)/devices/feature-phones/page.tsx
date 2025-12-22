@@ -62,10 +62,10 @@ function FeaturePhoneListContent() {
     const handleDelete = async (item: FeaturePhone) => {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
-                await deleteFeaturePhone(item.id, true);
-                await addLog('featurePhones', 'delete', `ガラホ削除: ${item.managementNumber}`);
+                await deleteFeaturePhone(item.id, false, false);
+                // Log and Toast handled by DataContext
             } catch (error) {
-                showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                // DataContext handles error toast
             }
         });
     };
@@ -252,7 +252,7 @@ function FeaturePhoneListContent() {
                 if (newFeaturePhone.employeeId) newFeaturePhone.status = '貸出中';
 
                 try {
-                    await addFeaturePhone(newFeaturePhone, true);
+                    await addFeaturePhone(newFeaturePhone, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
@@ -309,8 +309,8 @@ function FeaturePhoneListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ガラホ 編集' : 'ガラホ 新規登録'}>
                 <FeaturePhoneForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateFeaturePhone({ ...data, id: editingItem.id } as FeaturePhone, true);
-                    else await addFeaturePhone(data as Omit<FeaturePhone, 'id'>, true);
+                    if (editingItem) await updateFeaturePhone({ ...data, id: editingItem.id } as FeaturePhone);
+                    else await addFeaturePhone(data as Omit<FeaturePhone, 'id'>);
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

@@ -91,10 +91,10 @@ function TabletListContent() {
     const handleDelete = async (item: Tablet) => {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
-                await deleteTablet(item.id, true);
+                await deleteTablet(item.id, false, false); // Enable Log, Enable Toast
                 await addLog('tablets', 'delete', `タブレット削除: ${item.terminalCode}`);
             } catch (error) {
-                showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                // DataContext handles error toast
             }
         });
     };
@@ -288,7 +288,12 @@ function TabletListContent() {
                 };
 
                 try {
-                    await addTablet(newTablet, true);
+                    // Skip Toast for individual items in bulk import, but keep Log (or skip log too? Original was skipLog=true. Let's keep strict logging? 
+                    // Wait, original code had `addTablet(newTablet, true)`. 
+                    // If we want detailed logs for every import item, it will be 100 logs. 
+                    // The original code did a SUMMARY log at the end.
+                    // So we should KEEP skipLog=true, and ALSO skipToast=true.
+                    await addTablet(newTablet, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
@@ -349,8 +354,8 @@ function TabletListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'タブレット 編集' : 'タブレット 新規登録'}>
                 <TabletForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateTablet({ ...data, id: editingItem.id } as Tablet, true);
-                    else await addTablet(data as Omit<Tablet, 'id'>, true);
+                    if (editingItem) await updateTablet({ ...data, id: editingItem.id } as Tablet);
+                    else await addTablet(data as Omit<Tablet, 'id'>);
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

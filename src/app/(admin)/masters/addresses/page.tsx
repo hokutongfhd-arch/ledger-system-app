@@ -13,6 +13,7 @@ import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { AddressForm } from '../../../../features/forms/AddressForm';
 import { AddressDeviceList } from '../../../../features/components/AddressDeviceList';
 import * as XLSX from 'xlsx';
+import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'addressCode' | 'tel' | 'fax' | 'zipCode';
 type SortOrder = 'asc' | 'desc';
@@ -55,6 +56,8 @@ function AddressListContent() {
     const [notification, setNotification] = useState<{
         isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void;
     }>({ isOpen: false, title: '通知', message: '', type: 'alert' });
+
+    const { showToast } = useToast();
 
     const closeNotification = () => setNotification(prev => ({ ...prev, isOpen: false }));
     const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
@@ -200,7 +203,7 @@ function AddressListContent() {
                 };
 
                 try {
-                    await addAddress(newAddress, true);
+                    await addAddress(newAddress, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
@@ -209,9 +212,11 @@ function AddressListContent() {
 
             if (successCount > 0) {
                 await addLog('addresses', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'success');
+            } else {
+                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'info');
             }
 
-            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
@@ -221,9 +226,8 @@ function AddressListContent() {
         showNotification('本当に削除しますか？', 'confirm', async () => {
             try {
                 await deleteAddress(item.id);
-                await addLog('addresses', 'delete', `住所削除: ${item.addressCode}`);
             } catch (error) {
-                showNotification('削除に失敗しました。', 'alert', undefined, 'エラー');
+                console.error(error);
             }
         });
     };
@@ -323,7 +327,7 @@ function AddressListContent() {
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '住所 編集' : '住所 新規登録'}>
                 <AddressForm initialData={editingItem} onSubmit={async (data) => {
                     if (editingItem) await updateAddress({ ...data, id: editingItem.id } as Address);
-                    else await addAddress(data as Omit<Address, 'id'>, true);
+                    else await addAddress(data as Omit<Address, 'id'>);
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
