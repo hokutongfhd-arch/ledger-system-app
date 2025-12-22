@@ -138,11 +138,19 @@ export interface Address {
 
 export interface Log {
     id: string;
-    timestamp: string;
-    user: string;
-    target: string;
-    action: 'add' | 'update' | 'delete' | 'import' | 'login' | 'logout' | 'error';
-    details: string;
+    timestamp: string;        // occurred_at
+    actorName: string;        // actor_name
+    actorEmployeeCode: string;
+    target: string;           // Display (Japanese)
+    targetRaw: string;        // DB Value
+    targetId: string;
+    action: string;           // Display (Japanese)
+    actionRaw: string;        // DB Value
+    result: 'success' | 'failure';
+    metadata: any;
+    ipAddress: string;
+    details: string;          // UI Generated Summary
+    user: string;             // Compatibility fallback
 }
 
 export interface Memo {
