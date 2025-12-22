@@ -57,16 +57,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (authError) {
                 console.warn('Auth Login Failed:', authError.message);
-                await logger.error({
+                await logger.log({
                     action: 'LOGIN_FAILURE',
                     targetType: 'auth',
-                    message: 'Supabase Auth Sign-In Failed',
-                    actor: { employeeCode }
-                }, authError.message);
+                    message: authError.message || 'Supabase Auth Sign-In Failed',
+                    actor: { employeeCode },
+                    result: 'failure',
+                    metadata: { error: authError }
+                });
                 return null;
             }
 
             if (!authData.session) {
+                console.warn('Login Succeeded but No Session Returned');
+                await logger.log({
+                    action: 'LOGIN_FAILURE',
+                    targetType: 'auth',
+                    message: 'No Session returned after sign-in',
+                    actor: { employeeCode },
+                    result: 'failure'
+                });
                 return null;
             }
 
@@ -90,11 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (fallbackError || !fallbackData) {
                     console.error('Login failed: Profile not found.');
                     await supabase.auth.signOut(); // Force logout if no profile
-                    await logger.error({
+                    await logger.log({
                         action: 'LOGIN_FAILURE',
                         targetType: 'auth',
                         message: 'Profile not found after Auth Success',
-                        actor: { authId: authData.session.user.id, employeeCode }
+                        actor: { authId: authData.session.user.id, employeeCode },
+                        result: 'failure',
+                        metadata: { reason: 'Profile Not Found' }
                     });
                     return null;
                 }
@@ -120,12 +132,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         } catch (error: any) {
             console.error('Login unexpected error:', error);
-            await logger.error({
+            await logger.log({
                 action: 'LOGIN_FAILURE',
                 targetType: 'auth',
                 message: 'Unexpected Error during Login',
-                actor: { employeeCode }
-            }, error);
+                actor: { employeeCode },
+                result: 'failure',
+                metadata: { error: error }
+            });
             return null;
         }
     };

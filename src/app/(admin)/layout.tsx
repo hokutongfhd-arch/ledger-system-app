@@ -4,6 +4,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../features/context/AuthContext';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAnomalyMonitor } from '../../features/audit/useAnomalyMonitor';
 
 export default function AdminLayout({
     children,
@@ -12,6 +13,9 @@ export default function AdminLayout({
 }) {
     const { user, logout } = useAuth();
     const router = useRouter();
+
+    // Start background anomaly monitoring
+    useAnomalyMonitor();
 
     const handleLogout = async () => {
         await logout();

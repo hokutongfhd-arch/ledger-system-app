@@ -160,19 +160,34 @@ export const logService = {
         return data?.occurred_at || null;
     },
 
+    createLog: async (logData: {
+        actor_name: string;
+        actor_employee_code?: string;
+        target_type: string;
+        action_type: string;
+        details?: string;
+        result: 'success' | 'failure';
+        metadata?: any;
+    }) => {
+        const payload = {
+            ...logData,
+            metadata: { message: logData.details, ...logData.metadata },
+            occurred_at: new Date().toISOString()
+        };
+        const { data } = await logApi.insertLog(payload);
+        return data ? logService.mapLogFromDb(data) : null;
+    },
+
     addLog: async (endpoint: string, action: string, details: string, userName: string) => {
         // NOTE: This legacy addLog is less precise than the new structured logging. 
         // Ideally should assume 'success' and try to map legacy args to new schema if writing to audit_logs.
         // For now, mapping best effort.
-        const newLog = {
+        return await logService.createLog({
             actor_name: userName,
             target_type: endpoint,
             action_type: action.toUpperCase(),
-            metadata: { message: details },
-            occurred_at: new Date().toISOString(),
+            details: details,
             result: 'success'
-        };
-        const { data } = await logApi.insertLog(newLog);
-        return data ? logService.mapLogFromDb(data) : null;
+        });
     }
 };
