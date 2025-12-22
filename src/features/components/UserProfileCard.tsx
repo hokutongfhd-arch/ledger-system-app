@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { Camera, MapPin, Building, Shield, User } from 'lucide-react';
 
 export const UserProfileCard = () => {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const { employees, areas, addresses, updateEmployee } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,7 +34,7 @@ export const UserProfileCard = () => {
             try {
                 const updatedUser = { ...displayUser, profileImage: base64String };
                 await updateEmployee(updatedUser);
-                // setDisplayUser(updatedUser); // No longer needed, context update drives UI
+                await refreshUser(); // Force UI update via AuthContext fallback
             } catch (error) {
                 console.error('Failed to update profile image', error);
                 alert('画像の保存に失敗しました。');
