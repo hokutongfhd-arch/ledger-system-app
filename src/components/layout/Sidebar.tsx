@@ -45,7 +45,7 @@ const SidebarSection = ({ label, children }: { label?: string; children: React.R
 export const Sidebar = () => {
     const { user } = useAuth();
     const { employees } = useData();
-    const currentUser = employees.find(e => e.id === user?.id);
+    const currentUser = employees.find(e => e.id === user?.id) || user;
 
     return (
         <div className="w-64 h-screen flex flex-col bg-paper border-r-2 border-ink overflow-y-auto font-sans">
