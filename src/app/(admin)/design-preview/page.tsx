@@ -1,6 +1,6 @@
 'use client';
 
-import { SidebarPreview } from '../../components/layout/SidebarPreview';
+import { SidebarPreview } from '../../../components/layout/SidebarPreview';
 import { Search, Calendar, ChevronDown, MoreHorizontal, ArrowUpRight } from 'lucide-react';
 
 export default function DesignPreviewPage() {
