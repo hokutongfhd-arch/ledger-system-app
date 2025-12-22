@@ -39,7 +39,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     roleTitle: s(d.position),
     jobType: s(d.job_type),
     role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
-    profileImage: '',
+    profileImage: typeof window !== 'undefined' ? localStorage.getItem(`profile_image_${d.id}`) || '' : '',
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
