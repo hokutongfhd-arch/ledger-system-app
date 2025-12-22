@@ -1,19 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
+// Lazy client creator to prevent build-time error if env vars are missing
+const getSupabaseAdmin = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+        throw new Error('Supabase URL or Service Role Key is missing in environment variables');
+    }
+
+    return createClient(url, key, {
         auth: {
             autoRefreshToken: false,
             persistSession: false
         }
-    }
-);
+    });
+};
 
 export async function POST(req: Request) {
     try {
+        const supabaseAdmin = getSupabaseAdmin(); // Initialize here
+
         const body = await req.json();
         const { code, password, name, role } = body;
 
@@ -23,14 +31,7 @@ export async function POST(req: Request) {
 
         const email = `${code}@ledger-system.local`;
         const userRole = role === '管理者' || role === 'admin' ? 'admin' : 'user';
-        // Password default if not provided? Form should provide it.
-        // If password is empty (e.g. edit mode or not set), we can't create user without it?
-        // Supabase createUser requires password or email_confirm.
-        // We'll assume password is provided or use a default.
         const userPassword = password || '123456';
-
-        // 1. Check if user exists (Optional, createUser handles duplications by error usually, but list is safer for idempotency if needed)
-        // We'll try create directly to be fast.
 
         const { data, error } = await supabaseAdmin.auth.admin.createUser({
             email,
@@ -44,9 +45,7 @@ export async function POST(req: Request) {
         });
 
         if (error) {
-            // If user already exists, we should try to fetch their ID to ensure linkage
             if (error.message.includes('already registered') || error.status === 422) {
-                // Fetch existing user to return ID
                 const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
                 const existingUser = listData.users.find(u => u.email === email);
                 if (existingUser) {
