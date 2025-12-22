@@ -141,7 +141,7 @@ export interface Log {
     timestamp: string;
     user: string;
     target: string;
-    action: 'add' | 'update' | 'delete' | 'import';
+    action: 'add' | 'update' | 'delete' | 'import' | 'login' | 'logout' | 'error';
     details: string;
 }
 

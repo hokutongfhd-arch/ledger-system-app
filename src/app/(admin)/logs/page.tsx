@@ -6,7 +6,7 @@ import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
 import { Pagination } from '../../../components/ui/Pagination';
 import { Table } from '../../../components/ui/Table';
-import type { Log } from '../../../features/logs/log.types';
+import type { Log } from '../../../lib/types';
 import { Search, Download, Archive, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { generateWeekRanges, getWeekRange } from '../../../lib/utils/dateHelpers';
 
@@ -134,6 +134,15 @@ function LogListContent() {
                             } else if (item.action === 'delete') {
                                 label = '削除';
                                 className = 'bg-red-50 text-red-500';
+                            } else if (item.action === 'login') {
+                                label = 'ログイン';
+                                className = 'bg-indigo-50 text-indigo-500';
+                            } else if (item.action === 'logout') {
+                                label = 'ログアウト';
+                                className = 'bg-gray-50 text-gray-500';
+                            } else if (item.action === 'error') {
+                                label = 'エラー';
+                                className = 'bg-red-100 text-red-700';
                             }
 
                             return (

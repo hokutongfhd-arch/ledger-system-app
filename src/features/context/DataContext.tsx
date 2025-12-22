@@ -307,11 +307,14 @@ const mapAddressToDb = (t: Partial<Address>) => ({
 // Map audit_logs DB schema to frontend Log interface
 const mapLogFromDb = (d: any): Log => {
     // Map Audit Action to Frontend Action
-    const actionMap: Record<string, 'add' | 'update' | 'delete' | 'import'> = {
+    const actionMap: Record<string, 'add' | 'update' | 'delete' | 'import' | 'login' | 'logout' | 'error'> = {
         'CREATE': 'add', 'add': 'add',
         'UPDATE': 'update', 'update': 'update',
         'DELETE': 'delete', 'delete': 'delete',
         'IMPORT': 'import', 'import': 'import',
+        'LOGIN_SUCCESS': 'login',
+        'LOGOUT': 'logout',
+        'LOGIN_FAILURE': 'error',
     };
     const action = actionMap[d.action_type] || 'update';
 
