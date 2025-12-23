@@ -12,6 +12,9 @@ export type AlertType =
     | 'duplicate_employee_code'
     | 'duplicate_area_code'
     | 'duplicate_address_code'
+    | 'missing_employee_code'
+    | 'missing_address_code'
+    | 'missing_area_code'
     | 'contract_expiring';
 
 export type AlertSource =
@@ -66,6 +69,24 @@ export const useSystemAlerts = () => {
                             recordId: id,
                             path: `${path}?highlight=${id}&field=${key}`
                         });
+                    });
+                }
+            });
+        };
+
+        // Helper to check missing required codes
+        const checkMissing = (items: Record<string, any>[], key: string, source: AlertSource, path: string, label: string, type: AlertType) => {
+            items.forEach(item => {
+                const val = String(item[key] || '').trim();
+                // If value is empty, it means the code is missing but the record exists
+                if (!val) {
+                    result.push({
+                        id: `missing-${source}-${item.id}-${key}`,
+                        type: type,
+                        source,
+                        message: `${label}が登録されていません`,
+                        recordId: item.id,
+                        path: `${path}?highlight=${item.id}&field=${key}`
                     });
                 }
             });
@@ -174,7 +195,28 @@ export const useSystemAlerts = () => {
         checkDuplicates(areas, 'areaCode', 'Area', '/masters/areas', 'エリアコード');
         checkDuplicates(addresses, 'addressCode', 'Address', '/masters/addresses', '住所コード');
 
-        // 6. Contract Expiration Check
+        // 6. Missing Code Checks
+        // iPhone
+        checkMissing(iPhones, 'employeeId', 'iPhone', '/devices/iphones', '社員コード', 'missing_employee_code');
+        checkMissing(iPhones, 'addressCode', 'iPhone', '/devices/iphones', '住所コード', 'missing_address_code');
+
+        // FeaturePhone
+        checkMissing(featurePhones, 'employeeId', 'FeaturePhone', '/devices/feature-phones', '社員コード', 'missing_employee_code');
+        checkMissing(featurePhones, 'addressCode', 'FeaturePhone', '/devices/feature-phones', '住所コード', 'missing_address_code');
+
+        // Tablet
+        checkMissing(tablets, 'employeeCode', 'Tablet', '/devices/tablets', '社員コード', 'missing_employee_code');
+        checkMissing(tablets, 'addressCode', 'Tablet', '/devices/tablets', '住所コード', 'missing_address_code');
+
+        // Router
+        checkMissing(routers, 'employeeCode', 'Router', '/devices/routers', '社員コード', 'missing_employee_code');
+        checkMissing(routers, 'addressCode', 'Router', '/devices/routers', '住所コード', 'missing_address_code');
+
+        // Employee
+        checkMissing(employees, 'areaCode', 'Employee', '/masters/employees', 'エリアコード', 'missing_area_code');
+        checkMissing(employees, 'addressCode', 'Employee', '/masters/employees', '住所コード', 'missing_address_code');
+
+        // 7. Contract Expiration Check
         const checkExpiry = (item: any, source: AlertSource, path: string) => {
             if (item.lendDate && item.contractYears) {
                 const years = parseInt(item.contractYears, 10);
