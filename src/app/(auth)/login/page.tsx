@@ -84,16 +84,7 @@ export default function LoginPage() {
                 </button>
             </form>
 
-            <div className="mt-8 p-4 border-2 border-ink bg-background-subtle text-xs font-mono text-ink/70">
-                <p className="font-bold border-b border-ink/20 pb-2 mb-2">DEBUG INFO (Temporary)</p>
-                <div className="space-y-1">
-                    <p>App Env: {process.env.NODE_ENV}</p>
-                    <p>Supabase URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Configured' : '❌ MISSING'}</p>
-                    <p>Supabase Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Configured' : '❌ MISSING'}</p>
-                    <p className="border-t border-ink/20 pt-2 mt-2">Last Error:</p>
-                    <p className="text-accent-coral break-all">{error || 'None'}</p>
-                </div>
-            </div>
+
         </div>
     );
 }
