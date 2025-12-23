@@ -27,10 +27,10 @@ export const useAuditLogs = () => {
     const [currentPage, setCurrentPage] = useState(1);
 
     // Filters
-    const { start, end } = getWeekRange(new Date());
+    // Remove default date restriction to ensure logs are visible by default
     const [filters, setFilters] = useState<LogFilterState>({
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
+        startDate: '',
+        endDate: '',
         actor: '',
         actionType: '',
         result: '',

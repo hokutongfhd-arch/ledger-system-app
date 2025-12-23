@@ -104,6 +104,7 @@ export interface Employee {
     addressCode: string;
     roleTitle: string;
     jobType: string;
+    // TODO: Future Extension - Consider adding 'operator' | 'viewer' roles for more granular permissions
     role: 'admin' | 'user';
     profileImage?: string;
 }

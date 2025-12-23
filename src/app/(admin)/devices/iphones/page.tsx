@@ -9,11 +9,11 @@ import { Table } from '../../../../components/ui/Table';
 import type { IPhone } from '../../../../features/devices/device.types';
 import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { IPhoneForm } from '../../../../features/forms/IPhoneForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { IPhoneDetailModal } from '../../../../features/devices/components/IPhoneDetailModal';
+import { useConfirm } from '../../../../hooks/useConfirm';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -42,6 +42,7 @@ function IPhoneListContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<IPhone | undefined>(undefined);
@@ -51,19 +52,6 @@ function IPhoneListContent() {
     const [pageSize, setPageSize] = useState(15);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
-
-    const [notification, setNotification] = useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        type: 'alert' | 'confirm';
-        onConfirm?: () => void;
-    }>({
-        isOpen: false,
-        title: '通知',
-        message: '',
-        type: 'alert',
-    });
 
     const createQueryString = useCallback(
         (paramsToUpdate: Record<string, string | null>) => {
@@ -80,20 +68,6 @@ function IPhoneListContent() {
         [searchParams]
     );
 
-    const closeNotification = () => {
-        setNotification(prev => ({ ...prev, isOpen: false }));
-    };
-
-    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
-        setNotification({
-            isOpen: true,
-            title,
-            message,
-            type,
-            onConfirm,
-        });
-    };
-
     const { user } = useAuth();
 
     const handleAdd = () => {
@@ -107,42 +81,56 @@ function IPhoneListContent() {
     };
 
     const handleDelete = async (item: IPhone) => {
-        showNotification(
-            '本当に削除しますか？',
-            'confirm',
-            async () => {
-                try {
-                    await deleteIPhone(item.id); // Defaults are false, false (Log=Yes, Toast=Yes)
-                } catch (error) {
-                    console.error(error);
-                    // DataContext handles error toast
-                }
-            },
-            '確認'
-        );
+        const confirmed = await confirm({
+            title: '確認',
+            description: '本当に削除しますか？',
+            confirmText: '削除',
+            variant: 'destructive'
+        });
+
+        if (confirmed) {
+            try {
+                await deleteIPhone(item.id); // Defaults are false, false (Log=Yes, Toast=Yes)
+            } catch (error) {
+                console.error(error);
+                // DataContext handles error toast
+            }
+        }
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
-        showNotification(
-            '本当に削除しますか',
-            'confirm',
-            async () => {
-                try {
-                    for (const id of selectedIds) {
-                        await deleteIPhone(id, true, true);
-                    }
-                    await addLog('iphones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
-                    setSelectedIds(new Set());
-                    showNotification('削除しました');
-                } catch (error) {
-                    console.error("Bulk delete failed", error);
-                    showNotification('一部の削除に失敗しました', 'alert', undefined, 'エラー');
+        const confirmed = await confirm({
+            title: '確認',
+            description: `選択した ${selectedIds.size} 件を削除しますか？`,
+            confirmText: '一括削除',
+            variant: 'destructive'
+        });
+
+        if (confirmed) {
+            try {
+                for (const id of selectedIds) {
+                    await deleteIPhone(id, true, true);
                 }
-            },
-            '確認'
-        );
+                await addLog('iphones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
+                setSelectedIds(new Set());
+                await confirm({ // Use as Alert
+                    title: '削除完了',
+                    description: '削除しました',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            } catch (error) {
+                console.error("Bulk delete failed", error);
+                await confirm({
+                    title: 'エラー',
+                    description: '一部の削除に失敗しました',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            }
+        }
     };
 
     const handleCheckboxChange = (id: string) => {
@@ -347,7 +335,12 @@ function IPhoneListContent() {
             const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
 
             if (jsonData.length === 0) {
-                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
+                await confirm({
+                    title: 'エラー',
+                    description: 'ファイルが空です。',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
                 return;
             }
 
@@ -360,7 +353,12 @@ function IPhoneListContent() {
 
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
             if (missingHeaders.length > 0) {
-                showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
+                await confirm({
+                    title: 'インポートエラー',
+                    description: `不足している項目があります: ${missingHeaders.join(', ')}`,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
                 return;
             }
 
@@ -376,7 +374,12 @@ function IPhoneListContent() {
                     const extraData = row.slice(validColumnCount);
                     const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
                     if (hasExtraData) {
-                        showNotification('定義された列の外側にデータが存在します。ファイルを確認してください。', 'alert', undefined, 'インポートエラー');
+                        await confirm({
+                            title: 'インポートエラー',
+                            description: '定義された列の外側にデータが存在します。ファイルを確認してください。',
+                            confirmText: 'OK',
+                            cancelText: ''
+                        });
                         return;
                     }
                 }
@@ -435,7 +438,13 @@ function IPhoneListContent() {
                 await addLog('iphones', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
             }
 
-            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
+            await confirm({
+                title: 'インポート完了',
+                description: `成功: ${successCount}件\n失敗: ${errorCount}件`,
+                confirmText: 'OK',
+                cancelText: ''
+            });
+
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
@@ -519,7 +528,7 @@ function IPhoneListContent() {
                 addresses={addresses}
             />
 
-            <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
+            <ConfirmDialog />
         </div>
     );
 }

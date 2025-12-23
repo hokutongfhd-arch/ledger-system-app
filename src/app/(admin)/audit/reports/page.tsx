@@ -14,6 +14,8 @@ import {
     DialogTitle,
 } from "../../../../components/ui/dialog";
 
+import Link from 'next/link';
+
 export default function AuditReportsPage() {
     const [reports, setReports] = useState<AuditReport[]>([]);
     const [loading, setLoading] = useState(true);
@@ -75,7 +77,11 @@ export default function AuditReportsPage() {
                                     </TableRow>
                                 ) : (
                                     reports.map((report) => (
-                                        <TableRow key={report.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedReport(report)}>
+                                        <TableRow
+                                            key={report.id}
+                                            className={`hover:bg-muted/50 cursor-pointer ${report.summary.anomalies > 0 ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+                                            onClick={() => setSelectedReport(report)}
+                                        >
                                             <TableCell className="font-medium">
                                                 {new Date(report.period_start).toLocaleDateString()}
                                             </TableCell>
@@ -123,40 +129,83 @@ export default function AuditReportsPage() {
                         <DialogTitle>Report Detail: {selectedReport && new Date(selectedReport.period_start).toLocaleDateString()}</DialogTitle>
                     </DialogHeader>
                     {selectedReport && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="p-4 rounded-lg border bg-card">
-                                    <div className="text-sm font-medium text-muted-foreground">Period</div>
-                                    <div className="mt-1 font-mono text-sm">
-                                        {new Date(selectedReport.period_start).toLocaleString()} <br />
-                                        ↓ <br />
-                                        {new Date(selectedReport.period_end).toLocaleString()}
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">Period Info</div>
+                                    <div className="font-mono text-sm space-y-1">
+                                        <div className="flex justify-between">
+                                            <span>Start:</span>
+                                            <span>{new Date(selectedReport.period_start).toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>End:</span>
+                                            <span>{new Date(selectedReport.period_end).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4">
+                                        <Link href={`/logs?startDate=${selectedReport.period_start}&endDate=${selectedReport.period_end}`} passHref>
+                                            <Button size="sm" variant="outline" className="w-full">
+                                                View Logs for this Period
+                                            </Button>
+                                        </Link>
                                     </div>
                                 </div>
                                 <div className="p-4 rounded-lg border bg-card">
-                                    <div className="text-sm font-medium text-muted-foreground">Summary Stats</div>
-                                    <div className="mt-1 space-y-1 text-sm">
-                                        <div className="flex justify-between">
-                                            <span>Total Actions:</span>
-                                            <span className="font-bold">{selectedReport.summary.total_actions}</span>
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">Summary Stats</div>
+                                    <div className="mt-1 space-y-2 text-sm">
+                                        <div className="flex justify-between items-center p-2 bg-muted rounded">
+                                            <span>Total Actions</span>
+                                            <span className="font-bold text-lg">{selectedReport.summary.total_actions}</span>
                                         </div>
-                                        <div className="flex justify-between text-red-600">
-                                            <span>Login Failures:</span>
-                                            <span className="font-bold">{selectedReport.summary.login_failures}</span>
+                                        <div className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/10 rounded text-red-600">
+                                            <span>Login Failures</span>
+                                            <span className="font-bold text-lg">{selectedReport.summary.login_failures}</span>
                                         </div>
-                                        <div className="flex justify-between text-red-600">
-                                            <span>Anomalies:</span>
-                                            <span className="font-bold">{selectedReport.summary.anomalies}</span>
+                                        <div className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/10 rounded text-red-600">
+                                            <span>Anomalies</span>
+                                            <span className="font-bold text-lg">{selectedReport.summary.anomalies}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <h3 className="font-medium text-sm">Full Report JSON</h3>
-                                <pre className="p-4 rounded-lg bg-slate-950 text-slate-50 overflow-x-auto text-xs font-mono">
-                                    {JSON.stringify(selectedReport.summary, null, 2)}
-                                </pre>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 rounded-lg border bg-card">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">Breakdown by Action</div>
+                                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                                        {Object.entries(selectedReport.summary.breakdown_by_action || {}).map(([action, count]) => (
+                                            <div key={action} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
+                                                <span>{action}</span>
+                                                <span className="font-mono font-medium">{count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-lg border bg-card">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">Breakdown by Result</div>
+                                    <div className="space-y-1">
+                                        {Object.entries(selectedReport.summary.breakdown_by_result || {}).map(([result, count]) => (
+                                            <div key={result} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
+                                                <span className={result === 'failure' ? 'text-red-600' : 'text-green-600'}>
+                                                    {result}
+                                                </span>
+                                                <span className="font-mono font-medium">{count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 border-t">
+                                <details className="text-sm text-muted-foreground cursor-pointer">
+                                    <summary className="hover:text-foreground transition-colors p-2 font-medium">
+                                        Show Raw JSON Data
+                                    </summary>
+                                    <pre className="mt-2 p-4 rounded-lg bg-slate-950 text-slate-50 overflow-x-auto text-xs font-mono">
+                                        {JSON.stringify(selectedReport.summary, null, 2)}
+                                    </pre>
+                                </details>
                             </div>
                         </div>
                     )}

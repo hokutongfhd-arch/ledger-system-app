@@ -169,25 +169,39 @@ export const logService = {
         result: 'success' | 'failure';
         metadata?: any;
     }) => {
-        const payload = {
-            ...logData,
-            metadata: { message: logData.details, ...logData.metadata },
-            occurred_at: new Date().toISOString()
-        };
-        const { data } = await logApi.insertLog(payload);
-        return data ? logService.mapLogFromDb(data) : null;
+        try {
+            const payload = {
+                ...logData,
+                metadata: { message: logData.details, ...logData.metadata },
+                occurred_at: new Date().toISOString()
+            };
+            const { data } = await logApi.insertLog(payload);
+            return data ? logService.mapLogFromDb(data) : null;
+        } catch (error) {
+            console.error('[Audit Log Failure] Failed to create log. Proceeding without logging.', error);
+            // Return a mock log to satisfy callers expecting a result, or null.
+            // Returning null is safer if caller checks for it, but if caller expects a Log object it might crash.
+            // Reviewing typical usage: often awaited but return value ignored, or used for updating UI list.
+            // If it fails, we simply don't return the new log.
+            return null;
+        }
     },
 
     addLog: async (endpoint: string, action: string, details: string, userName: string) => {
-        // NOTE: This legacy addLog is less precise than the new structured logging. 
-        // Ideally should assume 'success' and try to map legacy args to new schema if writing to audit_logs.
-        // For now, mapping best effort.
-        return await logService.createLog({
-            actor_name: userName,
-            target_type: endpoint,
-            action_type: action.toUpperCase(),
-            details: details,
-            result: 'success'
-        });
+        try {
+            // NOTE: This legacy addLog is less precise than the new structured logging. 
+            // Ideally should assume 'success' and try to map legacy args to new schema if writing to audit_logs.
+            // For now, mapping best effort.
+            return await logService.createLog({
+                actor_name: userName,
+                target_type: endpoint,
+                action_type: action.toUpperCase(),
+                details: details,
+                result: 'success'
+            });
+        } catch (error) {
+            console.error('[Audit Log Failure] Failed to add legacy log.', error);
+            return null;
+        }
     }
 };
