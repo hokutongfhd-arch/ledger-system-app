@@ -73,26 +73,29 @@ export const useAnomalyMonitor = () => {
                     });
 
                     // Notify External (Slack)
-                    sendSlackAlert(
-                        `*${anomaly.type} Detected*\n${anomaly.description}`,
+                    const slackResult = await sendSlackAlert(
+                        `${anomaly.type} Detected`,
+                        anomaly.description,
                         {
+                            anomalyType: anomaly.type,
+                            occurredAt: anomaly.detectedAt,
                             riskLevel: anomaly.riskLevel,
-                            detectedAt: anomaly.detectedAt,
-                            relatedLogIds: anomaly.relatedLogIds
+                            relatedLogIds: anomaly.relatedLogIds,
                         }
-                    ).then(async (result) => {
-                        if (!result.success) {
-                            console.error('Slack Notification Failed:', result.error);
-                            // Optional: Log failure to audit_logs
-                            await logService.createLog({
-                                target_type: 'system',
-                                action_type: 'SLACK_NOTIFY_FAILED',
-                                details: `Failed to send slack alert: ${result.error}`,
-                                actor_name: 'System Monitor',
-                                result: 'failure'
-                            });
-                        }
-                    });
+                    );
+
+                    if (!slackResult.success) {
+                        console.error('Slack Notification Failed:', slackResult.error);
+                        // Optional: Log failure to audit_logs
+                        await logService.createLog({
+                            target_type: 'system',
+                            action_type: 'SLACK_NOTIFY_FAILED',
+                            details: `Failed to send slack alert: ${slackResult.error}`,
+                            actor_name: 'System Monitor',
+                            result: 'failure',
+                            metadata: { error: slackResult.error }
+                        });
+                    }
                 }
 
                 lastCheckRef.current = now;
