@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
-    output: 'export',
+    // output: 'export', // Server Actions are not supported with static export
     images: {
         unoptimized: true,
         remotePatterns: [
@@ -21,9 +21,9 @@ const nextConfig = {
     },
     // Fix Turbopack root detection issue
     turbopack: {
-        root: '.',
+        root: process.cwd(),
     },
-    distDir: 'dist',
+    // distDir: 'dist', // Use default .next for standard Vercel deployment
 };
 
 export default nextConfig;
