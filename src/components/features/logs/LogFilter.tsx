@@ -8,6 +8,27 @@ interface LogFilterProps {
 }
 
 export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate }) => {
+    // Helper: Convert UTC ISO string to Local YYYY-MM-DDTHH:mm string for input
+    const toLocalISOString = (dateStr: string) => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    // Helper: Handle input change, convert Local back to UTC ISO
+    const handleDateChange = (key: 'startDate' | 'endDate', value: string) => {
+        if (!value) {
+            onUpdate(key, '');
+            return;
+        }
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) {
+            onUpdate(key, d.toISOString());
+        }
+    };
+
     return (
         <div className="bg-background-paper p-4 rounded-xl shadow-sm border border-border mb-4">
             <div className="grid grid-cols-12 gap-4">
@@ -20,15 +41,15 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate }) => {
                     <div className="flex gap-2 items-center">
                         <input
                             type="datetime-local"
-                            value={filters.startDate.slice(0, 16)}
-                            onChange={(e) => onUpdate('startDate', new Date(e.target.value).toISOString())}
+                            value={filters.startDate ? toLocalISOString(filters.startDate) : ''}
+                            onChange={(e) => handleDateChange('startDate', e.target.value)}
                             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle focus:ring-2 focus:ring-blue-100 outline-none"
                         />
                         <span className="text-text-muted">-</span>
                         <input
                             type="datetime-local"
-                            value={filters.endDate.slice(0, 16)}
-                            onChange={(e) => onUpdate('endDate', new Date(e.target.value).toISOString())}
+                            value={filters.endDate ? toLocalISOString(filters.endDate) : ''}
+                            onChange={(e) => handleDateChange('endDate', e.target.value)}
                             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle focus:ring-2 focus:ring-blue-100 outline-none"
                         />
                     </div>

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { logService } from './log.service';
 import type { Log } from '../../lib/types';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
+import { fetchAuditLogsServer } from './logs.server';
 
 export type LogFilterState = {
     startDate: string;
@@ -43,10 +44,12 @@ export const useAuditLogs = () => {
         order: 'desc'
     });
 
+
+
     const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
-            const { logs: data, total } = await logService.fetchLogs({
+            const { logs: data, total, error } = await fetchAuditLogsServer({
                 page: currentPage,
                 pageSize: pageSize,
                 startDate: filters.startDate,
@@ -57,7 +60,14 @@ export const useAuditLogs = () => {
                 target: filters.target,
                 sort: sort
             });
-            setLogs(data);
+
+            if (error) {
+                console.error('Server fetch error:', error);
+            }
+
+            // Map server data (raw DB) to Log type using service mapper
+            const mappedLogs = (data || []).map(logService.mapLogFromDb);
+            setLogs(mappedLogs);
             setTotalCount(total);
         } catch (error) {
             console.error('Failed to fetch audit logs:', error);
@@ -90,7 +100,10 @@ export const useAuditLogs = () => {
             // Fetch all matching records (without pagination ideally, or large limit)
             // Note: For large datasets, you might need a dedicated export endpoint or looped fetching.
             // Here we assume a reasonable limit for CSV e.g. 1000 or using a large page size.
-            const { logs: allLogs } = await logService.fetchLogs({
+            // Fetch all matching records (without pagination ideally, or large limit)
+            // Note: For large datasets, you might need a dedicated export endpoint or looped fetching.
+            // Here we assume a reasonable limit for CSV e.g. 1000 or using a large page size.
+            const { logs: allLogs } = await fetchAuditLogsServer({
                 page: 1,
                 pageSize: 5000, // Hard cap for safety
                 startDate: filters.startDate,
