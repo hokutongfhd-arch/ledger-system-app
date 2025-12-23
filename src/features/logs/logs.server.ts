@@ -70,3 +70,37 @@ export async function fetchAuditLogsServer(params: {
         return { logs: [], total: 0, error: error.message };
     }
 }
+
+export async function fetchDashboardStatsServer(startDateStr: string) {
+    try {
+        // Fetch all logs since startDate
+        const { data: logs, error } = await supabaseAdmin
+            .from('audit_logs')
+            .select('occurred_at, action_type, result, actor_name, actor_employee_code')
+            .gte('occurred_at', startDateStr)
+            .order('occurred_at', { ascending: true });
+
+        if (error) throw error;
+
+        // Fetch Login Failures count for last 24h (independent of the range)
+        const yesterday = new Date();
+        yesterday.setHours(yesterday.getHours() - 24);
+
+        const { count: loginFail24h, error: kpiError } = await supabaseAdmin
+            .from('audit_logs')
+            .select('*', { count: 'exact', head: true })
+            .gte('occurred_at', yesterday.toISOString())
+            .eq('action_type', 'LOGIN_FAILURE')
+            .eq('result', 'failure');
+
+        return {
+            logs: logs || [],
+            loginFailcount24h: loginFail24h || 0,
+            error: null
+        };
+
+    } catch (error: any) {
+        console.error('Dashboard Stats Server Error:', error);
+        return { logs: [], loginFailcount24h: 0, error: error.message };
+    }
+}

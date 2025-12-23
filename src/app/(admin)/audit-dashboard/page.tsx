@@ -4,13 +4,19 @@ import React from 'react';
 import { useAuditDashboard } from '../../../features/audit/useAuditDashboard';
 import type { ActionTypeStat } from '../../../lib/types/audit';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    PieChart, Pie, Cell, LineChart, Line
+    Tooltip, Legend, ResponsiveContainer,
+    PieChart, Pie, Cell
 } from 'recharts';
 import { Activity, AlertTriangle, ShieldAlert, CheckCircle } from 'lucide-react';
+import { renderCustomizedLabel } from './PieLabel';
 
 export default function AuditDashboardPage() {
     const { data, loading, range, setRange } = useAuditDashboard();
+    // Sort logic: Descending order by count
+    const chartData = React.useMemo(() => {
+        if (!data?.distribution) return [];
+        return [...data.distribution].sort((a, b) => b.count - a.count);
+    }, [data?.distribution]);
 
     if (loading) {
         return (
@@ -77,52 +83,73 @@ export default function AuditDashboardPage() {
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[400px]">
-                {/* Trend Chart */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">操作数推移</h3>
-                    <div className="flex-1 min-h-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={trend}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis
-                                    dataKey="date"
-                                    tick={{ fontSize: 12 }}
-                                    tickFormatter={(str) => str.slice(5)} // MM-DD
-                                />
-                                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                />
-                                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="操作数" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
+            <div className="grid grid-cols-1 gap-6 h-[400px]">
                 {/* Distribution Chart */}
-                <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col">
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col">
                     <h3 className="text-lg font-bold text-gray-800 mb-4">アクション種別</h3>
-                    <div className="flex-1 min-h-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={distribution}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="count"
-                                >
-                                    {distribution.map((entry: ActionTypeStat, index: number) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend layout="vertical" verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                    <div className="flex flex-col md:flex-row h-full gap-8">
+                        {/* 1. Clean Chart Area (Left Side) - Increased width and reduced radius to prevent clipping */}
+                        <div className="h-[250px] md:h-full w-full md:w-[50%] shrink-0 relative flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
+                                    <Pie
+                                        style={{ outline: 'none' }}
+                                        data={chartData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={2}
+                                        startAngle={90} // Start from top (12 o'clock)
+                                        endAngle={-270} // Go clockwise
+                                        dataKey="count"
+                                        nameKey="action" // Needed for label to access 'name'
+                                        label={renderCustomizedLabel} // Use custom label
+                                        labelLine={false} // Disable default lines as custom renderer handles them
+                                    >
+                                        {chartData.map((entry: ActionTypeStat, index: number) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} strokeWidth={0} />
+                                        ))}
+                                    </Pie>
+
+                                </PieChart>
+                            </ResponsiveContainer>
+                            {/* Center Text (Total) */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="text-center">
+                                    <span className="block text-2xl font-bold text-gray-800">
+                                        {distribution.reduce((acc, curr) => acc + curr.count, 0)}
+                                    </span>
+                                    <span className="text-xs text-gray-400">TOTAL</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. Detailed List Area (Right Side) */}
+                        <div className="flex-1 overflow-y-auto mt-2 md:mt-0 pr-2 space-y-3 custom-scrollbar flex flex-col justify-center">
+                            {distribution.map((item, i) => {
+                                const total = distribution.reduce((acc, curr) => acc + curr.count, 0);
+                                const percent = total > 0 ? (item.count / total * 100).toFixed(0) : '0';
+
+                                return (
+                                    <div key={i} className="flex items-center justify-between text-base p-3 hover:bg-gray-50 rounded-lg transition-colors border-b border-gray-100 last:border-0">
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="w-4 h-4 rounded-full shrink-0"
+                                                style={{ backgroundColor: item.fill }}
+                                            />
+                                            <span className="text-gray-700 font-medium">
+                                                {item.action}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-6">
+                                            <span className="text-gray-900 font-bold text-lg">{percent}%</span>
+                                            <span className="text-gray-500 w-[60px] text-right">{item.count}件</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>

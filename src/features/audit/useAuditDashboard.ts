@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import type { DashboardData, KPIStats, DayStat, ActionTypeStat } from '../../lib/types/audit';
 import type { Log } from '../../lib/types';
 import { logService } from '../logs/log.service';
+import { fetchDashboardStatsServer } from '../logs/logs.server';
 import { subDays, startOfDay, subHours } from 'date-fns';
 
 type DateRange = 'today' | '7days' | '30days';
@@ -33,29 +34,23 @@ export const useAuditDashboard = () => {
                     break;
             }
 
-            // 1. Fetch Logs for the main charts and some KPIs
-            const { data: logsData, error: logsError } = await supabase
-                .from('audit_logs')
-                .select('*')
-                .gte('occurred_at', startDate.toISOString())
-                .order('occurred_at', { ascending: true });
+            // 1. Fetch Logs via Server Action (Bypass RLS)
+            const { logs: logsData, loginFailcount24h, error } = await fetchDashboardStatsServer(startDate.toISOString());
 
-            if (logsError) throw logsError;
+            if (error) throw new Error(error);
 
-            if (logsError) throw logsError;
+            // Map raw server data to Log type if needed, or use as is
+            // Note: Server action returns limited fields for performance, mapping partially
+            const logs = (logsData || []).map((d: any) => ({
+                timestamp: d.occurred_at,
+                actionRaw: d.action_type,
+                result: d.result,
+                actorName: d.actor_name,
+                // other fields are undefined but okay for stats
+            }));
 
-            const logs = (logsData || []).map(logService.mapLogFromDb);
-
-
-            // 2. Fetch specific KPI: Login Failures in last 24h
-            const { count: loginFailcount24h, error: kpiError } = await supabase
-                .from('audit_logs')
-                .select('*', { count: 'exact', head: true })
-                .gte('occurred_at', subHours(now, 24).toISOString())
-                .eq('action_type', 'LOGIN_FAILURE')
-                .eq('result', 'failure'); // Redundant but safe
-
-            if (kpiError) console.error('KPI fetch error', kpiError);
+            // Login Failures from server
+            // const { count: loginFailcount24h, error: kpiError } = await supabase... (Moved to server)
 
 
             // --- Aggregation ---
