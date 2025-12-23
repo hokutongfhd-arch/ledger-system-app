@@ -54,13 +54,6 @@ export const notifier = {
                 </div>
             ),
             {
-                duration: Infinity, // User must dismiss or click action (Requirement: "until pressed") - User actually said "re-display not done even if screen transitioned", effectively making it persistent until handled is safer? 
-                // Wait, user said "If I press close, it disappears."
-                // I'll keep 6000 or make it longer? User complained "realtime check" was slow.
-                // Let's set duration to a bit longer or Infinity to ensure they see it?
-                // Actually user said "notifications disappear only when x is pressed".
-                // "notifications disappear only when x is pressed" -> implied by "when x button is attached and pressed, notification disappears"
-                // Let's stick to a long duration or Infinity. I'll use Infinity to be safe so they definitely see it.
                 duration: Infinity,
                 position: 'top-right',
                 style: {
