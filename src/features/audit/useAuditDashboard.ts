@@ -89,11 +89,17 @@ export const useAuditDashboard = () => {
             });
 
             const distribution: ActionTypeStat[] = Array.from(actionMap.entries())
-                .map(([action, count], index) => ({
-                    action,
-                    count,
-                    fill: COLORS[index % COLORS.length]
-                }))
+                .map(([action, count], index) => {
+                    let fill = COLORS[index % COLORS.length];
+                    if (action === 'ANOMALY_DETECTED') fill = '#EF4444'; // Red-500 for Alert
+                    else if (action === 'LOGIN_FAILURE') fill = '#F59E0B'; // Amber-500 for Warning
+
+                    return {
+                        action,
+                        count,
+                        fill
+                    };
+                })
                 .sort((a, b) => b.count - a.count); // Descending
 
             setData({ kpi, trend, distribution });
