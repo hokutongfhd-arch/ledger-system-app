@@ -159,3 +159,19 @@ export interface Memo {
     memo: string;
     created_at?: string;
 }
+
+export interface AuditReport {
+    id: string;
+    report_type: 'daily' | 'weekly';
+    period_start: string;
+    period_end: string;
+    summary: {
+        total_actions: number;
+        login_failures: number;
+        anomalies: number;
+        breakdown_by_action: Record<string, number>;
+        breakdown_by_result: Record<string, number>;
+        generated_at: string;
+    };
+    created_at: string;
+}
