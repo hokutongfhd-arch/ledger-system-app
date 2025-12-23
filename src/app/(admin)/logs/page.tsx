@@ -27,6 +27,7 @@ export default function LogListPage() {
 }
 
 function LogListContent() {
+    const { user } = useAuth();
     const {
         logs,
         loading,
@@ -35,6 +36,8 @@ function LogListContent() {
         pageSize,
         filters,
         sort,
+        showArchived,
+        setShowArchived,
         setPageSize,
         setCurrentPage,
         updateFilter,
@@ -104,13 +107,26 @@ function LogListContent() {
                         <p className="text-xs text-text-muted">システム操作の履歴を検索・確認できます</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleExportCSV}
-                    className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all"
-                >
-                    <Download size={18} />
-                    <span className="font-medium">CSVエクスポート</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    {user?.role === 'admin' && (
+                        <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={showArchived}
+                                onChange={(e) => setShowArchived(e.target.checked)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className="text-sm font-medium text-gray-700">アーカイブ済みを表示</span>
+                        </label>
+                    )}
+                    <button
+                        onClick={handleExportCSV}
+                        className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all"
+                    >
+                        <Download size={18} />
+                        <span className="font-medium">CSVエクスポート</span>
+                    </button>
+                </div>
             </div>
 
             <LogFilter filters={filters} onUpdate={updateFilter} />
@@ -153,8 +169,8 @@ function LogListContent() {
                             accessor: (item) => (
                                 <div className="max-w-xs truncate text-sm text-gray-600" title={item.details}>
                                     <span className={`inline-block w-2 h-2 rounded-full mr-2 ${item.actionRaw === 'DELETE' ? 'bg-red-400' :
-                                            item.actionRaw === 'CREATE' ? 'bg-green-400' :
-                                                item.actionRaw === 'UPDATE' ? 'bg-blue-400' : 'bg-gray-400'
+                                        item.actionRaw === 'CREATE' ? 'bg-green-400' :
+                                            item.actionRaw === 'UPDATE' ? 'bg-blue-400' : 'bg-gray-400'
                                         }`}></span>
                                     {item.details}
                                 </div>

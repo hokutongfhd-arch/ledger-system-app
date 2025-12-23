@@ -152,6 +152,8 @@ export interface Log {
     ipAddress: string;
     details: string;          // UI Generated Summary
     user: string;             // Compatibility fallback
+    is_archived?: boolean;
+    archived_at?: string;
 }
 
 export interface Memo {

@@ -46,6 +46,9 @@ export const useAuditLogs = () => {
 
 
 
+    // Archive Toggle
+    const [showArchived, setShowArchived] = useState(false);
+
     const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
@@ -58,7 +61,8 @@ export const useAuditLogs = () => {
                 actionType: filters.actionType,
                 result: filters.result === '' ? undefined : filters.result,
                 target: filters.target,
-                sort: sort
+                sort: sort,
+                includeArchived: showArchived
             });
 
             if (error) {
@@ -75,7 +79,7 @@ export const useAuditLogs = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, filters, sort]);
+    }, [currentPage, pageSize, filters, sort, showArchived]);
 
     // Initial fetch
     useEffect(() => {
@@ -100,9 +104,6 @@ export const useAuditLogs = () => {
             // Fetch all matching records (without pagination ideally, or large limit)
             // Note: For large datasets, you might need a dedicated export endpoint or looped fetching.
             // Here we assume a reasonable limit for CSV e.g. 1000 or using a large page size.
-            // Fetch all matching records (without pagination ideally, or large limit)
-            // Note: For large datasets, you might need a dedicated export endpoint or looped fetching.
-            // Here we assume a reasonable limit for CSV e.g. 1000 or using a large page size.
             const { logs: allLogs } = await fetchAuditLogsServer({
                 page: 1,
                 pageSize: 5000, // Hard cap for safety
@@ -112,7 +113,8 @@ export const useAuditLogs = () => {
                 actionType: filters.actionType,
                 result: filters.result === '' ? undefined : filters.result,
                 target: filters.target,
-                sort: sort
+                sort: sort,
+                includeArchived: showArchived
             });
             return allLogs;
         } catch (error) {
@@ -129,6 +131,8 @@ export const useAuditLogs = () => {
         pageSize,
         filters,
         sort,
+        showArchived,
+        setShowArchived,
         setPageSize,
         setCurrentPage,
         updateFilter,

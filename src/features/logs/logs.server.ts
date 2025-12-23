@@ -19,6 +19,7 @@ export async function fetchAuditLogsServer(params: {
     result?: 'success' | 'failure';
     target?: string;
     sort?: { field: 'occurred_at' | 'actor_name'; order: 'asc' | 'desc' };
+    includeArchived?: boolean;
 }) {
     try {
         // Optional: Verify user session here if strict server-side auth check is needed
@@ -28,6 +29,13 @@ export async function fetchAuditLogsServer(params: {
         let query = supabaseAdmin
             .from('audit_logs')
             .select('*', { count: 'exact' });
+
+        // Archive Filter: Exclusive mode
+        if (params.includeArchived) {
+            query = query.eq('is_archived', true);
+        } else {
+            query = query.eq('is_archived', false); // Default: Active only
+        }
 
         // Filters
         if (params.startDate) query = query.gte('occurred_at', params.startDate);
