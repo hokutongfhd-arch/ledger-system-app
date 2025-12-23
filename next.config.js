@@ -20,10 +20,10 @@ const nextConfig = {
         ],
     },
     // Fix Turbopack root detection issue
-    turbopack: {
-        root: process.cwd(),
-    },
-    distDir: 'dist',
+    // turbopack: {
+    //    root: process.cwd(),
+    // },
+    // distDir: 'dist',
 };
 
 export default nextConfig;
