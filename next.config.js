@@ -23,7 +23,7 @@ const nextConfig = {
     turbopack: {
         root: process.cwd(),
     },
-    // distDir: 'dist', // Use default .next for standard Vercel deployment
+    distDir: 'dist',
 };
 
 export default nextConfig;
