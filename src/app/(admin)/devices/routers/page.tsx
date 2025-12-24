@@ -14,6 +14,7 @@ import { RouterForm } from '../../../../features/forms/RouterForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { RouterDetailModal } from '../../../../features/devices/components/RouterDetailModal';
+import { useConfirm } from '../../../../hooks/useConfirm';
 
 type SortKey = 'terminalCode' | 'carrier' | 'simNumber' | 'actualLenderName' | 'userName' | 'contractYears';
 type SortOrder = 'asc' | 'desc';
@@ -45,30 +46,63 @@ function RouterListContent() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
-
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
-
-    const [notification, setNotification] = useState<{
-        isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void;
-    }>({ isOpen: false, title: '通知', message: '', type: 'alert' });
-
-    const closeNotification = () => setNotification(prev => ({ ...prev, isOpen: false }));
-    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
-        setNotification({ isOpen: true, title, message, type, onConfirm });
-    };
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
     const handleEdit = (item: Router) => { setEditingItem(item); setIsModalOpen(true); };
 
     const handleDelete = async (item: Router) => {
-        showNotification('本当に削除しますか？', 'confirm', async () => {
+        const confirmed = await confirm({
+            title: '確認',
+            description: '本当に削除しますか？',
+            confirmText: '削除',
+            variant: 'destructive'
+        });
+
+        if (confirmed) {
             try {
                 await deleteRouter(item.id, false, false);
-                // Log and Toast handled by DataContext
             } catch (error) {
-                // DataContext handles error toast
+                console.error(error);
             }
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+
+        const confirmed = await confirm({
+            title: '確認',
+            description: `選択した ${selectedIds.size} 件を削除しますか？`,
+            confirmText: '一括削除',
+            variant: 'destructive'
         });
+
+        if (confirmed) {
+            try {
+                for (const id of selectedIds) {
+                    await deleteRouter(id, true, true);
+                }
+                await addLog('routers', 'delete', `ルーター一括削除: ${selectedIds.size}件`);
+                setSelectedIds(new Set());
+                await confirm({
+                    title: '削除完了',
+                    description: '削除しました',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            } catch (error) {
+                console.error("Bulk delete failed", error);
+                await confirm({
+                    title: 'エラー',
+                    description: '一部の削除に失敗しました',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            }
+        }
     };
 
     const filteredData = routers.filter(item =>
@@ -93,6 +127,30 @@ function RouterListContent() {
     });
 
     const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    const handleCheckboxChange = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            const newSelected = new Set(selectedIds);
+            paginatedData.forEach(item => newSelected.add(item.id));
+            setSelectedIds(newSelected);
+        } else {
+            const newSelected = new Set(selectedIds);
+            paginatedData.forEach(item => newSelected.delete(item.id));
+            setSelectedIds(newSelected);
+        }
+    };
+
+    const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
 
     const toggleSort = (key: SortKey) => {
         setSortCriteria(prev => {
@@ -194,7 +252,12 @@ function RouterListContent() {
             const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
 
             if (jsonData.length === 0) {
-                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
+                await confirm({
+                    title: 'エラー',
+                    description: 'ファイルが空です。',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
                 return;
             }
 
@@ -208,7 +271,12 @@ function RouterListContent() {
 
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
             if (missingHeaders.length > 0) {
-                showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
+                await confirm({
+                    title: 'インポートエラー',
+                    description: `不足している項目があります: ${missingHeaders.join(', ')}`,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
                 return;
             }
 
@@ -224,7 +292,12 @@ function RouterListContent() {
                     const extraData = row.slice(validColumnCount);
                     const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
                     if (hasExtraData) {
-                        showNotification('定義された列の外側にデータが存在します。ファイルを確認してください。', 'alert', undefined, 'インポートエラー');
+                        await confirm({
+                            title: 'インポートエラー',
+                            description: '定義された列の外側にデータが存在します。ファイルを確認してください。',
+                            confirmText: 'OK',
+                            cancelText: ''
+                        });
                         return;
                     }
                 }
@@ -281,7 +354,12 @@ function RouterListContent() {
                 await addLog('routers', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
             }
 
-            showNotification(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`);
+            await confirm({
+                title: 'インポート完了',
+                description: `成功: ${successCount}件\n失敗: ${errorCount}件`,
+                confirmText: 'OK',
+                cancelText: ''
+            });
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
@@ -311,6 +389,11 @@ function RouterListContent() {
                 data={paginatedData}
                 rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
                 columns={[
+                    {
+                        header: <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="w-4 h-4" />,
+                        accessor: (item) => <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => handleCheckboxChange(item.id)} className="w-4 h-4" />,
+                        className: "w-10 px-4"
+                    },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>通信キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('simNumber')}>SIM電番{getSortIcon('simNumber')}</div>, accessor: 'simNumber' },
@@ -322,7 +405,18 @@ function RouterListContent() {
                 onDelete={handleDelete}
             />
 
-            <Pagination currentPage={currentPage} totalPages={Math.ceil(sortedData.length / pageSize)} totalItems={sortedData.length} startIndex={(currentPage - 1) * pageSize} endIndex={Math.min(currentPage * pageSize, sortedData.length)} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+            <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(sortedData.length / pageSize)}
+                totalItems={sortedData.length}
+                startIndex={(currentPage - 1) * pageSize}
+                endIndex={Math.min(currentPage * pageSize, sortedData.length)}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                selectedCount={selectedIds.size}
+                onBulkDelete={handleBulkDelete}
+            />
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ルーター 編集' : 'ルーター 新規登録'}>
                 <RouterForm initialData={editingItem} onSubmit={async (data) => {
@@ -340,7 +434,7 @@ function RouterListContent() {
                 addresses={addresses}
             />
 
-            <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
+            <ConfirmDialog />
         </div>
     );
 }

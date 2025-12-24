@@ -12,6 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { AddressForm } from '../../../../features/forms/AddressForm';
 import { AddressDetailModal } from '../../../../features/addresses/components/AddressDetailModal';
+import { useConfirm } from '../../../../hooks/useConfirm';
 import { AddressDeviceList } from '../../../../features/components/AddressDeviceList';
 import * as XLSX from 'xlsx';
 import { useToast } from '../../../../features/context/ToastContext';
@@ -54,16 +55,13 @@ function AddressListContent() {
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
 
-    const [notification, setNotification] = useState<{
-        isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void;
-    }>({ isOpen: false, title: '通知', message: '', type: 'alert' });
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const { showToast } = useToast();
 
-    const closeNotification = () => setNotification(prev => ({ ...prev, isOpen: false }));
-    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
-        setNotification({ isOpen: true, title, message, type, onConfirm });
-    };
+    const closeNotification = () => { };
+    const showNotification = () => { };
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
     const handleEdit = (item: Address) => { setEditingItem(item); setIsModalOpen(true); };
@@ -132,14 +130,24 @@ function AddressListContent() {
             const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
 
             if (jsonData.length === 0) {
-                showNotification('ファイルが空です。', 'alert', undefined, 'エラー');
+                await confirm({
+                    title: 'エラー',
+                    description: 'ファイルが空です。',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
                 return;
             }
 
             const fileHeaders = jsonData[0] as string[];
             const missingHeaders = headers.filter(h => !fileHeaders.includes(h));
             if (missingHeaders.length > 0) {
-                showNotification(`不足している項目があります: ${missingHeaders.join(', ')}`, 'alert', undefined, 'インポートエラー');
+                await confirm({
+                    title: 'インポートエラー',
+                    description: `不足している項目があります: ${missingHeaders.join(', ')}`,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
                 return;
             }
 
@@ -154,7 +162,12 @@ function AddressListContent() {
                     const extraData = row.slice(validColumnCount);
                     const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
                     if (hasExtraData) {
-                        showNotification('定義された列の外側にデータが存在します。ファイルを確認してください。', 'alert', undefined, 'インポートエラー');
+                        await confirm({
+                            title: 'インポートエラー',
+                            description: '定義された列の外側にデータが存在します。ファイルを確認してください。',
+                            confirmText: 'OK',
+                            cancelText: ''
+                        });
                         return;
                     }
                 }
@@ -213,10 +226,14 @@ function AddressListContent() {
 
             if (successCount > 0) {
                 await addLog('addresses', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
-                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'success');
-            } else {
-                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'info');
             }
+
+            await confirm({
+                title: 'インポート完了',
+                description: `成功: ${successCount}件\n失敗: ${errorCount}件`,
+                confirmText: 'OK',
+                cancelText: ''
+            });
 
             if (event.target) event.target.value = '';
         };
@@ -224,13 +241,55 @@ function AddressListContent() {
     };
 
     const handleDelete = async (item: Address) => {
-        showNotification('本当に削除しますか？', 'confirm', async () => {
+        const confirmed = await confirm({
+            title: '確認',
+            description: '本当に削除しますか？',
+            confirmText: '削除',
+            variant: 'destructive'
+        });
+
+        if (confirmed) {
             try {
                 await deleteAddress(item.id);
             } catch (error) {
                 console.error(error);
             }
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+
+        const confirmed = await confirm({
+            title: '確認',
+            description: `選択した ${selectedIds.size} 件を削除しますか？`,
+            confirmText: '一括削除',
+            variant: 'destructive'
         });
+
+        if (confirmed) {
+            try {
+                for (const id of selectedIds) {
+                    await deleteAddress(id, true, true);
+                }
+                await addLog('addresses', 'delete', `住所一括削除: ${selectedIds.size}件`);
+                setSelectedIds(new Set());
+                await confirm({
+                    title: '削除完了',
+                    description: '削除しました',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            } catch (error) {
+                console.error("Bulk delete failed", error);
+                await confirm({
+                    title: 'エラー',
+                    description: '一部の削除に失敗しました',
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            }
+        }
     };
 
     const filteredData = addresses.filter(item =>
@@ -260,6 +319,30 @@ function AddressListContent() {
     });
 
     const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    const handleCheckboxChange = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            const newSelected = new Set(selectedIds);
+            paginatedData.forEach(item => newSelected.add(item.id));
+            setSelectedIds(newSelected);
+        } else {
+            const newSelected = new Set(selectedIds);
+            paginatedData.forEach(item => newSelected.delete(item.id));
+            setSelectedIds(newSelected);
+        }
+    };
+
+    const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
 
     const toggleSort = (key: SortKey) => {
         setSortCriteria(prev => {
@@ -310,6 +393,11 @@ function AddressListContent() {
                 data={paginatedData}
                 rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
                 columns={[
+                    {
+                        header: <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="w-4 h-4" />,
+                        accessor: (item) => <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => handleCheckboxChange(item.id)} className="w-4 h-4" />,
+                        className: "w-10 px-4"
+                    },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>住所コード{getSortIcon('addressCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.addressCode}</button> },
                     { header: '事業所名', accessor: 'officeName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('tel')}>ＴＥＬ{getSortIcon('tel')}</div>, accessor: 'tel' },
@@ -323,7 +411,18 @@ function AddressListContent() {
                 canDelete={() => isAdmin}
             />
 
-            <Pagination currentPage={currentPage} totalPages={Math.ceil(sortedData.length / pageSize)} totalItems={sortedData.length} startIndex={(currentPage - 1) * pageSize} endIndex={Math.min(currentPage * pageSize, sortedData.length)} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+            <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(sortedData.length / pageSize)}
+                totalItems={sortedData.length}
+                startIndex={(currentPage - 1) * pageSize}
+                endIndex={Math.min(currentPage * pageSize, sortedData.length)}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                selectedCount={selectedIds.size}
+                onBulkDelete={handleBulkDelete}
+            />
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '住所 編集' : '住所 新規登録'}>
                 <AddressForm initialData={editingItem} onSubmit={async (data) => {
@@ -340,7 +439,7 @@ function AddressListContent() {
                 areas={areas}
             />
 
-            <NotificationModal isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} onConfirm={notification.onConfirm} />
+            <ConfirmDialog />
         </div>
     );
 }
