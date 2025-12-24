@@ -23,10 +23,18 @@ export interface ActionTypeStat {
     [key: string]: any;
 }
 
+export interface SeverityStat {
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    count: number;
+    fill: string;
+    [key: string]: any; // For Recharts compatibility
+}
+
 export interface DashboardData {
     kpi: KPIStats;
     trend: DayStat[];
     distribution: ActionTypeStat[];
+    severityDistribution: SeverityStat[]; // New field
 }
 
 // --- Anomaly Detection Types ---

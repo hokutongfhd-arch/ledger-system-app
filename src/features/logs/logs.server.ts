@@ -84,7 +84,7 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
         // Fetch all logs since startDate
         const { data: logs, error } = await supabaseAdmin
             .from('audit_logs')
-            .select('occurred_at, action_type, result, actor_name, actor_employee_code')
+            .select('occurred_at, action_type, result, actor_name, actor_employee_code, severity')
             .gte('occurred_at', startDateStr)
             .order('occurred_at', { ascending: true });
 

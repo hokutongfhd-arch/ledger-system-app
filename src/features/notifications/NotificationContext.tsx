@@ -1,43 +1,77 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
+export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
+
 interface NotificationContextType {
     unreadCount: number;
-    markAllAsRead: () => Promise<void>;
+    maxSeverity: SeverityLevel | null;
+    markAllAsRead: (silent?: boolean) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [unreadCount, setUnreadCount] = useState(0);
+    const [maxSeverity, setMaxSeverity] = useState<SeverityLevel | null>(null);
     const router = useRouter();
+    const routerRef = useRef(router);
 
-    // 1. Fetch initial unread count
-    const fetchUnreadCount = useCallback(async () => {
+    useEffect(() => {
+        routerRef.current = router;
+    }, [router]);
+
+    const getSeverityWeight = useCallback((severity: string): number => {
+        switch (severity) {
+            case 'critical': return 4;
+            case 'high': return 3;
+            case 'medium': return 2;
+            case 'low': return 1;
+            default: return 0;
+        }
+    }, []);
+
+    const isHigherSeverity = useCallback((a: string, b: string | null): boolean => {
+        if (!b) return true;
+        return getSeverityWeight(a) > getSeverityWeight(b);
+    }, [getSeverityWeight]);
+
+    const fetchUnreadState = useCallback(async () => {
         try {
-            const { count, error } = await supabase
+            const { data, count, error } = await supabase
                 .from('audit_logs')
-                .select('*', { count: 'exact', head: true })
+                .select('severity', { count: 'exact' })
                 .eq('action_type', 'ANOMALY_DETECTED')
                 .eq('is_acknowledged', false);
 
-            if (!error && count !== null) {
+            if (error) throw error;
+
+            if (count !== null) {
                 setUnreadCount(count);
+                let currentMax: SeverityLevel | null = null;
+                if (data) {
+                    data.forEach((log: any) => {
+                        const sev = log.severity || 'medium';
+                        if (isHigherSeverity(sev, currentMax)) {
+                            currentMax = sev;
+                        }
+                    });
+                }
+                setMaxSeverity(currentMax);
             }
         } catch (err) {
             console.error('Failed to fetch unread anomalies:', err);
         }
-    }, []);
+    }, [isHigherSeverity]);
 
-    // 2. Mark All as Read
-    const markAllAsRead = async () => {
+    const markAllAsRead = useCallback(async (silent: boolean = false) => {
         try {
-            // Optimistic update
             setUnreadCount(0);
+            setMaxSeverity(null);
 
             const { error } = await supabase
                 .from('audit_logs')
@@ -47,21 +81,30 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
             if (error) throw error;
 
-            toast.success('全ての通知を既読にしました');
-            router.refresh();
-        } catch (err) {
-            console.error('Failed to acknowledge alerts:', err);
-            toast.error('既読設定に失敗しました');
-            fetchUnreadCount(); // Revert on error
+            if (!silent) {
+                toast.success('全ての通知を既読にしました');
+            }
+            routerRef.current.refresh();
+        } catch (err: any) {
+            console.error('Failed to acknowledge alerts:', {
+                message: err.message,
+                details: err.details,
+                hint: err.hint,
+                code: err.code,
+                full: err
+            });
+            if (!silent) {
+                toast.error('既読設定に失敗しました');
+            }
+            fetchUnreadState();
         }
-    };
+    }, [fetchUnreadState]);
 
-    // 3. Realtime Subscription
     useEffect(() => {
-        fetchUnreadCount();
+        fetchUnreadState();
 
         const channel = supabase
-            .channel('audit-notifications')
+            .channel('audit-notifications-final')
             .on(
                 'postgres_changes',
                 {
@@ -72,26 +115,50 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 },
                 (payload) => {
                     const newLog = payload.new as any;
-                    // Increment count
-                    setUnreadCount(prev => prev + 1);
+                    const severity = newLog.severity || 'medium';
 
-                    // Show Toast
-                    toast.error(
+                    setUnreadCount(prev => prev + 1);
+                    setMaxSeverity(prev => isHigherSeverity(severity, prev) ? severity : prev);
+
+                    if (severity === 'low') return;
+
+                    const isCritical = severity === 'critical';
+                    const isHigh = severity === 'high';
+
+                    const toastStyle = {
+                        border: isCritical ? '1px solid #EF4444' : (isHigh ? '1px solid #F97316' : '1px solid #3B82F6'),
+                        background: isCritical ? '#FEF2F2' : (isHigh ? '#FFF7ED' : '#EFF6FF'),
+                        color: isCritical ? '#991B1B' : (isHigh ? '#9A3412' : '#1E40AF'),
+                    };
+
+                    const icon = isCritical ? '🚨' : (isHigh ? '⚠️' : 'ℹ️');
+                    const title = isCritical ? '重大な異常検知' : (isHigh ? '異常検知(High)' : '異常検知');
+
+                    toast.custom(
                         (t) => (
-                            <div className="flex flex-col gap-1 cursor-pointer" onClick={() => router.push('/logs')}>
-                                <span className="font-bold text-sm">🚨 異常検知</span>
-                                <span className="text-xs">営業時間外のアクセスが検出されました。</span>
-                                <span className="text-xs text-gray-500">{newLog.actor_name}</span>
+                            <div
+                                className="flex flex-col gap-1 cursor-pointer p-4 rounded-lg shadow-lg bg-white border-2"
+                                style={{ ...toastStyle, minWidth: '320px', zIndex: 9999 }}
+                                onClick={() => {
+                                    routerRef.current.push('/audit-dashboard');
+                                    toast.dismiss(t.id);
+                                }}
+                            >
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xl">{icon}</span>
+                                    <span className="font-bold text-sm">{title}</span>
+                                </div>
+                                <span className="text-xs font-medium">不審な操作が検出されました。</span>
+                                <div className="flex justify-between items-center mt-1">
+                                    <span className="text-xs opacity-80">User: {newLog.actor_name || 'System'}</span>
+                                    <span className="text-[10px] opacity-60">Just now</span>
+                                </div>
                             </div>
                         ),
                         {
-                            duration: 5000,
+                            duration: isCritical ? Infinity : 8000,
                             position: 'top-right',
-                            style: {
-                                border: '1px solid #EF4444',
-                                background: '#FEF2F2',
-                                color: '#991B1B'
-                            }
+                            id: `anomaly-${newLog.id}-${Date.now()}`
                         }
                     );
                 }
@@ -101,10 +168,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [fetchUnreadCount, router]);
+    }, [fetchUnreadState, isHigherSeverity]);
+
+    const value = useMemo(() => ({
+        unreadCount,
+        maxSeverity,
+        markAllAsRead
+    }), [unreadCount, maxSeverity, markAllAsRead]);
 
     return (
-        <NotificationContext.Provider value={{ unreadCount, markAllAsRead }}>
+        <NotificationContext.Provider value={value}>
             {children}
         </NotificationContext.Provider>
     );

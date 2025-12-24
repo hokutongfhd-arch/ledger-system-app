@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import type { DashboardData, KPIStats, DayStat, ActionTypeStat } from '../../lib/types/audit';
+import type { DashboardData, KPIStats, DayStat, ActionTypeStat, SeverityStat } from '../../lib/types/audit';
 import type { Log } from '../../lib/types';
 import { logService } from '../logs/log.service';
 import { fetchDashboardStatsServer } from '../logs/logs.server';
@@ -38,7 +38,9 @@ export const useAuditDashboard = () => {
             // Phase 6-3: Added unacknowledgedAnomalyCount
             const { logs: logsData, loginFailcount24h, unacknowledgedAnomalyCount, error } = await fetchDashboardStatsServer(startDate.toISOString());
 
-            if (error) throw new Error(error);
+            if (error) {
+                throw new Error(error);
+            }
 
             // Map raw server data to Log type if needed, or use as is
             // Note: Server action returns limited fields for performance, mapping partially
@@ -99,10 +101,43 @@ export const useAuditDashboard = () => {
                 })
                 .sort((a, b) => b.count - a.count); // Descending
 
-            setData({ kpi, trend, distribution });
+            // Chart: Severity Distribution (Anomaly Only)
+            const severityDistribution: SeverityStat[] = [];
+            const anomalyLogs = logs.filter((l: any) => l.actionRaw === 'ANOMALY_DETECTED');
+
+            if (anomalyLogs.length > 0) {
+                const severityMap = new Map<string, number>();
+                anomalyLogs.forEach((log: any) => {
+                    const sev = log.severity || 'medium';
+                    severityMap.set(sev, (severityMap.get(sev) || 0) + 1);
+                });
+
+                const sevOrder = ['critical', 'high', 'medium', 'low'];
+                const sevColors: Record<string, string> = {
+                    critical: '#991B1B', // Red-800
+                    high: '#EA580C', // Orange-600
+                    medium: '#EAB308', // Yellow-500
+                    low: '#9CA3AF' // Gray-400
+                };
+
+                sevOrder.forEach(sev => {
+                    const count = severityMap.get(sev) || 0;
+                    if (count > 0) {
+                        severityDistribution.push({
+                            severity: sev as any,
+                            count,
+                            fill: sevColors[sev]
+                        });
+                    }
+                });
+            }
+
+            setData({ kpi, trend, distribution, severityDistribution });
 
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
+            // Fallback empty data to stop loading and prevent hang
+            setData(prev => prev || null);
         } finally {
             setLoading(false);
         }

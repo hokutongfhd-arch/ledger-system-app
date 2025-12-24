@@ -12,8 +12,18 @@ export default function UserLayout({
     children: React.ReactNode;
 }) {
     const { user, logout } = useAuth();
-    const { unreadCount } = useNotification();
+    const { unreadCount, maxSeverity } = useNotification();
     const router = useRouter();
+
+    const getBadgeColor = () => {
+        switch (maxSeverity) {
+            case 'critical': return 'bg-red-600';
+            case 'high': return 'bg-orange-500';
+            case 'medium': return 'bg-yellow-500 text-black';
+            case 'low': return 'bg-gray-500';
+            default: return 'bg-red-500';
+        }
+    };
 
     const handleLogout = async () => {
         await logout();
@@ -42,7 +52,7 @@ export default function UserLayout({
                         >
                             <Bell size={20} className="text-ink" />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                                <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white ${getBadgeColor()}`}>
                                     {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                             )}
