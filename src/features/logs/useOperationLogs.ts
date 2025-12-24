@@ -1,87 +1,84 @@
 import { useState, useCallback, useEffect } from 'react';
-import { logService } from './log.service';
-import type { Log } from '../../lib/types';
+import { fetchOperationLogsServer } from './operationLogs.server';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
-import { fetchAuditLogsServer } from './logs.server';
+import type { OperationLog } from '../../lib/types';
 
-export type LogFilterState = {
+export type OperationLogFilterState = {
     startDate: string;
     endDate: string;
     actor: string;
-    actionType: string;
-    result: 'success' | 'failure' | '';
-    target: string;
+    operation: string;
+    tableName: string;
 };
 
-export type SortState = {
-    field: 'occurred_at' | 'actor_name';
+export type OperationSortState = {
+    field: 'created_at' | 'actor_name';
     order: 'asc' | 'desc';
 };
 
-export const useAuditLogs = () => {
-    const [logs, setLogs] = useState<Log[]>([]);
+const mapLogFromDb = (d: any): OperationLog => ({
+    id: d.id,
+    timestamp: d.created_at, // Use created_at as requested
+    tableName: d.table_name,
+    operation: d.operation,
+    oldData: d.old_data,
+    newData: d.new_data,
+    actorName: d.actor_name,
+    actorCode: d.actor_code,
+    isArchived: d.is_archived,
+    archivedAt: d.archived_at,
+});
+
+export const useOperationLogs = () => {
+    const [logs, setLogs] = useState<OperationLog[]>([]);
     const [loading, setLoading] = useState(false);
     const [totalCount, setTotalCount] = useState(0);
 
-    // Pagination
     const [pageSize, setPageSize] = useState(15);
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Filters
     const { start, end } = getWeekRange(new Date());
-    const [filters, setFilters] = useState<LogFilterState>({
+    const [filters, setFilters] = useState<OperationLogFilterState>({
         startDate: start.toISOString(),
         endDate: end.toISOString(),
         actor: '',
-        actionType: '',
-        result: '',
-        target: ''
+        operation: '',
+        tableName: ''
     });
 
-    // Sort
-    const [sort, setSort] = useState<SortState>({
-        field: 'occurred_at',
+    const [sort, setSort] = useState<OperationSortState>({
+        field: 'created_at', // Default sort to created_at
         order: 'desc'
     });
 
-
-
-    // Archive Toggle
     const [showArchived, setShowArchived] = useState(false);
 
     const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
-            const { logs: data, total, error } = await fetchAuditLogsServer({
+            const { logs: data, total, error } = await fetchOperationLogsServer({
                 page: currentPage,
                 pageSize: pageSize,
                 startDate: filters.startDate,
                 endDate: filters.endDate,
                 actor: filters.actor,
-                actionType: filters.actionType,
-                result: filters.result === '' ? undefined : filters.result,
-                target: filters.target,
+                operation: filters.operation,
+                tableName: filters.tableName,
                 sort: sort,
                 includeArchived: showArchived
             });
 
-            if (error) {
-                console.error('Server fetch error:', error);
+            if (!error && data) {
+                setLogs(data.map(mapLogFromDb));
+                setTotalCount(total);
             }
-
-            // Map server data (raw DB) to Log type using service mapper
-            const mappedLogs = (data || []).map(logService.mapLogFromDb);
-            setLogs(mappedLogs);
-            setTotalCount(total);
         } catch (error) {
-            console.error('Failed to fetch audit logs:', error);
-            // In a real app, you might expose an error state
+            console.error('Failed to fetch operation logs:', error);
         } finally {
             setLoading(false);
         }
     }, [currentPage, pageSize, filters, sort, showArchived]);
 
-    // Initial fetch
     useEffect(() => {
         fetchLogs();
     }, [fetchLogs]);
@@ -104,33 +101,28 @@ export const useAuditLogs = () => {
         }
     }, [showArchived]);
 
-    const updateFilter = (key: keyof LogFilterState, value: string) => {
+    const updateFilter = (key: keyof OperationLogFilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-        setCurrentPage(1); // Reset page on filter change
+        setCurrentPage(1);
     };
 
-    const handleSort = (field: 'occurred_at' | 'actor_name') => {
+    const handleSort = (field: 'created_at' | 'actor_name') => {
         setSort(prev => ({
             field,
             order: prev.field === field && prev.order === 'desc' ? 'asc' : 'desc'
         }));
     };
 
-    // CSV Export Helper
     const fetchAllForExport = async () => {
         try {
-            // Fetch all matching records (without pagination ideally, or large limit)
-            // Note: For large datasets, you might need a dedicated export endpoint or looped fetching.
-            // Here we assume a reasonable limit for CSV e.g. 1000 or using a large page size.
-            const { logs: allLogs } = await fetchAuditLogsServer({
+            const { logs: allLogs } = await fetchOperationLogsServer({
                 page: 1,
-                pageSize: 5000, // Hard cap for safety
+                pageSize: 5000,
                 startDate: filters.startDate,
                 endDate: filters.endDate,
                 actor: filters.actor,
-                actionType: filters.actionType,
-                result: filters.result === '' ? undefined : filters.result,
-                target: filters.target,
+                operation: filters.operation,
+                tableName: filters.tableName,
                 sort: sort,
                 includeArchived: showArchived
             });

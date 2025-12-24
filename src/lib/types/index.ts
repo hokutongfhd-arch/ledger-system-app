@@ -178,3 +178,16 @@ export interface AuditReport {
     };
     created_at: string;
 }
+
+export interface OperationLog {
+    id: string;
+    timestamp: string;        // occurred_at
+    tableName: string;        // table_name
+    operation: 'INSERT' | 'UPDATE' | 'DELETE';
+    oldData: any;             // old_data
+    newData: any;             // new_data
+    actorName: string;        // actor_name
+    actorCode: string;        // actor_code
+    isArchived: boolean;      // is_archived
+    archivedAt?: string;      // archived_at
+}

@@ -1,16 +1,26 @@
 import React from 'react';
-import { Search, Calendar, Filter } from 'lucide-react';
-import type { LogFilterState } from '../../../features/logs/useAuditLogs';
+import { Search, Calendar, Filter, Database, Box } from 'lucide-react';
+import type { OperationLogFilterState } from '../../../features/logs/useOperationLogs';
 
-interface LogFilterProps {
-    filters: LogFilterState;
-    onUpdate: (key: keyof LogFilterState, value: string) => void;
+interface OperationLogFilterProps {
+    filters: OperationLogFilterState;
+    onUpdate: (key: keyof OperationLogFilterState, value: string) => void;
     readOnlyDates?: boolean;
     maxDate?: string;
 }
 
-export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnlyDates, maxDate }) => {
-    // Helper: Convert UTC ISO string to Local YYYY-MM-DDTHH:mm string for input
+const TABLE_OPTIONS = [
+    { value: 'employees', label: '社員マスタ' },
+    { value: 'areas', label: 'エリアマスタ' },
+    { value: 'addresses', label: '住所マスタ' },
+    { value: 'tablets', label: '勤怠タブレット' },
+    { value: 'iphones', label: 'iPhone' },
+    { value: 'featurephones', label: 'ガラホ' },
+    { value: 'routers', label: 'モバイルルーター' }
+];
+
+export const OperationLogFilter: React.FC<OperationLogFilterProps> = ({ filters, onUpdate, readOnlyDates, maxDate }) => {
+
     const toLocalISOString = (dateStr: string) => {
         if (!dateStr) return '';
         const d = new Date(dateStr);
@@ -19,7 +29,6 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    // Helper: Handle input change, convert Local back to UTC ISO
     const handleDateChange = (key: 'startDate' | 'endDate', value: string) => {
         if (readOnlyDates) return;
         if (!value) {
@@ -76,58 +85,40 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                     />
                 </div>
 
-                {/* Result & Action */}
-                <div className="col-span-12 sm:col-span-6 lg:col-span-3 flex gap-2">
-                    <div className="flex-1 flex flex-col gap-1">
-                        <label className="text-xs text-text-muted font-medium flex items-center gap-1">
-                            <Filter size={12} /> 結果
-                        </label>
-                        <select
-                            value={filters.result}
-                            onChange={(e) => onUpdate('result', e.target.value)}
-                            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
-                        >
-                            <option value="">すべて</option>
-                            <option value="success">成功</option>
-                            <option value="failure">失敗</option>
-                        </select>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                        <label className="text-xs text-text-muted font-medium">アクション</label>
-                        <select
-                            value={filters.actionType}
-                            onChange={(e) => onUpdate('actionType', e.target.value)}
-                            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
-                        >
-                            <option value="">すべて</option>
-                            <option value="CREATE">登録</option>
-                            <option value="UPDATE">更新</option>
-                            <option value="DELETE">削除</option>
-                            <option value="IMPORT">インポート</option>
-                            <option value="LOGIN_SUCCESS">ログイン</option>
-                            <option value="LOGIN_FAILURE">ログイン失敗</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* Target */}
-                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
-                    <label className="text-xs text-text-muted font-medium">対象機能</label>
+                {/* Table Name */}
+                <div className="col-span-12 sm:col-span-6 lg:col-span-3 flex flex-col gap-1">
+                    <label className="text-xs text-text-muted font-medium flex items-center gap-1">
+                        <Database size={12} /> 対象テーブル
+                    </label>
                     <select
-                        value={filters.target}
-                        onChange={(e) => onUpdate('target', e.target.value)}
-                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
+                        value={filters.tableName}
+                        onChange={(e) => onUpdate('tableName', e.target.value)}
+                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle focus:ring-2 focus:ring-blue-100 outline-none cursor-pointer"
                     >
                         <option value="">すべて</option>
-                        <option value="iphone">iPhone</option>
-                        <option value="feature_phone">ガラホ</option>
-                        <option value="tablet">勤怠タブレット</option>
-                        <option value="router">モバイルルーター</option>
-                        <option value="employee">社員マスタ</option>
-                        <option value="area">エリアマスタ</option>
-                        <option value="address">住所マスタ</option>
+                        {TABLE_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                 </div>
+
+                {/* Operation */}
+                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
+                    <label className="text-xs text-text-muted font-medium flex items-center gap-1">
+                        <Box size={12} /> 操作項目
+                    </label>
+                    <select
+                        value={filters.operation}
+                        onChange={(e) => onUpdate('operation', e.target.value)}
+                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle focus:ring-2 focus:ring-blue-100 outline-none cursor-pointer"
+                    >
+                        <option value="">すべて</option>
+                        <option value="INSERT">登録</option>
+                        <option value="UPDATE">更新</option>
+                        <option value="DELETE">削除</option>
+                    </select>
+                </div>
+
             </div>
         </div>
     );
