@@ -92,7 +92,15 @@ const TARGET_NAMES: Record<string, string> = {
     addresses: '住所マスタ',
     manual: 'マニュアル',
     manuals: 'マニュアル',
-    admin: '管理コンソール'
+    admin: '管理コンソール',
+    auth: '認証',
+    employee_list: '社員一覧',
+    employee_detail: '社員詳細',
+    device_list: 'デバイス一覧',
+    device_detail: 'デバイス詳細',
+    manual_list: 'マニュアル一覧',
+    dashboard: 'ダッシュボード',
+    unknown: 'その他'
 };
 
 const ACTION_NAMES: Record<string, string> = {
@@ -103,6 +111,9 @@ const ACTION_NAMES: Record<string, string> = {
     LOGIN_SUCCESS: 'ログイン',
     LOGIN_FAILURE: 'ログイン失敗',
     LOGOUT: 'ログアウト',
+    EXPORT: 'エクスポート',
+    VIEW_PAGE: 'ページ閲覧',
+    ANOMALY_DETECTED: '異常検知',
     ERROR: 'エラー'
 };
 

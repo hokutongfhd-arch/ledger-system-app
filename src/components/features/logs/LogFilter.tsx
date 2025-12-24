@@ -93,7 +93,7 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                         </select>
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
-                        <label className="text-xs text-text-muted font-medium">アクション</label>
+                        <label className="text-xs text-text-muted font-medium">アクション種別</label>
                         <select
                             value={filters.actionType}
                             onChange={(e) => onUpdate('actionType', e.target.value)}
@@ -104,28 +104,42 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                             <option value="UPDATE">更新</option>
                             <option value="DELETE">削除</option>
                             <option value="IMPORT">インポート</option>
+                            <option value="EXPORT">エクスポート</option>
                             <option value="LOGIN_SUCCESS">ログイン</option>
                             <option value="LOGIN_FAILURE">ログイン失敗</option>
+                            <option value="LOGOUT">ログアウト</option>
+                            <option value="VIEW_PAGE">ページ閲覧</option>
+                            <option value="ANOMALY_DETECTED">異常検知</option>
+                            <option value="ERROR">エラー</option>
                         </select>
                     </div>
                 </div>
 
                 {/* Target */}
                 <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
-                    <label className="text-xs text-text-muted font-medium">対象機能</label>
+                    <label className="text-xs text-text-muted font-medium">対象種別</label>
                     <select
                         value={filters.target}
                         onChange={(e) => onUpdate('target', e.target.value)}
                         className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
                     >
                         <option value="">すべて</option>
+                        <option value="auth">認証</option>
+                        <option value="employee">社員マスタ</option>
+                        <option value="employee_list">社員一覧</option>
+                        <option value="employee_detail">社員詳細</option>
+                        <option value="area">エリアマスタ</option>
+                        <option value="address">住所マスタ</option>
                         <option value="iphone">iPhone</option>
                         <option value="feature_phone">ガラホ</option>
                         <option value="tablet">勤怠タブレット</option>
                         <option value="router">モバイルルーター</option>
-                        <option value="employee">社員マスタ</option>
-                        <option value="area">エリアマスタ</option>
-                        <option value="address">住所マスタ</option>
+                        <option value="device_list">デバイス一覧</option>
+                        <option value="device_detail">デバイス詳細</option>
+                        <option value="manual">マニュアル</option>
+                        <option value="admin">管理コンソール</option>
+                        <option value="dashboard">ダッシュボード</option>
+                        <option value="unknown">その他</option>
                     </select>
                 </div>
             </div>

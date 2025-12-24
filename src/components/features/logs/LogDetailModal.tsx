@@ -48,8 +48,8 @@ export const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onC
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InfoItem icon={<Clock size={16} />} label="日時" value={new Date(log.timestamp).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} />
                         <InfoItem icon={<User size={16} />} label="実行者" value={`${log.actorName} (${log.actorEmployeeCode})`} />
-                        <InfoItem icon={<Activity size={16} />} label="アクション" value={log.action} />
-                        <InfoItem icon={<HardDrive size={16} />} label="対象機能" value={`${log.target} (ID: ${log.targetId || '-'})`} />
+                        <InfoItem icon={<Activity size={16} />} label="アクション種別" value={log.action} />
+                        <InfoItem icon={<HardDrive size={16} />} label="対象種別" value={`${log.target} (ID: ${log.targetId || '-'})`} />
                     </div>
 
                     {/* Details Text */}
