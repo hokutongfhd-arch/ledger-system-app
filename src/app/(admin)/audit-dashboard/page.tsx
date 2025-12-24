@@ -56,6 +56,14 @@ export default function AuditDashboardPage() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Phase 6-3: Unacknowledged Anomalies */}
+                <KPICard
+                    title="未確認の異常"
+                    value={kpi.unacknowledgedAnomalyCount}
+                    alert={kpi.unacknowledgedAnomalyCount > 0}
+                    subtext="要確認"
+                    icon={<AlertTriangle className={kpi.unacknowledgedAnomalyCount > 0 ? "text-red-600" : "text-gray-400"} size={24} />}
+                />
                 <KPICard
                     title="本日の操作数"
                     value={kpi.todayActionCount}
@@ -65,7 +73,7 @@ export default function AuditDashboardPage() {
                     title="本日の失敗数"
                     value={kpi.todayFailureCount}
                     alert={kpi.todayFailureCount > 0}
-                    icon={<AlertTriangle className={kpi.todayFailureCount > 0 ? "text-red-500" : "text-gray-400"} size={24} />}
+                    icon={<AlertTriangle className={kpi.todayFailureCount > 0 ? "text-amber-500" : "text-gray-400"} size={24} />}
                 />
                 <KPICard
                     title="ログイン失敗 (24h)"

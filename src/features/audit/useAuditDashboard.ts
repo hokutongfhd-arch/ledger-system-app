@@ -35,7 +35,8 @@ export const useAuditDashboard = () => {
             }
 
             // 1. Fetch Logs via Server Action (Bypass RLS)
-            const { logs: logsData, loginFailcount24h, error } = await fetchDashboardStatsServer(startDate.toISOString());
+            // Phase 6-3: Added unacknowledgedAnomalyCount
+            const { logs: logsData, loginFailcount24h, unacknowledgedAnomalyCount, error } = await fetchDashboardStatsServer(startDate.toISOString());
 
             if (error) throw new Error(error);
 
@@ -49,29 +50,25 @@ export const useAuditDashboard = () => {
                 // other fields are undefined but okay for stats
             }));
 
-            // Login Failures from server
-            // const { count: loginFailcount24h, error: kpiError } = await supabase... (Moved to server)
-
-
             // --- Aggregation ---
 
             // KPI: Today's numbers
             const todayStart = startOfDay(now).toISOString();
-            const todayLogs = logs.filter(l => l.timestamp >= todayStart);
+            const todayLogs = logs.filter((l: any) => l.timestamp >= todayStart);
 
             const kpi: KPIStats = {
                 todayActionCount: todayLogs.length,
-                todayFailureCount: todayLogs.filter(l => l.result === 'failure').length,
+                todayFailureCount: todayLogs.filter((l: any) => l.result === 'failure').length,
                 loginFailureCount24h: loginFailcount24h || 0,
-                adminActionCount: todayLogs.filter(l =>
+                unacknowledgedAnomalyCount: unacknowledgedAnomalyCount || 0,
+                adminActionCount: todayLogs.filter((l: any) =>
                     ['CREATE', 'UPDATE', 'DELETE'].includes(l.actionRaw)
-                    // Note: Ideally filter by actor role if available, but for now assuming these actions imply admin/management work
                 ).length
             };
 
             // Chart: Trend (Logs per day)
             const trendMap = new Map<string, number>();
-            logs.forEach(log => {
+            logs.forEach((log: any) => {
                 const day = log.timestamp.split('T')[0];
                 trendMap.set(day, (trendMap.get(day) || 0) + 1);
             });
@@ -83,7 +80,7 @@ export const useAuditDashboard = () => {
 
             // Chart: Action Distribution
             const actionMap = new Map<string, number>();
-            logs.forEach(log => {
+            logs.forEach((log: any) => {
                 const action = log.actionRaw;
                 actionMap.set(action, (actionMap.get(action) || 0) + 1);
             });

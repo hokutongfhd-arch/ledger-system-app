@@ -101,14 +101,22 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
             .eq('action_type', 'LOGIN_FAILURE')
             .eq('result', 'failure');
 
+        // Fetch Unacknowledged Anomalies Count (Total, not just in range)
+        const { count: unackCount, error: anomalyError } = await supabaseAdmin
+            .from('audit_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('action_type', 'ANOMALY_DETECTED')
+            .eq('is_acknowledged', false);
+
         return {
             logs: logs || [],
             loginFailcount24h: loginFail24h || 0,
+            unacknowledgedAnomalyCount: unackCount || 0,
             error: null
         };
 
     } catch (error: any) {
         console.error('Dashboard Stats Server Error:', error);
-        return { logs: [], loginFailcount24h: 0, error: error.message };
+        return { logs: [], loginFailcount24h: 0, unacknowledgedAnomalyCount: 0, error: error.message };
     }
 }

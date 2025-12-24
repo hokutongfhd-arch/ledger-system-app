@@ -2,8 +2,9 @@
 
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../features/context/AuthContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useNotification } from '../../features/notifications/NotificationContext';
 
 export default function UserLayout({
     children,
@@ -11,6 +12,7 @@ export default function UserLayout({
     children: React.ReactNode;
 }) {
     const { user, logout } = useAuth();
+    const { unreadCount } = useNotification();
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -33,6 +35,19 @@ export default function UserLayout({
                         <span className="text-accent-violet ml-1">.</span>
                     </h2>
                     <div className="flex items-center gap-6">
+                        {/* Notification Bell */}
+                        <button
+                            onClick={() => router.push('/audit-dashboard')}
+                            className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <Bell size={20} className="text-ink" />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
+
                         <div className="text-right">
                             <p className="font-bold text-ink text-sm font-display tracking-tight">{user?.name}</p>
                             <p className="text-ink-light text-xs tracking-wider uppercase">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>

@@ -8,6 +8,7 @@ import { UserProfileCard } from '../../../features/components/UserProfileCard';
 import { UserDeviceList } from '../../../features/components/UserDeviceList';
 import { MemoPad } from '../../../features/components/MemoPad';
 import { useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 
 export default function UserDashboardPage() {
@@ -29,6 +30,10 @@ function UserDashboardContent() {
     const { user } = useAuth();
     const alerts = useSystemAlerts();
     const router = useRouter();
+
+    useEffect(() => {
+        toast.success('マイページへようこそ', { id: 'welcome-toast' });
+    }, []);
 
     // Filter alerts for the current user (Employee record)
     const myAlerts = user ? alerts.filter(a => a.recordId === user.id && (a.type === 'unregistered_area' || a.type === 'unregistered_address')) : [];

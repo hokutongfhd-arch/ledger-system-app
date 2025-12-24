@@ -7,6 +7,7 @@ export interface KPIStats {
     todayActionCount: number;
     todayFailureCount: number;
     loginFailureCount24h: number; // Last 24 hours
+    unacknowledgedAnomalyCount: number; // Phase 6-3
     adminActionCount: number; // CREATE/UPDATE/DELETE by admin
 }
 
