@@ -14,7 +14,7 @@ const TABLE_LABELS: Record<string, string> = {
     addresses: '住所マスタ',
     tablets: '勤怠タブレット',
     iphones: 'iPhone',
-    'feature-phones': 'ガラホ',
+    featurephones: 'ガラホ',
     routers: 'モバイルルーター'
 };
 
