@@ -57,8 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!session) return;
 
         try {
-            // Re-fetch profile
-            const { data: employeeData } = await supabase
+            // 1. Try to fetch profile via auth_id
+            const { data: employeeData, error: dbError } = await supabase
                 .from('employees')
                 .select('*')
                 .eq('auth_id', session.user.id)
@@ -67,6 +67,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (employeeData) {
                 const employee = mapEmployeeFromDb(employeeData);
                 setUser(employee);
+                return;
+            }
+
+            // 2. Fallback: Try to match by employee code extracted from email
+            // (email format is code@ledger-system.local)
+            const userEmail = session.user.email;
+            if (userEmail && userEmail.endsWith('@ledger-system.local')) {
+                const employeeCode = userEmail.split('@')[0];
+                console.warn(`Profile not found via auth_id (${session.user.id}), trying code fallback (${employeeCode})...`);
+
+                const { data: fallbackData } = await supabase
+                    .from('employees')
+                    .select('*')
+                    .eq('employee_code', employeeCode)
+                    .single();
+
+                if (fallbackData) {
+                    // Auto-link the auth_id for future logins and auditing
+                    await supabase
+                        .from('employees')
+                        .update({ auth_id: session.user.id })
+                        .eq('id', fallbackData.id);
+
+                    const employee = mapEmployeeFromDb({ ...fallbackData, auth_id: session.user.id });
+                    setUser(employee);
+                }
             }
         } catch (error) {
             console.error('Failed to refresh user:', error);

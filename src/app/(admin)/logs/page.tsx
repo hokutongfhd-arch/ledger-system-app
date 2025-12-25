@@ -12,7 +12,7 @@ import { useOperationLogs } from '../../../features/logs/useOperationLogs';
 import { getWeekRange } from '../../../lib/utils/dateHelpers';
 import { LogFilter } from '../../../components/features/logs/LogFilter';
 import { OperationLogFilter } from '../../../components/features/logs/OperationLogFilter';
-import { LogDetailModal } from '../../../components/features/logs/LogDetailModal';
+import LogDetailModal from '../../../components/features/logs/LogDetailModal';
 import { OperationLogDetailModal } from '../../../components/features/logs/OperationLogDetailModal';
 import type { OperationLog } from '../../../lib/types';
 import { clsx } from 'clsx';

@@ -11,13 +11,30 @@ interface LogDetailModalProps {
 }
 
 const STATUS_MAP: Record<string, string> = {
-    no_issue: '問題なし (No Issue)',
-    mitigated: '是正済み (Mitigated)',
-    investigating: '調査中 (Investigating)',
-    escalated: 'エスカレーション (Escalated)'
+    no_issue: '問題なし',
+    mitigated: '是正済み',
+    investigating: '調査中',
+    escalated: 'エスカレーション'
 };
 
-export const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, onSubmitResponse }) => {
+const SEVERITY_LABELS: Record<string, string> = {
+    critical: '緊急',
+    high: '高',
+    medium: '中',
+    low: '低'
+};
+
+const InfoItem: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
+    <div className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:border-blue-100 hover:bg-blue-50/30 transition-colors">
+        <div className="mt-0.5 text-gray-400">{icon}</div>
+        <div>
+            <p className="text-xs text-gray-500 font-medium mb-0.5">{label}</p>
+            <p className="text-sm text-gray-900 font-medium break-all">{value}</p>
+        </div>
+    </div>
+);
+
+const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, onSubmitResponse }) => {
     const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
 
     if (!isOpen || !log) return null;
@@ -115,7 +132,7 @@ export const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onC
                                     <button
                                         onClick={() => setIsResponseModalOpen(true)}
                                         className={`${isAnomaly ? 'bg-amber-600 hover:bg-amber-700' :
-                                                isFailure ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+                                            isFailure ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
                                             } text-white px-6 py-2 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 shrink-0 active:scale-95`}
                                     >
                                         対応を登録する
@@ -138,13 +155,13 @@ export const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onC
                             <p className="text-gray-900 leading-relaxed">{log.details}</p>
                             {log.severity && (
                                 <div className="mt-2 flex items-center gap-2">
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Severity:</span>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">重要度:</span>
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${log.severity === 'critical' ? 'bg-red-600 text-white' :
                                         log.severity === 'high' ? 'bg-red-100 text-red-600' :
                                             log.severity === 'medium' ? 'bg-amber-100 text-amber-600' :
                                                 'bg-blue-100 text-blue-600'
                                         }`}>
-                                        {log.severity}
+                                        {SEVERITY_LABELS[log.severity] || log.severity}
                                     </span>
                                 </div>
                             )}
@@ -160,7 +177,7 @@ export const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onC
                         {/* Metadata JSON */}
                         <div>
                             <h3 className="text-sm font-bold text-gray-700 mb-2 flex justify-between items-center">
-                                Metadata (Raw JSON)
+                                メタデータ (JSON原文)
                                 <span className="text-xs font-normal text-gray-400">{new Blob([metadataStr]).size} bytes</span>
                             </h3>
                             <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto border border-slate-700 relative group">
@@ -197,12 +214,4 @@ export const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onC
     );
 };
 
-const InfoItem: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
-    <div className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:border-blue-100 hover:bg-blue-50/30 transition-colors">
-        <div className="mt-0.5 text-gray-400">{icon}</div>
-        <div>
-            <p className="text-xs text-gray-500 font-medium mb-0.5">{label}</p>
-            <p className="text-sm text-gray-900 font-medium break-all">{value}</p>
-        </div>
-    </div>
-);
+export default LogDetailModal;

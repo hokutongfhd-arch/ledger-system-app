@@ -14,6 +14,14 @@ export interface KPIStats {
 export interface DayStat {
     date: string; // YYYY-MM-DD
     count: number;
+    failureCount: number;
+    anomalyCount: number;
+}
+
+export interface ActorStat {
+    name: string;
+    code: string;
+    count: number;
 }
 
 export interface ActionTypeStat {
@@ -34,7 +42,10 @@ export interface DashboardData {
     kpi: KPIStats;
     trend: DayStat[];
     distribution: ActionTypeStat[];
-    severityDistribution: SeverityStat[]; // New field
+    severityDistribution: SeverityStat[];
+    recentAnomalies: Log[]; // Phase 6-7: NEW
+    topActors: ActorStat[]; // Phase 6-7: NEW
+    topAnomalyActors: ActorStat[]; // Phase 6-7: NEW
 }
 
 // --- Anomaly Detection Types ---

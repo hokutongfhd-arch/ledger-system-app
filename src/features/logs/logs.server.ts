@@ -108,10 +108,20 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
             .eq('action_type', 'ANOMALY_DETECTED')
             .eq('is_acknowledged', false);
 
+        // Fetch Unacknowledged Anomalies (Recent 5 for Dashboard)
+        const { data: recentAnomaliesData, error: recentError } = await supabaseAdmin
+            .from('audit_logs')
+            .select('*')
+            .eq('action_type', 'ANOMALY_DETECTED')
+            .eq('is_acknowledged', false)
+            .order('occurred_at', { ascending: false })
+            .limit(5);
+
         return {
             logs: logs || [],
             loginFailcount24h: loginFail24h || 0,
             unacknowledgedAnomalyCount: unackCount || 0,
+            recentAnomalies: recentAnomaliesData || [],
             error: null
         };
 

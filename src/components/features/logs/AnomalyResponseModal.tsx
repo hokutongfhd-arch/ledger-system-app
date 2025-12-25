@@ -82,7 +82,12 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                         <div className="bg-red-50 p-3 rounded-lg border border-red-100 mb-2">
                             <p className="text-xs text-red-800 font-bold mb-1">対象ログ概要:</p>
                             <p className="text-sm text-red-700">{log.details}</p>
-                            <p className="text-[10px] text-red-500 mt-1 uppercase">Severity: {log.severity || 'low'}</p>
+                            <p className="text-[10px] text-red-500 mt-1 uppercase">重要度: {{
+                                critical: '緊急',
+                                high: '高',
+                                medium: '中',
+                                low: '低'
+                            }[log.severity || 'low']}</p>
                         </div>
 
                         <div>
@@ -93,10 +98,10 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"
                                 required
                             >
-                                <option value="no_issue">問題なし (No Issue)</option>
-                                <option value="mitigated">是正済み (Mitigated)</option>
-                                <option value="investigating">調査中 (Investigating)</option>
-                                <option value="escalated">エスカレーション (Escalated)</option>
+                                <option value="no_issue">問題なし</option>
+                                <option value="mitigated">是正済み</option>
+                                <option value="investigating">調査中</option>
+                                <option value="escalated">エスカレーション</option>
                             </select>
                         </div>
 

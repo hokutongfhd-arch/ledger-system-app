@@ -14,8 +14,145 @@ const TABLE_LABELS: Record<string, string> = {
     addresses: '住所マスタ',
     tablets: '勤怠タブレット',
     iphones: 'iPhone',
-    featurephones: 'ガラホ',
+    'feature-phones': 'ガラホ',
     routers: 'モバイルルーター'
+};
+
+const FIELD_LABELS: Record<string, string> = {
+    // Common
+    id: 'ID',
+    status: 'ステータス',
+    notes: '備考',
+    no: '№',
+
+    // Employee
+    name: '氏名',
+    nameKana: '氏名（カナ）',
+    name_kana: '氏名（カナ）',
+    code: '社員番号',
+    employee_code: '社員番号',
+    email: 'メールアドレス',
+    role: '権限',
+    companyNo: '会社番号',
+    company_no: '会社番号',
+    departmentCode: '部署コード',
+    department_code: '部署コード',
+    department: '部署',
+    gender: '性別',
+    birthDate: '生年月日',
+    birth_date: '生年月日',
+    joinDate: '入社日',
+    join_date: '入社日',
+    age: '年齢',
+    yearsOfService: '勤続年数',
+    years_of_service: '勤続年数',
+    employeeType: '社員区分',
+    employee_type: '社員区分',
+    salaryType: '給与区分',
+    salary_type: '給与区分',
+    costType: '原価区分',
+    cost_type: '原価区分',
+    roleTitle: '役職名',
+    role_title: '役職名',
+    jobType: '職種',
+    job_type: '職種',
+    profileImage: 'プロフィール画像',
+    profile_image: 'プロフィール画像',
+
+    // Device General
+    managementNumber: '管理番号',
+    management_number: '管理番号',
+    modelName: '機種名',
+    model_name: '機種名',
+    phoneNumber: '電話番号',
+    phone_number: '電話番号',
+    carrier: 'キャリア',
+    contractYears: '契約年数',
+    contract_years: '契約年数',
+    lendDate: '貸与日',
+    lend_date: '貸与日',
+    receiptDate: '受領書提出日',
+    receipt_date: '受領書提出日',
+    returnDate: '返却日',
+    return_date: '返却日',
+    costCompany: '負担先会社',
+    cost_company: '負担先会社',
+    employeeId: '社員コード',
+    employee_id: '社員コード',
+    addressCode: '住所コード',
+    address_code: '住所コード',
+
+    // Tablet / Router Specific
+    terminalCode: '端末CD',
+    terminal_code: '端末CD',
+    maker: 'メーカー',
+    modelNumber: '機種型番',
+    model_number: '機種型番',
+    officeCode: '事業所CD',
+    office_code: '事業所CD',
+    history: '履歴',
+    smartAddressId: 'スマートアドレスID',
+    smart_address_id: 'スマートアドレスID',
+    smartAddressPw: 'スマートアドレスPW',
+    smart_address_pw: 'スマートアドレスPW',
+    biller: '請求元',
+    cost: '費用',
+    costTransfer: '費用振替',
+    cost_transfer: '費用振替',
+    dataCapacity: '通信容量',
+    data_capacity: '通信容量',
+    simNumber: 'SIM電番',
+    sim_number: 'SIM電番',
+    ipAddress: 'IPアドレス',
+    ip_address: 'IPアドレス',
+    subnetMask: 'サブネットマスク',
+    subnet_mask: 'サブネットマスク',
+    startIp: '開始IP',
+    start_ip: '開始IP',
+    endIp: '終了IP',
+    end_ip: '終了IP',
+    company: '会社',
+    actualLender: '実貸与先',
+    actual_lender: '実貸与先',
+    actualLenderName: '実貸与先名',
+    actual_lender_name: '実貸与先名',
+    costBearer: '負担先',
+    cost_bearer: '負担先',
+    lendingHistory: '貸与履歴',
+    lending_history: '貸与履歴',
+    contractStatus: '契約状況',
+    contract_status: '契約状況',
+
+    // Area
+    areaCode: 'エリアコード',
+    area_code: 'エリアコード',
+    areaName: 'エリア名',
+    area_name: 'エリア名',
+
+    // Address
+    officeName: '拠点名',
+    office_name: '拠点名',
+    tel: '電話番号',
+    fax: 'FAX番号',
+    zipCode: '郵便番号',
+    zip_code: '郵便番号',
+    address: '住所',
+    division: '所属',
+    area: 'エリア',
+    mainPerson: '担当者',
+    main_person: '担当者',
+    branchNumber: '枝番',
+    branch_number: '枝番',
+    specialNote: '特記事項',
+    special_note: '特記事項',
+    attentionNote: '注意事項',
+    attention_note: '注意事項',
+    labelName: '宛名用氏名',
+    label_name: '宛名用氏名',
+    labelZip: '宛名用郵便番号',
+    label_zip: '宛名用郵便番号',
+    labelAddress: '宛名用住所',
+    label_address: '宛名用住所'
 };
 
 const OP_MAP: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -63,8 +200,9 @@ export const OperationLogDetailModal: React.FC<OperationLogDetailModalProps> = (
                     <tbody className="divide-y divide-border">
                         {changes.map(key => (
                             <tr key={key} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="px-4 py-2 font-mono text-xs text-blue-600 font-medium">
-                                    {key}
+                                <td className="px-4 py-2 font-medium text-xs text-blue-800">
+                                    {FIELD_LABELS[key] || key}
+                                    {FIELD_LABELS[key] && <div className="text-[9px] text-gray-400 font-mono mt-0.5">{key}</div>}
                                 </td>
                                 <td className="px-4 py-2">
                                     <div className="text-red-600 bg-red-50 px-2 py-1 rounded line-through break-all whitespace-pre-wrap">

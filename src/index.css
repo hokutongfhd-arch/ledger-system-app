@@ -47,11 +47,11 @@
 
   /* Table Styles */
   .table-container {
-    @apply w-full overflow-hidden border-2 border-ink bg-white shadow-offset rounded-none;
+    @apply w-full overflow-x-auto border-2 border-ink bg-white shadow-offset rounded-none;
   }
 
   .table-header {
-    @apply bg-background-subtle border-b-2 border-ink text-xs font-bold text-ink uppercase tracking-widest text-left py-3 px-6 font-display;
+    @apply bg-background-subtle border-b-2 border-ink text-xs font-bold text-ink uppercase tracking-widest text-left py-3 px-6 font-display whitespace-nowrap;
   }
 
   .table-cell {

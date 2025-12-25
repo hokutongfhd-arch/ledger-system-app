@@ -38,8 +38,15 @@ DECLARE
     old_val JSONB := NULL;
     new_val JSONB := NULL;
 BEGIN
-    -- 実行者の取得 (auth.uid() から社員情報を特定)
-    SELECT name, employee_code INTO actor_record FROM employees WHERE auth_id = auth.uid();
+    -- 実行者の取得 (auth.uid() or JWT email から社員情報を特定)
+    SELECT name, employee_code INTO actor_record FROM employees 
+    WHERE auth_id = auth.uid()
+       OR (
+           -- auth_id が未紐付けの場合のフォールバック (email: code@ledger-system.local)
+           auth.jwt() ->> 'email' IS NOT NULL 
+           AND employee_code = split_part(auth.jwt() ->> 'email', '@', 1)
+       );
+    
     actor_name := COALESCE(actor_record.name, 'システム');
     actor_code := COALESCE(actor_record.employee_code, 'SYSTEM');
 

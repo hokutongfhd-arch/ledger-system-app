@@ -35,21 +35,29 @@ export const useAuditDashboard = () => {
             }
 
             // 1. Fetch Logs via Server Action (Bypass RLS)
-            // Phase 6-3: Added unacknowledgedAnomalyCount
-            const { logs: logsData, loginFailcount24h, unacknowledgedAnomalyCount, error } = await fetchDashboardStatsServer(startDate.toISOString());
+            const { logs: logsData, loginFailcount24h, unacknowledgedAnomalyCount, recentAnomalies: rAnomaliesRaw, error } = await fetchDashboardStatsServer(startDate.toISOString());
 
             if (error) {
                 throw new Error(error);
             }
 
-            // Map raw server data to Log type if needed, or use as is
-            // Note: Server action returns limited fields for performance, mapping partially
-            const logs = (logsData || []).map((d: any) => ({
+            // Map raw server data to Log type
+            const logs: Log[] = (logsData || []).map((d: any) => ({
+                id: d.id,
                 timestamp: d.occurred_at,
+                action: d.action_type, // Fallback to raw if logic is needed later
                 actionRaw: d.action_type,
                 result: d.result,
                 actorName: d.actor_name,
-                // other fields are undefined but okay for stats
+                actorEmployeeCode: d.actor_employee_code,
+                severity: d.severity,
+                target: d.target_type || '',
+                targetRaw: d.target_type || '',
+                targetId: d.target_id || '',
+                ipAddress: d.ip_address || '',
+                details: '',
+                user: d.actor_name || '',
+                metadata: d.metadata || {},
             }));
 
             // --- Aggregation ---
@@ -68,16 +76,19 @@ export const useAuditDashboard = () => {
                 ).length
             };
 
-            // Chart: Trend (Logs per day)
-            const trendMap = new Map<string, number>();
+            // Chart: Trend (Logs per day) - Multi-axis
+            const trendMap = new Map<string, { count: number; failureCount: number; anomalyCount: number }>();
             logs.forEach((log: any) => {
                 const day = log.timestamp.split('T')[0];
-                trendMap.set(day, (trendMap.get(day) || 0) + 1);
+                const current = trendMap.get(day) || { count: 0, failureCount: 0, anomalyCount: 0 };
+                current.count++;
+                if (log.result === 'failure') current.failureCount++;
+                if (log.actionRaw === 'ANOMALY_DETECTED') current.anomalyCount++;
+                trendMap.set(day, current);
             });
 
-            // Fill gaps if necessary (optional, skipping for simple implementation)
             const trend: DayStat[] = Array.from(trendMap.entries())
-                .map(([date, count]) => ({ date, count }))
+                .map(([date, stats]) => ({ date, ...stats }))
                 .sort((a, b) => a.date.localeCompare(b.date));
 
             // Chart: Action Distribution
@@ -87,19 +98,28 @@ export const useAuditDashboard = () => {
                 actionMap.set(action, (actionMap.get(action) || 0) + 1);
             });
 
+            const ACTION_COLOR_MAP: Record<string, string> = {
+                LOGIN_SUCCESS: '#0088FE', // Blue
+                ANOMALY_DETECTED: '#FF6B6B', // Coral
+                VIEW_PAGE: '#FFBB28', // Yellow
+                LOGIN_FAILURE: '#7C3AED', // Violet
+                CREATE: '#FF8042', // Orange
+                UPDATE: '#00C49F', // Green
+                DELETE: '#8884d8', // Purple
+                LOGOUT: '#82ca9d'  // Light Green
+            };
+
             const distribution: ActionTypeStat[] = Array.from(actionMap.entries())
+                .sort((a, b) => b[1] - a[1]) // Sort by count first
                 .map(([action, count], index) => {
-                    let fill = COLORS[index % COLORS.length];
-                    if (action === 'ANOMALY_DETECTED') fill = '#EF4444'; // Red-500 for Alert
-                    else if (action === 'LOGIN_FAILURE') fill = '#F59E0B'; // Amber-500 for Warning
+                    let fill = ACTION_COLOR_MAP[action] || COLORS[index % COLORS.length];
 
                     return {
                         action,
                         count,
                         fill
                     };
-                })
-                .sort((a, b) => b.count - a.count); // Descending
+                });
 
             // Chart: Severity Distribution (Anomaly Only)
             const severityDistribution: SeverityStat[] = [];
@@ -132,7 +152,65 @@ export const useAuditDashboard = () => {
                 });
             }
 
-            setData({ kpi, trend, distribution, severityDistribution });
+            // Top Actors
+            const actorMap = new Map<string, { count: number; name: string }>();
+            const anomalyActorMap = new Map<string, { count: number; name: string }>();
+
+            logs.forEach((log: any) => {
+                const code = log.actorEmployeeCode;
+                const name = log.actorName;
+                if (!code) return;
+
+                const current = actorMap.get(code) || { count: 0, name };
+                current.count++;
+                actorMap.set(code, current);
+
+                if (log.actionRaw === 'ANOMALY_DETECTED') {
+                    const currentA = anomalyActorMap.get(code) || { count: 0, name };
+                    currentA.count++;
+                    anomalyActorMap.set(code, currentA);
+                }
+            });
+
+            const topActors = Array.from(actorMap.entries())
+                .map(([code, stats]) => ({ code, ...stats }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            const topAnomalyActors = Array.from(anomalyActorMap.entries())
+                .map(([code, stats]) => ({ code, ...stats }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            // Map Recent Anomalies
+            const recentAnomalies: Log[] = (rAnomaliesRaw || []).map((d: any) => ({
+                id: d.id,
+                timestamp: d.occurred_at,
+                action: d.action_type,
+                actionRaw: d.action_type,
+                result: d.result,
+                actorName: d.actor_name,
+                actorEmployeeCode: d.actor_employee_code,
+                severity: d.severity,
+                target: d.target_type || '',
+                targetRaw: d.target_type || '',
+                targetId: d.target_id || '',
+                ipAddress: d.ip_address || '',
+                details: '',
+                user: d.actor_name || '',
+                metadata: d.metadata || {},
+                is_acknowledged: d.is_acknowledged,
+            }));
+
+            setData({
+                kpi,
+                trend,
+                distribution,
+                severityDistribution,
+                topActors,
+                topAnomalyActors,
+                recentAnomalies
+            });
 
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
