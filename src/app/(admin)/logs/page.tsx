@@ -87,7 +87,8 @@ function AuditLogContent() {
         setCurrentPage,
         updateFilter,
         handleSort,
-        fetchAllForExport
+        fetchAllForExport,
+        submitResponse
     } = useAuditLogs();
 
     const [selectedLog, setSelectedLog] = useState<Log | null>(null);
@@ -190,6 +191,27 @@ function AuditLogContent() {
                         },
                         { header: '対象', accessor: 'target' },
                         {
+                            header: '対応',
+                            accessor: (item) => {
+                                const needsResponse = item.actionRaw === 'ANOMALY_DETECTED' ||
+                                    item.result === 'failure' ||
+                                    (item.severity && item.severity !== 'low');
+
+                                if (!needsResponse && !item.is_acknowledged) return <span className="text-gray-400">-</span>;
+
+                                return (
+                                    <span className={clsx(
+                                        "px-2 py-0.5 rounded text-[10px] font-bold shadow-sm whitespace-nowrap",
+                                        item.is_acknowledged ? 'bg-green-100 text-green-700' :
+                                            item.actionRaw === 'ANOMALY_DETECTED' ? 'bg-amber-100 text-amber-700 animate-pulse-subtle' :
+                                                item.result === 'failure' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                    )}>
+                                        {item.is_acknowledged ? '完了' : '未対応'}
+                                    </span>
+                                );
+                            }
+                        },
+                        {
                             header: '結果',
                             accessor: (item) => (
                                 <span className={clsx(
@@ -245,6 +267,7 @@ function AuditLogContent() {
                 log={selectedLog}
                 isOpen={!!selectedLog}
                 onClose={() => setSelectedLog(null)}
+                onSubmitResponse={submitResponse}
             />
         </div>
     );

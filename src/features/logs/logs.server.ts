@@ -120,3 +120,33 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
         return { logs: [], loginFailcount24h: 0, unacknowledgedAnomalyCount: 0, error: error.message };
     }
 }
+
+export async function submitAnomalyResponseServer(params: {
+    logId: string;
+    status: string;
+    note: string;
+    adminUserId: string;
+}) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('audit_logs')
+            .update({
+                is_acknowledged: true,
+                acknowledged_by: params.adminUserId,
+                acknowledged_at: new Date().toISOString(),
+                response_status: params.status,
+                response_note: params.note
+            })
+            .eq('id', params.logId);
+
+        if (error) {
+            console.error('Submit Anomaly Response Error:', error);
+            throw new Error(error.message);
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Server Action Error:', error);
+        return { success: false, error: error.message };
+    }
+}

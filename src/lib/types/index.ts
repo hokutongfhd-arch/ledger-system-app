@@ -107,6 +107,7 @@ export interface Employee {
     // TODO: Future Extension - Consider adding 'operator' | 'viewer' roles for more granular permissions
     role: 'admin' | 'user';
     profileImage?: string;
+    authId: string;
 }
 
 export interface Area {
@@ -137,6 +138,8 @@ export interface Address {
     attentionNote: string;
 }
 
+export type AnomalyResponseStatus = 'no_issue' | 'mitigated' | 'investigating' | 'escalated';
+
 export interface Log {
     id: string;
     timestamp: string;        // occurred_at
@@ -154,6 +157,12 @@ export interface Log {
     user: string;             // Compatibility fallback
     is_archived?: boolean;
     archived_at?: string;
+    is_acknowledged?: boolean;
+    acknowledged_by?: string;      // UUID (Admin User ID)
+    acknowledged_at?: string;
+    response_status?: AnomalyResponseStatus;
+    response_note?: string;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
 }
 
 export interface Memo {

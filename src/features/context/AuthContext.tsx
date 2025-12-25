@@ -42,6 +42,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     jobType: s(d.job_type),
     role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
     profileImage: typeof window !== 'undefined' ? localStorage.getItem(`profile_image_${d.id}`) || '' : '',
+    authId: s(d.auth_id),
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -159,7 +160,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return null;
                 }
 
-                const employee = mapEmployeeFromDb(fallbackData);
+                // Auto-link the auth_id for future logins and auditing
+                await supabase
+                    .from('employees')
+                    .update({ auth_id: authData.session.user.id })
+                    .eq('id', fallbackData.id);
+
+                const employee = mapEmployeeFromDb({ ...fallbackData, auth_id: authData.session.user.id });
                 setUser(employee);
                 await logger.info({
                     action: 'LOGIN_SUCCESS',

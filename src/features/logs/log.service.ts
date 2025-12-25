@@ -148,6 +148,14 @@ export const logService = {
             ipAddress: s(d.ip_address),
             details: details,
             user: s(d.actor_name) || s(d.actor_employee_code) || 'System',
+            is_acknowledged: d.is_acknowledged,
+            acknowledged_by: d.acknowledged_by,
+            acknowledged_at: d.acknowledged_at,
+            response_status: d.response_status,
+            response_note: d.response_note,
+            severity: d.severity,
+            is_archived: d.is_archived,
+            archived_at: d.archived_at,
         };
     },
 

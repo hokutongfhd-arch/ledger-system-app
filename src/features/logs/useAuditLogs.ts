@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { logService } from './log.service';
 import type { Log } from '../../lib/types';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
-import { fetchAuditLogsServer } from './logs.server';
+import { fetchAuditLogsServer, submitAnomalyResponseServer } from './logs.server';
 
 export type LogFilterState = {
     startDate: string;
@@ -141,6 +141,29 @@ export const useAuditLogs = () => {
         }
     };
 
+    const submitResponse = useCallback(async (logId: string, status: string, note: string, adminUserId: string) => {
+        setLoading(true);
+        try {
+            const result = await submitAnomalyResponseServer({
+                logId,
+                status,
+                note,
+                adminUserId
+            });
+            if (result.success) {
+                await fetchLogs();
+                return { success: true };
+            } else {
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            console.error('Failed to submit response:', error);
+            return { success: false, error: '予期せぬエラーが発生しました' };
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchLogs]);
+
     return {
         logs,
         loading,
@@ -156,6 +179,7 @@ export const useAuditLogs = () => {
         updateFilter,
         handleSort,
         refresh: fetchLogs,
-        fetchAllForExport
+        fetchAllForExport,
+        submitResponse
     };
 };
