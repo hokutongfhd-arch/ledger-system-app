@@ -138,7 +138,7 @@ export interface Address {
     attentionNote: string;
 }
 
-export type AnomalyResponseStatus = 'no_issue' | 'mitigated' | 'investigating' | 'escalated';
+export type AnomalyResponseStatus = 'pending' | 'investigating' | 'completed';
 
 export interface Log {
     id: string;

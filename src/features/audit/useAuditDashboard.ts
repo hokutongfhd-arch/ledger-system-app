@@ -225,6 +225,30 @@ export const useAuditDashboard = () => {
         fetchData();
     }, [fetchData]);
 
+    // Add Realtime Listener for Auto-Refresh on new anomalies
+    useEffect(() => {
+        const channel = supabase
+            .channel('audit-dashboard-refresh')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'audit_logs',
+                    filter: "action_type=eq.ANOMALY_DETECTED"
+                },
+                () => {
+                    // Refetch data when a new anomaly is detected
+                    fetchData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [fetchData]);
+
     return {
         data,
         loading,

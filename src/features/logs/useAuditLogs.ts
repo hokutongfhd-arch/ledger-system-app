@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { logService } from './log.service';
 import type { Log } from '../../lib/types';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
-import { fetchAuditLogsServer, submitAnomalyResponseServer } from './logs.server';
+import { fetchAuditLogsServer, submitAnomalyResponseServer, fetchAuditLogByIdServer } from './logs.server';
 
 export type LogFilterState = {
     startDate: string;
@@ -27,15 +28,17 @@ export const useAuditLogs = () => {
     const [pageSize, setPageSize] = useState(15);
     const [currentPage, setCurrentPage] = useState(1);
 
+    const searchParams = useSearchParams();
+
     // Filters
     const { start, end } = getWeekRange(new Date());
     const [filters, setFilters] = useState<LogFilterState>({
         startDate: start.toISOString(),
         endDate: end.toISOString(),
-        actor: '',
-        actionType: '',
+        actor: searchParams.get('actor') || '',
+        actionType: searchParams.get('actionType') || '',
         result: '',
-        target: ''
+        target: searchParams.get('target') || ''
     });
 
     // Sort
@@ -164,6 +167,35 @@ export const useAuditLogs = () => {
         }
     }, [fetchLogs]);
 
+    const [initialSelectedLog, setInitialSelectedLog] = useState<Log | null>(null);
+
+    // Sync with URL parameters for external navigation
+    useEffect(() => {
+        const actor = searchParams.get('actor');
+        const target = searchParams.get('target');
+        const actionType = searchParams.get('actionType');
+        const logId = searchParams.get('logId');
+
+        if (actor || target || actionType) {
+            setFilters(prev => ({
+                ...prev,
+                actor: actor ?? prev.actor,
+                target: target ?? prev.target,
+                actionType: actionType ?? prev.actionType
+            }));
+            // Reset to first page when filters change
+            setCurrentPage(1);
+        }
+
+        if (logId) {
+            fetchAuditLogByIdServer(logId).then(res => {
+                if (res.log) {
+                    setInitialSelectedLog(logService.mapLogFromDb(res.log));
+                }
+            });
+        }
+    }, [searchParams]);
+
     return {
         logs,
         loading,
@@ -180,6 +212,8 @@ export const useAuditLogs = () => {
         handleSort,
         refresh: fetchLogs,
         fetchAllForExport,
-        submitResponse
+        submitResponse,
+        initialSelectedLog,
+        setInitialSelectedLog
     };
 };

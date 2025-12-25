@@ -17,14 +17,14 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
     onSubmit
 }) => {
     const { user } = useAuth();
-    const [status, setStatus] = useState<AnomalyResponseStatus>('investigating');
-    const [note, setNote] = useState('');
+    const [status, setStatus] = useState<AnomalyResponseStatus>(log.response_status || 'pending');
+    const [note, setNote] = useState(log.response_note || '');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
 
-    const isNoteRequired = log.severity === 'high' || log.severity === 'critical';
+    const isNoteRequired = log.severity === 'high' || log.severity === 'critical' || status === 'completed';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,10 +98,9 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"
                                 required
                             >
-                                <option value="no_issue">問題なし</option>
-                                <option value="mitigated">是正済み</option>
+                                <option value="pending">調査前</option>
                                 <option value="investigating">調査中</option>
-                                <option value="escalated">エスカレーション</option>
+                                <option value="completed">完了</option>
                             </select>
                         </div>
 
@@ -121,7 +120,7 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                         <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-blue-700 space-y-1">
                             <p>● 対応者: {user?.name || '管理者'}</p>
                             <p>● 登録日時: 現在の日時が自動的に記録されます</p>
-                            <p>● 証跡保護: この内容は監査ログとして保存され、改ざん不能な形で保護されます</p>
+                            <p>● 証跡保護: 「完了」として登録すると、ログの結果が「成功」になりアラートから除外されます</p>
                         </div>
                     </div>
 

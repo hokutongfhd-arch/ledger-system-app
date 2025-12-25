@@ -138,15 +138,24 @@ export async function submitAnomalyResponseServer(params: {
     adminUserId: string;
 }) {
     try {
+        const isCompleted = params.status === 'completed';
+
+        const updateData: any = {
+            is_acknowledged: isCompleted,
+            acknowledged_by: params.adminUserId,
+            acknowledged_at: new Date().toISOString(),
+            response_status: params.status,
+            response_note: params.note
+        };
+
+        // If marked as 'completed', we treat it as finalized and set result to 'success'
+        if (isCompleted) {
+            updateData.result = 'success';
+        }
+
         const { error } = await supabaseAdmin
             .from('audit_logs')
-            .update({
-                is_acknowledged: true,
-                acknowledged_by: params.adminUserId,
-                acknowledged_at: new Date().toISOString(),
-                response_status: params.status,
-                response_note: params.note
-            })
+            .update(updateData)
             .eq('id', params.logId);
 
         if (error) {
@@ -158,5 +167,20 @@ export async function submitAnomalyResponseServer(params: {
     } catch (error: any) {
         console.error('Server Action Error:', error);
         return { success: false, error: error.message };
+    }
+}
+export async function fetchAuditLogByIdServer(id: string) {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('audit_logs')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        return { log: data, error: null };
+    } catch (error: any) {
+        console.error('Fetch Audit Log by ID Error:', error);
+        return { log: null, error: error.message };
     }
 }

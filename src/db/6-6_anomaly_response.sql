@@ -3,14 +3,14 @@
 -- 1. Create Enum for Response Status
 DO $$ 
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'anomaly_response_status') THEN
-        CREATE TYPE anomaly_response_status AS ENUM (
-            'no_issue',      -- 問題なし
-            'mitigated',     -- 是正済み
-            'investigating', -- 調査中
-            'escalated'      -- エスカレーション
-        );
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'anomaly_response_status') THEN
+        DROP TYPE anomaly_response_status CASCADE;
     END IF;
+    CREATE TYPE anomaly_response_status AS ENUM (
+        'pending',       -- 調査前
+        'investigating', -- 調査中
+        'completed'      -- 完了
+    );
 END $$;
 
 -- 2. Add Tracking Columns to audit_logs
@@ -43,7 +43,6 @@ BEGIN
        (OLD.action_type IS DISTINCT FROM NEW.action_type) OR
        (OLD.target_type IS DISTINCT FROM NEW.target_type) OR
        (OLD.target_id IS DISTINCT FROM NEW.target_id) OR
-       (OLD.result IS DISTINCT FROM NEW.result) OR
        (OLD.ip_address IS DISTINCT FROM NEW.ip_address) OR
        (OLD.metadata IS DISTINCT FROM NEW.metadata) OR
        (OLD.severity IS DISTINCT FROM NEW.severity) THEN

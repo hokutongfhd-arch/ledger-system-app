@@ -11,6 +11,7 @@ interface NotificationContextType {
     unreadCount: number;
     maxSeverity: SeverityLevel | null;
     markAllAsRead: (silent?: boolean) => Promise<void>;
+    refreshNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -140,7 +141,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                                 className="flex flex-col gap-1 cursor-pointer p-4 rounded-lg shadow-lg bg-white border-2"
                                 style={{ ...toastStyle, minWidth: '320px', zIndex: 9999 }}
                                 onClick={() => {
-                                    routerRef.current.push('/audit-dashboard');
+                                    if (window.location.pathname === '/audit-dashboard') {
+                                        window.dispatchEvent(new CustomEvent('refresh-audit-dashboard'));
+                                    } else {
+                                        routerRef.current.push('/audit-dashboard');
+                                    }
                                     toast.dismiss(t.id);
                                 }}
                             >
@@ -163,6 +168,23 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     );
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'audit_logs',
+                },
+                (payload) => {
+                    const newLog = payload.new as any;
+                    // If action_type is specified and it's not an anomaly, skip
+                    if (newLog.action_type && newLog.action_type !== 'ANOMALY_DETECTED') {
+                        return;
+                    }
+                    // Otherwise (if anomaly or if action_type missing from payload), refetch
+                    fetchUnreadState();
+                }
+            )
             .subscribe();
 
         return () => {
@@ -173,8 +195,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const value = useMemo(() => ({
         unreadCount,
         maxSeverity,
-        markAllAsRead
-    }), [unreadCount, maxSeverity, markAllAsRead]);
+        markAllAsRead,
+        refreshNotifications: fetchUnreadState
+    }), [unreadCount, maxSeverity, markAllAsRead, fetchUnreadState]);
 
     return (
         <NotificationContext.Provider value={value}>

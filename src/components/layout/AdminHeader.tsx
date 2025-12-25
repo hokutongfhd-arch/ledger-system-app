@@ -27,8 +27,8 @@ export const AdminHeader = () => {
     };
 
     const handleNotificationClick = async () => {
-        if (unreadCount > 0) {
-            router.push('/audit-dashboard');
+        if (window.location.pathname === '/audit-dashboard') {
+            window.dispatchEvent(new CustomEvent('refresh-audit-dashboard'));
         } else {
             router.push('/audit-dashboard');
         }

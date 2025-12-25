@@ -88,10 +88,32 @@ function AuditLogContent() {
         updateFilter,
         handleSort,
         fetchAllForExport,
-        submitResponse
+        submitResponse,
+        initialSelectedLog,
+        setInitialSelectedLog
     } = useAuditLogs();
 
     const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+
+    // Initial log selection from URL or updates from list
+    useEffect(() => {
+        if (initialSelectedLog) {
+            setSelectedLog(initialSelectedLog);
+            setInitialSelectedLog(null); // Clear after consumption
+        }
+    }, [initialSelectedLog, setInitialSelectedLog]);
+
+    useEffect(() => {
+        if (selectedLog && logs) {
+            const updated = logs.find(l => l.id === selectedLog.id);
+            if (updated) {
+                // Ensure deep equality check to prevent loops
+                if (JSON.stringify(updated) !== JSON.stringify(selectedLog)) {
+                    setSelectedLog(updated);
+                }
+            }
+        }
+    }, [logs, selectedLog]);
 
     const getSortIcon = (field: 'occurred_at' | 'actor_name') => {
         if (sort.field !== field) return <ArrowUpDown size={14} className="ml-1 text-gray-300" />;
@@ -264,10 +286,12 @@ function AuditLogContent() {
             />
 
             <LogDetailModal
+                key={selectedLog?.id}
                 log={selectedLog}
                 isOpen={!!selectedLog}
                 onClose={() => setSelectedLog(null)}
                 onSubmitResponse={submitResponse}
+                isDashboardContext={false}
             />
         </div>
     );

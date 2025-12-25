@@ -13,15 +13,30 @@ import LogDetailModal from '../../../components/features/logs/LogDetailModal';
 import { useAuditLogs } from '../../../features/logs/useAuditLogs';
 
 export default function AuditDashboardPage() {
-    const { data, loading, range, setRange } = useAuditDashboard();
-    const { markAllAsRead } = useNotification();
+    const { data, loading, range, setRange, refresh } = useAuditDashboard();
+    const { markAllAsRead, refreshNotifications } = useNotification();
     const { submitResponse } = useAuditLogs();
     const [selectedLog, setSelectedLog] = useState<any>(null);
 
-    // Automatically mark notifications as read when entering the dashboard
+    // Listen for manual refresh requests (e.g. from Notification Toast or Bell)
     useEffect(() => {
-        markAllAsRead(true);
-    }, [markAllAsRead]);
+        const handleRefresh = () => refresh();
+        window.addEventListener('refresh-audit-dashboard', handleRefresh);
+        return () => window.removeEventListener('refresh-audit-dashboard', handleRefresh);
+    }, [refresh]);
+
+    // Keep selectedLog in sync with refreshed data
+    useEffect(() => {
+        if (selectedLog && data?.recentAnomalies) {
+            const updated = data.recentAnomalies.find((l: any) => l.id === selectedLog.id);
+            if (updated) {
+                // Only update if something actually changed to avoid infinite loops
+                if (JSON.stringify(updated) !== JSON.stringify(selectedLog)) {
+                    setSelectedLog(updated);
+                }
+            }
+        }
+    }, [data?.recentAnomalies, selectedLog]);
 
     if (loading) {
         return (
@@ -126,7 +141,7 @@ export default function AuditDashboardPage() {
                                                 <th className="py-2">実行ユーザー</th>
                                                 <th className="py-2">アクション</th>
                                                 <th className="py-2">重要度</th>
-                                                <th className="py-2">詳細</th>
+                                                <th className="py-2 text-right px-4">操作</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#0A0E27]/5">
@@ -144,9 +159,9 @@ export default function AuditDashboardPage() {
                                                     <td className="py-4">
                                                         <SeverityChip severity={log.severity || 'medium'} />
                                                     </td>
-                                                    <td className="py-4">
-                                                        <div className="flex items-center gap-2 text-[#00F0FF] opacity-0 group-hover:opacity-100 transition-opacity font-display font-bold text-xs uppercase">
-                                                            調査する <ArrowRight size={14} />
+                                                    <td className="py-4 text-right px-4">
+                                                        <div className="flex items-center justify-end gap-3 text-[#00F0FF] opacity-0 group-hover:opacity-100 transition-opacity font-display font-bold text-xs uppercase">
+                                                            <span>対応する</span> <ArrowRight size={14} />
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -312,10 +327,22 @@ export default function AuditDashboardPage() {
             {/* Log Detail Modal Integration */}
             {selectedLog && (
                 <LogDetailModal
+                    key={selectedLog.id}
                     log={selectedLog}
                     isOpen={!!selectedLog}
                     onClose={() => setSelectedLog(null)}
-                    onSubmitResponse={submitResponse}
+                    isDashboardContext={true}
+                    onSubmitResponse={async (id, status, note, adminId) => {
+                        const res = await submitResponse(id, status, note, adminId);
+                        if (res.success) {
+                            refresh();
+                            // Small delay to ensure DB reflects changes before refetching count
+                            setTimeout(() => {
+                                refreshNotifications();
+                            }, 500);
+                        }
+                        return res;
+                    }}
                 />
             )}
         </div>
