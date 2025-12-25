@@ -4,21 +4,23 @@ import React, { useEffect, useState } from 'react';
 import { useAuditDashboard } from '../../../features/audit/useAuditDashboard';
 import { useNotification } from '../../../features/notifications/NotificationContext';
 import {
-    Tooltip, Legend, ResponsiveContainer,
+    Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid
 } from 'recharts';
-import { Activity, AlertTriangle, ShieldAlert, CheckCircle, ArrowRight, ShieldCheck, User } from 'lucide-react';
+import { Activity, AlertTriangle, ShieldAlert, ArrowRight, ShieldCheck, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import LogDetailModal from '../../../components/features/logs/LogDetailModal';
 import { useAuditLogs } from '../../../features/logs/useAuditLogs';
+import { ReportGenerationModal } from '../../../components/features/audit/ReportGenerationModal';
 
 export default function AuditDashboardPage() {
     const { data, loading, range, setRange, refresh } = useAuditDashboard();
-    const { markAllAsRead, refreshNotifications } = useNotification();
+    const { refreshNotifications } = useNotification();
     const { submitResponse } = useAuditLogs();
     const [selectedLog, setSelectedLog] = useState<any>(null);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-    // Listen for manual refresh requests (e.g. from Notification Toast or Bell)
+    // Listen for manual refresh requests
     useEffect(() => {
         const handleRefresh = () => refresh();
         window.addEventListener('refresh-audit-dashboard', handleRefresh);
@@ -30,7 +32,6 @@ export default function AuditDashboardPage() {
         if (selectedLog && data?.recentAnomalies) {
             const updated = data.recentAnomalies.find((l: any) => l.id === selectedLog.id);
             if (updated) {
-                // Only update if something actually changed to avoid infinite loops
                 if (JSON.stringify(updated) !== JSON.stringify(selectedLog)) {
                     setSelectedLog(updated);
                 }
@@ -42,8 +43,8 @@ export default function AuditDashboardPage() {
         return (
             <div className="flex items-center justify-center h-full bg-[#FEFEF8]">
                 <div className="animate-pulse flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 bg-accent-electric rounded-lg shadow-sm"></div>
-                    <span className="text- ink/50 font-display">データを読み込み中...</span>
+                    <div className="h-10 w-10 bg-[#00F0FF] rounded-lg shadow-sm border-2 border-[#0A0E27]"></div>
+                    <span className="text-[#0A0E27]/50 font-display">データを読み込み中...</span>
                 </div>
             </div>
         );
@@ -51,7 +52,7 @@ export default function AuditDashboardPage() {
 
     if (!data) return <div>No Data</div>;
 
-    const { kpi, trend, distribution, severityDistribution, recentAnomalies, topActors, topAnomalyActors } = data;
+    const { kpi, trend, distribution, recentAnomalies, topActors, topAnomalyActors } = data;
 
     return (
         <div className="bg-[#FEFEF8] min-h-screen -m-8 p-8 font-japanese text-[#0A0E27]">
@@ -63,19 +64,28 @@ export default function AuditDashboardPage() {
                     </h1>
                     <p className="text-lg opacity-70 font-display italic">システム稼働状況および行動分析レポート</p>
                 </div>
-                <div className="flex bg-white p-1 rounded-sm border-2 border-[#0A0E27] shadow-[2px_2px_0px_0px_#0A0E27]">
-                    {(['today', '7days', '30days'] as const).map((r) => (
-                        <button
-                            key={r}
-                            onClick={() => setRange(r)}
-                            className={`px-6 py-2 text-sm font-bold font-display transition-all ${range === r
-                                ? 'bg-[#00F0FF] text-[#0A0E27]'
-                                : 'text-[#0A0E27]/40 hover:text-[#0A0E27]'
-                                }`}
-                        >
-                            {r === 'today' ? '今日' : r === '7days' ? '7日間' : '30日間'}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-white p-1 rounded-sm border-2 border-[#0A0E27] shadow-[2px_2px_0px_0px_#0A0E27]">
+                        {(['today', '7days', '30days'] as const).map((r) => (
+                            <button
+                                key={r}
+                                onClick={() => setRange(r)}
+                                className={`px-6 py-2 text-sm font-bold font-display transition-all ${range === r
+                                    ? 'bg-[#00F0FF] text-[#0A0E27]'
+                                    : 'text-[#0A0E27]/40 hover:text-[#0A0E27]'
+                                    }`}
+                            >
+                                {r === 'today' ? '今日' : r === '7days' ? '7日間' : '30日間'}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => setIsReportModalOpen(true)}
+                        className="flex items-center gap-3 px-8 py-3 bg-[#0A0E27] text-white font-bold font-display uppercase tracking-widest border-2 border-[#0A0E27] shadow-[6px_6px_0px_0px_#00F0FF] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all active:scale-95"
+                    >
+                        <FileText size={20} className="text-[#00F0FF]" />
+                        レポート生成
+                    </button>
                 </div>
             </header>
 
@@ -133,8 +143,8 @@ export default function AuditDashboardPage() {
                         </div>
                         <div className={`bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8 ${recentAnomalies.length > 0 && recentAnomalies.some(a => a.severity === 'high' || a.severity === 'critical') ? 'ring-4 ring-[#FF6B6B] ring-inset' : ''}`}>
                             {recentAnomalies.length > 0 ? (
-                                <div className="space-y-4">
-                                    <table className="w-full text-left">
+                                <div className="space-y-4 overflow-x-auto">
+                                    <table className="w-full text-left min-w-[600px]">
                                         <thead>
                                             <tr className="border-b border-[#0A0E27]/10 text-xs font-display font-bold uppercase tracking-tighter opacity-50">
                                                 <th className="py-2">発生日時</th>
@@ -168,14 +178,9 @@ export default function AuditDashboardPage() {
                                             ))}
                                         </tbody>
                                     </table>
-                                    <div className="pt-4 flex justify-end">
-                                        <a href="/logs?actionType=ANOMALY_DETECTED" className="text-sm font-bold font-display flex items-center gap-2 hover:opacity-70 border-b border-[#0A0E27]">
-                                            すべての異常ログを表示 <ArrowRight size={14} />
-                                        </a>
-                                    </div>
                                 </div>
                             ) : (
-                                <div className="py-12 flex flex-col items-center justify-center opacity-30 italic">
+                                <div className="py-12 flex flex-col items-center justify-center opacity-30 italic font-bold">
                                     <p>現在、未対応のセキュリティアラートはありません。</p>
                                 </div>
                             )}
@@ -189,7 +194,7 @@ export default function AuditDashboardPage() {
                             <h2 className="text-3xl font-bold uppercase font-display border-b-2 border-[#0A0E27] pr-8">アクティビティトレンド</h2>
                         </div>
                         <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8 h-[540px] flex flex-col">
-                            <div className="flex-1 min-h-0">
+                            <div className="flex-1 min-h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={trend}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -208,21 +213,15 @@ export default function AuditDashboardPage() {
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#FEFEF8', border: '2px solid #0A0E27', borderRadius: '0', fontSize: '12px', fontFamily: 'Zen Kaku Gothic New' }}
                                             itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                                            itemSorter={(item: any) => {
-                                                const order: Record<string, number> = { '総操作数': 1, '不正検知数': 2, '失敗数': 3 };
-                                                return order[item.name as string] || 99;
-                                            }}
                                         />
-                                        <Line type="monotone" dataKey="count" name="総操作数" stroke="#0A0E27" strokeWidth={2} dot={{ r: 4, fill: '#0A0E27' }} activeDot={{ r: 6 }} />
-                                        <Line type="monotone" dataKey="anomalyCount" name="不正検知数" stroke="#FF6B6B" strokeWidth={2} dot={{ r: 4, fill: '#FF6B6B' }} activeDot={{ r: 6 }} />
-                                        <Line type="monotone" dataKey="failureCount" name="失敗数" stroke="#7C3AED" strokeWidth={2} dot={{ r: 4, fill: '#7C3AED' }} activeDot={{ r: 6 }} />
+                                        <Line type="monotone" dataKey="count" name="総操作数" stroke="#0A0E27" strokeWidth={2} dot={{ r: 4, fill: '#0A0E27' }} />
+                                        <Line type="monotone" dataKey="anomalyCount" name="不正検知数" stroke="#FF6B6B" strokeWidth={2} dot={{ r: 4, fill: '#FF6B6B' }} />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
                             <div className="mt-6 flex justify-center gap-12 font-japanese text-[10px] font-bold uppercase tracking-widest opacity-60">
                                 <div className="flex items-center gap-2"><div className="w-4 h-0.5 bg-[#0A0E27]" /> 総操作数</div>
                                 <div className="flex items-center gap-2"><div className="w-4 h-0.5 bg-[#FF6B6B]" /> 不正検知数</div>
-                                <div className="flex items-center gap-2"><div className="w-4 h-0.5 bg-[#7C3AED]" /> 失敗数</div>
                             </div>
                         </div>
                     </section>
@@ -233,44 +232,40 @@ export default function AuditDashboardPage() {
                             <div className="w-10 h-10 bg-[#00F0FF] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">04</div>
                             <h2 className="text-3xl font-bold uppercase font-display border-b-2 border-[#0A0E27] pr-8">内訳分析</h2>
                         </div>
-                        <div className="grid grid-cols-1 gap-8">
-                            <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-6">
-                                <h3 className="text-sm font-bold uppercase font-display mb-8 opacity-50 tracking-tighter">アクション別構成比</h3>
-                                <div className="h-[220px] relative">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={distribution}
-                                                innerRadius={65}
-                                                outerRadius={90}
-                                                paddingAngle={4}
-                                                dataKey="count"
-                                                nameKey="action"
-                                                animationBegin={0}
-                                                animationDuration={400}
-                                            >
-                                                {distribution.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.fill} strokeWidth={0} />
-                                                ))}
-                                            </Pie>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                        <span className="text-4xl font-bold font-display">{distribution.reduce((acc, c) => acc + c.count, 0)}</span>
-                                        <span className="text-[10px] font-bold font-display opacity-40 uppercase">合計件数</span>
-                                    </div>
+                        <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-6 h-[540px] flex flex-col">
+                            <h3 className="text-sm font-bold uppercase font-display mb-8 opacity-50 tracking-tighter">アクション別構成比</h3>
+                            <div className="h-[220px] min-h-[220px] relative mb-8">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={distribution}
+                                            innerRadius={65}
+                                            outerRadius={90}
+                                            paddingAngle={4}
+                                            dataKey="count"
+                                            nameKey="action"
+                                        >
+                                            {distribution.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} strokeWidth={0} />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-4xl font-bold font-display">{distribution.reduce((acc, c) => acc + c.count, 0)}</span>
+                                    <span className="text-[10px] font-bold font-display opacity-40 uppercase">合計件数</span>
                                 </div>
-                                <div className="mt-8 space-y-2">
-                                    {distribution.slice(0, 3).map((item, i) => (
-                                        <div key={i} className="flex justify-between items-center text-xs">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.fill }} />
-                                                <span className="font-bold">{ACTION_LABELS[item.action] || item.action}</span>
-                                            </div>
-                                            <span className="font-display font-bold opacity-60">{item.count}</span>
+                            </div>
+                            <div className="space-y-2 overflow-y-auto flex-1">
+                                {distribution.slice(0, 10).map((item, i) => (
+                                    <div key={i} className="flex justify-between items-center text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.fill }} />
+                                            <span className="font-bold truncate max-w-[120px]">{ACTION_LABELS[item.action] || item.action}</span>
                                         </div>
-                                    ))}
-                                </div>
+                                        <span className="font-display font-bold opacity-60">{item.count}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </section>
@@ -284,7 +279,7 @@ export default function AuditDashboardPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                         <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8">
-                            <h3 className="text-sm font-bold uppercase font-display mb-6 border-b border-[#0A0E27]/10 pb-2">操作数上位ユーザー (ランキング)</h3>
+                            <h3 className="text-sm font-bold uppercase font-display mb-6 border-b border-[#0A0E27]/10 pb-2">操作数上位ユーザー</h3>
                             <div className="space-y-4">
                                 {topActors.map((actor, idx) => (
                                     <div key={actor.code} className="flex items-center justify-between border-b border-[#0A0E27]/5 pb-2">
@@ -312,43 +307,43 @@ export default function AuditDashboardPage() {
                                                 <p className="text-[10px] font-display font-medium opacity-50">{actor.code}</p>
                                             </div>
                                         </div>
-                                        <span className="font-display font-bold text-xl text-[#FF6B6B]">{actor.count} <span className="text-[10px] opacity-40">件のアラート</span></span>
+                                        <span className="font-display font-bold text-xl text-[#FF6B6B]">{actor.count} <span className="text-[10px] opacity-40">件</span></span>
                                     </div>
                                 ))}
-                                {topAnomalyActors.length === 0 && (
-                                    <div className="py-12 flex items-center justify-center opacity-20 italic text-sm">現在、顕著な異常パターンは検出されていません。</div>
-                                )}
                             </div>
                         </div>
                     </div>
                 </section>
             </main>
 
-            {/* Log Detail Modal Integration */}
+            {/* Modals */}
             {selectedLog && (
                 <LogDetailModal
                     key={selectedLog.id}
                     log={selectedLog}
                     isOpen={!!selectedLog}
                     onClose={() => setSelectedLog(null)}
-                    isDashboardContext={true}
-                    onSubmitResponse={async (id, status, note, adminId) => {
-                        const res = await submitResponse(id, status, note, adminId);
+                    onSubmitResponse={async (logId, status, note, adminUserId) => {
+                        const res = await submitResponse(logId, status, note, adminUserId);
                         if (res.success) {
                             refresh();
-                            // Small delay to ensure DB reflects changes before refetching count
-                            setTimeout(() => {
-                                refreshNotifications();
-                            }, 500);
+                            setTimeout(() => refreshNotifications(), 500);
                         }
                         return res;
                     }}
+                    isDashboardContext={true}
                 />
             )}
+
+            <ReportGenerationModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+            />
         </div>
     );
 }
 
+// Sub-components
 function KPICard({ title, value, icon, alert = false, subtext }: { title: string, value: number, icon: React.ReactNode, alert?: boolean, subtext?: string }) {
     return (
         <div className={`relative bg-white border-2 border-[#0A0E27] p-6 shadow-[4px_4px_0px_0px_#0A0E27] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_#0A0E27] ${alert ? 'border-[#FF6B6B] ring-2 ring-[#FF6B6B] ring-inset' : ''}`}>
@@ -369,19 +364,6 @@ function KPICard({ title, value, icon, alert = false, subtext }: { title: string
     );
 }
 
-const ACTION_LABELS: Record<string, string> = {
-    LOGIN_SUCCESS: 'ログイン成功',
-    LOGIN_FAILURE: 'ログイン失敗',
-    LOGOUT: 'ログアウト',
-    CREATE: 'データ作成',
-    UPDATE: 'データ更新',
-    DELETE: 'データ削除',
-    ANOMALY_DETECTED: '異常検知',
-    EXPORT: 'エクスポート',
-    IMPORT: 'インポート',
-    DOWNLOAD_TEMPLATE: 'テンプレート読込'
-};
-
 function SeverityChip({ severity }: { severity: string }) {
     const styles = {
         critical: 'bg-[#FF6B6B] text-white',
@@ -401,3 +383,16 @@ function SeverityChip({ severity }: { severity: string }) {
         </span>
     );
 }
+
+const ACTION_LABELS: Record<string, string> = {
+    LOGIN_SUCCESS: 'ログイン成功',
+    LOGIN_FAILURE: 'ログイン失敗',
+    LOGOUT: 'ログアウト',
+    CREATE: 'データ作成',
+    UPDATE: 'データ更新',
+    DELETE: 'データ削除',
+    ANOMALY_DETECTED: '異常検知',
+    EXPORT: 'エクスポート',
+    IMPORT: 'インポート',
+    DOWNLOAD_TEMPLATE: 'テンプレート読込'
+};

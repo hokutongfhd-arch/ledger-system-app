@@ -174,17 +174,22 @@ export interface Memo {
 
 export interface AuditReport {
     id: string;
-    report_type: 'daily' | 'weekly';
+    report_type: 'daily' | 'weekly' | 'summary' | 'detailed';
     period_start: string;
     period_end: string;
     summary: {
         total_actions: number;
         login_failures: number;
         anomalies: number;
+        unacknowledged_anomalies?: number;
         breakdown_by_action: Record<string, number>;
         breakdown_by_result: Record<string, number>;
         generated_at: string;
     };
+    generated_by?: string;      // Employee Code
+    generated_by_name?: string; // Employee Name
+    pdf_path?: string;
+    checksum?: string;
     created_at: string;
 }
 

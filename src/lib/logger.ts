@@ -1,4 +1,5 @@
-import { supabase } from './supabaseClient';
+import { supabase as staticSupabase } from './supabaseClient';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export type LogActionType =
     | 'LOGIN_SUCCESS'
@@ -9,6 +10,7 @@ export type LogActionType =
     | 'DELETE'
     | 'IMPORT'
     | 'EXPORT'
+    | 'GENERATE'
     | 'ERROR';
 
 export type TargetType =
@@ -20,6 +22,7 @@ export type TargetType =
     | 'router'
     | 'area'
     | 'address'
+    | 'report'
     | 'unknown';
 
 export interface LogEntry {
@@ -33,28 +36,41 @@ export interface LogEntry {
         authId?: string;
         employeeCode?: string;
         name?: string;
-    }
+    };
+    isAcknowledged?: boolean;
 }
 
 class LoggerService {
+    private client: any = null;
+
+    private getClient() {
+        if (typeof window === 'undefined') return staticSupabase;
+        if (this.client) return this.client;
+
+        this.client = createClientComponentClient();
+        return this.client;
+    }
+
     /**
      * Writes a log entry to the audit_logs table.
      * This method is "fire and forget" mostly, but handles errors internally to not break the app.
      */
     async log(entry: LogEntry) {
         try {
-            // 1. Resolve Actor (if not provided, try to get from current session)
+            const supabase = this.getClient();
+
+            // 1. Resolve Actor
             let actorAuthId = entry.actor?.authId;
             let actorEmployeeCode = entry.actor?.employeeCode;
             let actorName = entry.actor?.name;
 
             if (!actorAuthId) {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    actorAuthId = session.user.id;
-                    // We might not have employee code/name readily available without fetching, 
-                    // but usually the caller (Context) has it. 
-                    // If missing, we leave it null or assume the backend context knows.
+                // Only try to fetch session if definitely in the browser and not a login/auth related action 
+                if (typeof window !== 'undefined' && entry.targetType !== 'auth') {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        actorAuthId = session.user.id;
+                    }
                 }
             }
 
@@ -67,6 +83,7 @@ class LoggerService {
                 target_type: entry.targetType,
                 target_id: entry.targetId,
                 result: entry.result,
+                is_acknowledged: entry.isAcknowledged ?? false,
                 metadata: {
                     message: entry.message,
                     ...entry.metadata
