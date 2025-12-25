@@ -38,6 +38,10 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
         setSubmitting(true);
         setError(null);
         try {
+            if (!user.authId) {
+                setError('ログインユーザーの認証IDが見つかりません。再ログインを試してください。');
+                return;
+            }
             const result = await onSubmit(log.id, status, note, user.authId);
             if (result.success) {
                 onClose();

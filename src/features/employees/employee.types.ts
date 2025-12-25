@@ -22,6 +22,7 @@ export interface Employee {
     jobType: string;
     role: 'admin' | 'user';
     profileImage?: string;
+    authId?: string;
 }
 
 export interface Memo {

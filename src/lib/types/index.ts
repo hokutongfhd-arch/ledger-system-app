@@ -107,7 +107,7 @@ export interface Employee {
     // TODO: Future Extension - Consider adding 'operator' | 'viewer' roles for more granular permissions
     role: 'admin' | 'user';
     profileImage?: string;
-    authId: string;
+    authId?: string;
 }
 
 export interface Area {
