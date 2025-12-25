@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Tablet, IPhone, FeaturePhone, Router, Employee, Area, Address, Log, DeviceStatus } from '../../lib/types';
 import { useAuth } from './AuthContext';
-import { supabase } from '../../lib/supabaseClient';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
@@ -318,6 +318,7 @@ const TARGET_MAP: Record<string, TargetType> = {
 };
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const supabase = createClientComponentClient();
     const [tablets, setTablets] = useState<Tablet[]>([]);
     const [iPhones, setIPhones] = useState<IPhone[]>([]);
     const [featurePhones, setFeaturePhones] = useState<FeaturePhone[]>([]);

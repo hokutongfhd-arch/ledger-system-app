@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS logs (
 ALTER TABLE logs ENABLE ROW LEVEL SECURITY;
 
 -- Admin can do everything
+DROP POLICY IF EXISTS admin_all_logs ON logs;
 CREATE POLICY admin_all_logs ON logs
 FOR ALL TO authenticated
 USING (
@@ -38,15 +39,25 @@ DECLARE
     old_val JSONB := NULL;
     new_val JSONB := NULL;
 BEGIN
-    -- 実行者の取得 (auth.uid() or JWT email から社員情報を特定)
-    SELECT name, employee_code INTO actor_record FROM employees 
+    -- 実行者の取得 (auth.uid() or JWT info から社員情報を特定)
+    -- 注意: Next.js + Auth Helpers では DataContext のクライアントが正しく設定されていないと auth.uid() が NULL になることがあります
+    SELECT id, name, employee_code, auth_id INTO actor_record FROM employees 
     WHERE auth_id = auth.uid()
        OR (
-           -- auth_id が未紐付けの場合のフォールバック (email: code@ledger-system.local)
-           auth.jwt() ->> 'email' IS NOT NULL 
-           AND employee_code = split_part(auth.jwt() ->> 'email', '@', 1)
+           -- auth_id が未紐付けの場合のフォールバック
+           -- Auth ユーザー作成時に設定される app_metadata 経由、または email: code@ledger-system.local 経由
+           employee_code = COALESCE(
+               auth.jwt() -> 'app_metadata' ->> 'employee_code',
+               split_part(auth.jwt() ->> 'email', '@', 1)
+           )
        );
     
+    -- 自己修復: auth_id が未紐付けなら自動的にリンクする (SECURITY DEFINER なので実行可能)
+    -- これにより、次回以降の操作は auth_id で即座に特定可能になります
+    IF actor_record.id IS NOT NULL AND actor_record.auth_id IS NULL AND auth.uid() IS NOT NULL THEN
+        UPDATE employees SET auth_id = auth.uid() WHERE id = actor_record.id;
+    END IF;
+
     actor_name := COALESCE(actor_record.name, 'システム');
     actor_code := COALESCE(actor_record.employee_code, 'SYSTEM');
 
