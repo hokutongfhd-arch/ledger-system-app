@@ -173,36 +173,38 @@ export default function AuditDashboardPage() {
                             <div className="w-10 h-10 bg-[#00F0FF] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">03</div>
                             <h2 className="text-3xl font-bold uppercase font-display border-b-2 border-[#0A0E27] pr-8">アクティビティトレンド</h2>
                         </div>
-                        <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8 h-[500px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={trend}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                    <XAxis
-                                        dataKey="date"
-                                        axisLine={{ stroke: '#0A0E27', strokeWidth: 1 }}
-                                        tickLine={false}
-                                        tick={{ fill: '#0A0E27', fontSize: 10, fontWeight: 'bold' }}
-                                        tickFormatter={(val) => val.split('-').slice(1).join('.')}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#0A0E27', fontSize: 10, fontWeight: 'bold' }}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#FEFEF8', border: '2px solid #0A0E27', borderRadius: '0', fontSize: '12px', fontFamily: 'Zen Kaku Gothic New' }}
-                                        itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                                        itemSorter={(item: any) => {
-                                            const order: Record<string, number> = { '総操作数': 1, '不正検知数': 2, '失敗数': 3 };
-                                            return order[item.name as string] || 99;
-                                        }}
-                                    />
-                                    <Line type="monotone" dataKey="count" name="総操作数" stroke="#0A0E27" strokeWidth={2} dot={{ r: 4, fill: '#0A0E27' }} activeDot={{ r: 6 }} />
-                                    <Line type="monotone" dataKey="anomalyCount" name="不正検知数" stroke="#FF6B6B" strokeWidth={2} dot={{ r: 4, fill: '#FF6B6B' }} activeDot={{ r: 6 }} />
-                                    <Line type="monotone" dataKey="failureCount" name="失敗数" stroke="#7C3AED" strokeWidth={2} dot={{ r: 4, fill: '#7C3AED' }} activeDot={{ r: 6 }} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                            <div className="mt-8 flex justify-center gap-12 font-japanese text-[10px] font-bold uppercase tracking-widest opacity-60">
+                        <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8 h-[540px] flex flex-col">
+                            <div className="flex-1 min-h-0">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={trend}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                        <XAxis
+                                            dataKey="date"
+                                            axisLine={{ stroke: '#0A0E27', strokeWidth: 1 }}
+                                            tickLine={false}
+                                            tick={{ fill: '#0A0E27', fontSize: 10, fontWeight: 'bold' }}
+                                            tickFormatter={(val) => val.split('-').slice(1).join('.')}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#0A0E27', fontSize: 10, fontWeight: 'bold' }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#FEFEF8', border: '2px solid #0A0E27', borderRadius: '0', fontSize: '12px', fontFamily: 'Zen Kaku Gothic New' }}
+                                            itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                            itemSorter={(item: any) => {
+                                                const order: Record<string, number> = { '総操作数': 1, '不正検知数': 2, '失敗数': 3 };
+                                                return order[item.name as string] || 99;
+                                            }}
+                                        />
+                                        <Line type="monotone" dataKey="count" name="総操作数" stroke="#0A0E27" strokeWidth={2} dot={{ r: 4, fill: '#0A0E27' }} activeDot={{ r: 6 }} />
+                                        <Line type="monotone" dataKey="anomalyCount" name="不正検知数" stroke="#FF6B6B" strokeWidth={2} dot={{ r: 4, fill: '#FF6B6B' }} activeDot={{ r: 6 }} />
+                                        <Line type="monotone" dataKey="failureCount" name="失敗数" stroke="#7C3AED" strokeWidth={2} dot={{ r: 4, fill: '#7C3AED' }} activeDot={{ r: 6 }} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="mt-6 flex justify-center gap-12 font-japanese text-[10px] font-bold uppercase tracking-widest opacity-60">
                                 <div className="flex items-center gap-2"><div className="w-4 h-0.5 bg-[#0A0E27]" /> 総操作数</div>
                                 <div className="flex items-center gap-2"><div className="w-4 h-0.5 bg-[#FF6B6B]" /> 不正検知数</div>
                                 <div className="flex items-center gap-2"><div className="w-4 h-0.5 bg-[#7C3AED]" /> 失敗数</div>
