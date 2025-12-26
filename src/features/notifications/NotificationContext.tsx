@@ -144,9 +144,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         color: isCritical ? '#991B1B' : (isHigh ? '#9A3412' : '#1E40AF'),
                     };
 
-                    const icon = isCritical ? '🚨' : (isHigh ? '⚠️' : 'ℹ️');
-                    const title = isCritical ? '重大な異常検知(Critical)' : (isHigh ? '異常検知(High)' : '異常検知');
-                    const subtitle = isConsecutive ? '（連続検知）' : '';
+                    const icon = isCritical ? '🛡️' : (isHigh ? '⚠️' : 'ℹ️');
+                    const title = isCritical ? '重大な不正検知' : (isHigh ? '不正検知（高）' : '不正検知');
+                    const subtitle = isConsecutive ? '（連続発生）' : '';
 
                     // Make Critical messages more specific
                     let message = '不審な操作が検出されました。';
@@ -155,10 +155,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         if (metaMsg) {
                             message = `${metaMsg}`;
                         } else {
-                            message = `深刻なセキュリティリスクが検知されました: [${newLog.target_type}]`;
+                            message = `重大なセキュリティリスクが検知されました: [${newLog.target_type}]`;
                         }
                     } else if (isHigh) {
-                        message = '警告レベルの異常が検出されました。確認が必要です。';
+                        message = '高レベルの不正が検出されました。早急な確認を推奨します。';
                     }
 
                     toast.custom(

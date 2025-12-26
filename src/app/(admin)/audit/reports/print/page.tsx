@@ -20,12 +20,12 @@ const ACTION_LABELS: Record<string, string> = {
     CREATE: 'データ作成',
     UPDATE: 'データ更新',
     DELETE: 'データ削除',
-    ANOMALY_DETECTED: '異常検知',
+    ANOMALY_DETECTED: '不正検知',
     EXPORT: 'エクスポート',
     IMPORT: 'インポート',
     DOWNLOAD_TEMPLATE: 'テンプレート読込',
     GENERATE: 'レポート生成',
-    ANOMALY_RESPONSE: '不正対応登録'
+    ANOMALY_RESPONSE: '対応内容登録'
 };
 
 export default function AuditReportPrintPage() {
@@ -213,9 +213,9 @@ export default function AuditReportPrintPage() {
 
                         <div className="grid grid-cols-2 gap-8">
                             <KPICardPrint title="総操作数" value={summary.total_actions} icon={<Activity size={24} />} />
-                            <KPICardPrint title="異常検知数" value={summary.anomalies} icon={<AlertTriangle size={24} />} alert />
-                            <KPICardPrint title="失敗アクション" value={summary.breakdown_by_result?.failure || 0} icon={<ShieldAlert size={24} />} />
-                            <KPICardPrint title="未対応件数" value={summary.unacknowledged_anomalies || 0} icon={<Zap size={24} />} alert />
+                            <KPICardPrint title="不正検知数" value={summary.anomalies} icon={<ShieldAlert size={24} />} alert={summary.anomalies > 0} />
+                            <KPICardPrint title="失敗アクション" value={summary.breakdown_by_result?.failure || 0} icon={<X size={24} />} />
+                            <KPICardPrint title="未対応件数" value={summary.unacknowledged_anomalies || 0} icon={<Zap size={24} />} alert={summary.unacknowledged_anomalies > 0} />
                         </div>
 
                         <div className="grid grid-cols-2 gap-12 pt-8 chart-container">
@@ -375,7 +375,9 @@ export default function AuditReportPrintPage() {
                         <div className="mt-12 p-12 border-4 border-[#0A0E27] shadow-[12px_12px_0px_0px_#00F0FF]">
                             <h4 className="text-sm font-black uppercase mb-4 tracking-widest">監査上の留意点</h4>
                             <p className="text-sm font-bold leading-relaxed opacity-80">
-                                上位ユーザーの操作内容は業務上の必要性に基づくものであるか再確認を推奨します。特に「不正検知」において上位にランクインしているユーザーについては、実行されたアクションの詳細およびその背景について、関連部門と連携し実態調査を行う必要があります。
+                                {data.topAnomalyActors.length > 0
+                                    ? "上位ユーザーの操作内容は業務上の必要性に基づくものであるか再確認を推奨します。特に「不正検知」において上位にランクインしているユーザーについては、実行されたアクションの詳細およびその背景について、関連部門と連携し実態調査を行う必要があります。"
+                                    : "対象期間内において、特定のユーザーによる集中的な不正検知は確認されませんでした。全体的な操作傾向に特筆すべきリスクは認められません。"}
                             </p>
                         </div>
                     </div>
@@ -401,13 +403,13 @@ export default function AuditReportPrintPage() {
                                         </div>
                                         <div className="flex flex-col items-end gap-2 text-right">
                                             <div className="text-xs font-black bg-[#FF6B6B] text-white px-3 py-1 uppercase tracking-widest">
-                                                重要度: {ano.severity === 'high' ? '高' : ano.severity === 'medium' ? '中' : '低'}
+                                                重要度: {ano.severity === 'critical' ? '重大' : ano.severity === 'high' ? '高' : ano.severity === 'medium' ? '中' : '低'}
                                             </div>
                                             <div className={clsx(
                                                 "text-xs font-black px-3 py-1 uppercase tracking-widest border-2",
                                                 ano.status === 'completed' ? "border-[#00F0FF] text-[#0A0E27]" : "border-[#FF6B6B] text-[#FF6B6B]"
                                             )}>
-                                                状態: {ano.status === 'completed' ? '対応済（判断記録あり）' : '未対応（判断未実施）'}
+                                                状態: {ano.status === 'completed' ? '対応済' : '未対応'}
                                             </div>
                                         </div>
                                     </div>
@@ -457,8 +459,13 @@ export default function AuditReportPrintPage() {
                                 </div>
                             ))}
                             {anomalies.length === 0 && (
-                                <div className="py-32 text-center border-8 border-dotted border-[#0A0E27]/10 italic font-black text-2xl opacity-20 uppercase tracking-[0.2em]">
-                                    No Anomalies Detected in this Period
+                                <div className="py-24 flex flex-col items-center justify-center border-8 border-dotted border-[#0A0E27]/10 text-[#0A0E27]/30">
+                                    <ShieldCheck size={64} className="mb-6 opacity-20" />
+                                    <p className="text-2xl font-black italic uppercase tracking-[0.2em] mb-4">No Anomalies Detected</p>
+                                    <div className="max-w-[400px] text-center space-y-2">
+                                        <p className="text-sm font-bold leading-relaxed">対象期間内において、システムが検知すべき不正な操作は認められませんでした。</p>
+                                        <p className="text-xs font-medium">全ての監査対象ログは正常に記録されており、改竄の痕跡も確認されていません。現状、システムは極めて健全な状態で運用されていると判断されます。</p>
+                                    </div>
                                 </div>
                             )}
                         </div>

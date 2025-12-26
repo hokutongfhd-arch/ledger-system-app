@@ -13,13 +13,13 @@ interface LogDetailModalProps {
 }
 
 const STATUS_MAP: Record<string, string> = {
-    pending: '調査前',
+    pending: '未対応',
     investigating: '調査中',
-    completed: '対応済（判断記録あり）'
+    completed: '対応済'
 };
 
 const SEVERITY_LABELS: Record<string, string> = {
-    critical: '緊急',
+    critical: '重大',
     high: '高',
     medium: '中',
     low: '低'
@@ -73,8 +73,8 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                                 </div>
                             )}
                             <div>
-                                <h2 className="text-lg font-bold text-gray-800">{isAnomaly ? '不正検知ログ詳細' : 'ログ詳細'}</h2>
-                                <p className="text-sm text-gray-500 font-mono">{log.id}</p>
+                                <h2 className="text-lg font-bold text-[#0A0E27]">{isAnomaly ? '不正検知ログ詳細' : 'ログ詳細'}</h2>
+                                <p className="text-xs text-gray-400 font-mono tracking-tighter">{log.id}</p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
@@ -107,51 +107,56 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                             {log.response_status ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                             <User size={14} /> 最終対応者ID
                                         </div>
-                                        <div className="text-sm font-mono bg-white px-2 py-1 rounded border border-gray-200 truncate">
+                                        <div className="text-sm font-mono bg-white px-2 py-1.5 rounded border border-gray-200 truncate">
                                             {log.acknowledged_by}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                             <Clock size={14} /> 最終更新日時
                                         </div>
-                                        <div className="text-sm bg-white px-2 py-1 rounded border border-gray-200">
+                                        <div className="text-sm bg-white px-2 py-1.5 rounded border border-gray-200">
                                             {log.acknowledged_at ? new Date(log.acknowledged_at).toLocaleString('ja-JP') : '-'}
                                         </div>
                                     </div>
                                     <div className="md:col-span-2 space-y-2">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                             <Check size={14} /> 現在のステータス
                                         </div>
-                                        <div className={`text-sm font-bold bg-white px-2 py-1 rounded border w-fit ${log.is_acknowledged ? 'border-green-200 text-green-700' : 'border-amber-200 text-amber-700'}`}>
+                                        <div className={`text-xs font-bold px-3 py-1 rounded border w-fit ${log.is_acknowledged ? 'bg-gray-100 border-gray-200 text-gray-500' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
                                             {STATUS_MAP[log.response_status || ''] || log.response_status}
-                                            {log.is_acknowledged && <span className="ml-2 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest">記録済</span>}
+                                            {log.is_acknowledged && <span className="ml-2 text-[10px] font-medium opacity-60">記録済</span>}
                                         </div>
                                     </div>
                                     <div className="md:col-span-2 space-y-2">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                             <FileText size={14} /> 対応メモ
                                         </div>
-                                        <div className="text-sm bg-white p-3 rounded-lg border border-gray-200 italic leading-relaxed text-gray-700">
+                                        <div className="text-sm bg-white p-3 rounded-lg border border-gray-200 italic leading-relaxed text-gray-600">
                                             {log.response_note || '(メモなし)'}
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                    <p className={`text-sm font-medium italic ${isAnomaly ? 'text-amber-800' : isFailure ? 'text-red-800' : 'text-blue-800'}`}>
-                                        {isAnomaly
-                                            ? '未対応の不正検知です。速やかに状況を確認し、対応内容を記録してください。'
-                                            : '未対応のイベントです。必要に応じて状況を確認し、対応内容を記録してください。'}
-                                    </p>
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
+                                    <div className="space-y-1">
+                                        <p className={`text-sm font-bold flex items-center gap-2 ${isAnomaly ? 'text-amber-800' : isFailure ? 'text-red-800' : 'text-blue-800'}`}>
+                                            対応が必要です
+                                        </p>
+                                        <p className="text-xs text-gray-600 leading-relaxed">
+                                            {isAnomaly
+                                                ? '未対応の不正検知です。速やかに状況を確認し、対応内容を記録してください。'
+                                                : '未対応のイベントです。状況を確認し、必要に応じて対応内容を記録してください。'}
+                                        </p>
+                                    </div>
                                     <button
                                         onClick={() => setIsResponseModalOpen(true)}
-                                        className={`${isAnomaly ? 'bg-amber-600 hover:bg-amber-700' :
-                                            isFailure ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
-                                            } text-white px-6 py-2 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 shrink-0 active:scale-95`}
+                                        className={`${isAnomaly ? 'bg-[#0A0E27] hover:bg-[#1A1E37]' :
+                                            isFailure ? 'bg-[#FF6B6B] hover:bg-[#FF8585]' : 'bg-[#00F0FF] hover:bg-[#33F3FF] text-[#0A0E27]'
+                                            } text-white px-8 py-2.5 rounded shadow-sm font-bold transition-all flex items-center gap-2 shrink-0 active:scale-95 border-2 border-[#0A0E27]`}
                                     >
                                         対応を登録する
                                     </button>

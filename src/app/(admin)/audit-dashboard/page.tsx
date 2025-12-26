@@ -99,11 +99,11 @@ export default function AuditDashboardPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                         <KPICard
-                            title="未対応の異常"
+                            title="未対応の不正検知"
                             value={kpi.unacknowledgedAnomalyCount}
                             alert={kpi.unacknowledgedAnomalyCount > 0}
-                            subtext="即時の対応が必要です"
-                            icon={<AlertTriangle size={20} />}
+                            subtext={kpi.unacknowledgedAnomalyCount > 0 ? "即時の対応が必要です" : "現在、未対応の項目はありません"}
+                            icon={<ShieldAlert size={20} />}
                         />
                         <KPICard
                             title="本日の総操作数"
@@ -217,8 +217,10 @@ export default function AuditDashboardPage() {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="py-12 flex flex-col items-center justify-center opacity-30 italic font-bold">
-                                    <p>現在、未対応のセキュリティアラートはありません。</p>
+                                <div className="py-20 flex flex-col items-center justify-center text-[#0A0E27]/40 italic">
+                                    <ShieldCheck size={48} className="mb-4 opacity-20" />
+                                    <p className="text-xl font-bold font-display uppercase tracking-widest mb-1">Clear</p>
+                                    <p className="text-sm font-medium">現在、未対応の不正検知はありません。監査ログは正常に記録されています。</p>
                                 </div>
                             )}
                         </div>
@@ -404,18 +406,18 @@ function KPICard({ title, value, icon, alert = false, subtext }: { title: string
 function SeverityChip({ severity }: { severity: string }) {
     const styles = {
         critical: 'bg-[#FF6B6B] text-white',
-        high: 'bg-[#FF6B6B]/20 text-[#FF6B6B]',
-        medium: 'bg-[#EAB308]/20 text-[#EAB308]',
-        low: 'bg-[#0A0E27]/10 text-[#0A0E27]/60'
+        high: 'bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20',
+        medium: 'bg-[#EAB308]/10 text-[#B45309] border border-[#EAB308]/20',
+        low: 'bg-[#0A0E27]/5 text-[#0A0E27]/40 border border-[#0A0E27]/10'
     };
     const labels: Record<string, string> = {
-        critical: '緊急',
+        critical: '重大',
         high: '高',
         medium: '中',
         low: '低'
     };
     return (
-        <span className={`text-[10px] font-display font-bold uppercase px-2 py-0.5 tracking-tighter ${styles[severity as keyof typeof styles] || styles.medium}`}>
+        <span className={`text-[10px] font-display font-bold px-2.5 py-1 tracking-wider ${styles[severity as keyof typeof styles] || styles.medium}`}>
             {labels[severity as keyof typeof styles] || severity}
         </span>
     );
@@ -428,10 +430,10 @@ const ACTION_LABELS: Record<string, string> = {
     CREATE: 'データ作成',
     UPDATE: 'データ更新',
     DELETE: 'データ削除',
-    ANOMALY_DETECTED: '異常検知',
+    ANOMALY_DETECTED: '不正検知',
     EXPORT: 'エクスポート',
     IMPORT: 'インポート',
     DOWNLOAD_TEMPLATE: 'テンプレート読込',
     GENERATE: 'レポート生成',
-    ANOMALY_RESPONSE: '不正対応登録'
+    ANOMALY_RESPONSE: '対応内容登録'
 };

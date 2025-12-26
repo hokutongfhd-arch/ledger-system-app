@@ -79,11 +79,11 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                             </div>
                         )}
 
-                        <div className="bg-red-50 p-3 rounded-lg border border-red-100 mb-2">
-                            <p className="text-xs text-red-800 font-bold mb-1">対象ログ概要:</p>
-                            <p className="text-sm text-red-700">{log.details}</p>
-                            <p className="text-[10px] text-red-500 mt-1 uppercase">重要度: {{
-                                critical: '緊急',
+                        <div className="bg-[#FF6B6B]/5 p-4 rounded border border-[#FF6B6B]/10 mb-2">
+                            <p className="text-[10px] text-[#FF6B6B] font-bold uppercase tracking-widest mb-1">対象不正検知概要</p>
+                            <p className="text-sm text-[#0A0E27] font-bold leading-relaxed">{log.details}</p>
+                            <p className="text-[10px] text-gray-400 mt-2 font-display">重要度: {{
+                                critical: '重大',
                                 high: '高',
                                 medium: '中',
                                 low: '低'
@@ -98,9 +98,9 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"
                                 required
                             >
-                                <option value="pending">調査前</option>
+                                <option value="pending">未対応</option>
                                 <option value="investigating">調査中</option>
-                                <option value="completed">対応済（判断記録あり）</option>
+                                <option value="completed">対応済</option>
                             </select>
                         </div>
 
@@ -120,7 +120,7 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                         <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-blue-800 space-y-1">
                             <p className="font-bold flex items-center gap-1"><AlertCircle size={14} /> 提出前の確認事項</p>
                             <p>● 対応者: {user?.name || '管理者'}</p>
-                            <p>● この内容は後から変更できず、監査・説明責任の対象となります</p>
+                            <p>● この内容は証跡として永続的に記録され、変更できません</p>
                             <p>● 「対応済」として登録すると、アラートから除外されます</p>
                         </div>
                     </div>

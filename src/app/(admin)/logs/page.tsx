@@ -223,12 +223,12 @@ function AuditLogContent() {
 
                                 return (
                                     <span className={clsx(
-                                        "px-2 py-0.5 rounded text-[10px] font-bold shadow-sm whitespace-nowrap",
-                                        item.is_acknowledged ? 'bg-green-100 text-green-700' :
-                                            item.actionRaw === 'ANOMALY_DETECTED' ? 'bg-amber-100 text-amber-700 animate-pulse-subtle' :
-                                                item.result === 'failure' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                        "px-3 py-1 rounded text-[10px] font-bold tracking-wider whitespace-nowrap",
+                                        item.is_acknowledged ? 'bg-gray-100 text-gray-400' :
+                                            item.actionRaw === 'ANOMALY_DETECTED' ? 'bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20 animate-pulse-subtle' :
+                                                item.result === 'failure' ? 'bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20' : 'bg-[#00F0FF]/10 text-[#008A94] border border-[#00F0FF]/20'
                                     )}>
-                                        {item.is_acknowledged ? '対応済（判断記録あり）' : '未対応（判断未実施）'}
+                                        {item.is_acknowledged ? '対応済' : '未対応'}
                                     </span>
                                 );
                             }
