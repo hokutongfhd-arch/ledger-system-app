@@ -57,7 +57,7 @@ const statusColorMap: Record<string, string> = {
 };
 
 function TabletListContent() {
-    const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees, addresses } = useData();
+    const { tablets, addTablet, updateTablet, deleteTablet, employees, addresses } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -87,7 +87,6 @@ function TabletListContent() {
         if (confirmed) {
             try {
                 await deleteTablet(item.id, false, false);
-                await addLog('tablets', 'delete', `タブレット削除: ${item.terminalCode}`);
             } catch (error) {
                 console.error(error);
             }
@@ -109,7 +108,6 @@ function TabletListContent() {
                 for (const id of selectedIds) {
                     await deleteTablet(id, true, true);
                 }
-                await addLog('tablets', 'delete', `タブレット一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 await confirm({
                     title: '削除完了',
@@ -370,7 +368,7 @@ function TabletListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('tablets', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                // Manual log removed - covered by DB triggers
             }
 
             await confirm({

@@ -192,7 +192,6 @@ const DeviceManualListContent = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const isDraggingRef = useRef(false);
-    const { addLog } = useData();
 
     const fetchManuals = async () => {
         try {
@@ -470,7 +469,7 @@ const DeviceManualListContent = () => {
                 await fetchManuals();
 
                 for (const fileName of registeredFiles) {
-                    await addLog('manuals', 'add', `ファイル追加: ${fileName} (${title})`);
+                    // Manual log removed
                 }
             }
 
@@ -530,7 +529,6 @@ const DeviceManualListContent = () => {
             fetchManuals();
 
             const deletedFileName = item.files[fileIndex]?.name || '不明なファイル';
-            await addLog('manuals', 'delete', `ファイル削除: ${deletedFileName} (${item.title})`);
 
         } catch (error) {
             console.error('Error deleting file:', error);

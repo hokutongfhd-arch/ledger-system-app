@@ -38,7 +38,7 @@ export default function EmployeeListPage() {
 }
 
 function EmployeeListContent() {
-    const { employees, addEmployee, updateEmployee, deleteEmployee, addLog, areas, addresses } = useData();
+    const { employees, addEmployee, updateEmployee, deleteEmployee, areas, addresses } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const highlightId = searchParams.get('highlight');
@@ -95,7 +95,6 @@ function EmployeeListContent() {
                 for (const id of selectedIds) {
                     await deleteEmployee(id, true, true);
                 }
-                await addLog('employees', 'delete', `社員一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 await confirm({
                     title: '削除完了',
@@ -294,7 +293,6 @@ function EmployeeListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('employees', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
                 showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'success');
             } else {
                 showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'info');

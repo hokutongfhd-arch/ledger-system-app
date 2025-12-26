@@ -2,16 +2,17 @@ import { supabase as staticSupabase } from './supabaseClient';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export type LogActionType =
-    | 'LOGIN_SUCCESS'
-    | 'LOGIN_FAILURE'
-    | 'LOGOUT'
-    | 'CREATE'
-    | 'UPDATE'
-    | 'DELETE'
-    | 'IMPORT'
-    | 'EXPORT'
-    | 'GENERATE'
-    | 'ERROR';
+    | 'LOGIN_SUCCESS'     // 監査ログ
+    | 'LOGIN_FAILURE'     // 監査ログ
+    | 'LOGOUT'            // 監査ログ
+    | 'CREATE'            // 原則、操作ログ。Authユーザー作成等は監査ログ
+    | 'UPDATE'            // 原則、操作ログ
+    | 'DELETE'            // 原則、操作ログ
+    | 'IMPORT'            // 操作ログ
+    | 'EXPORT'            // 監査ログ (データ持ち出しの証跡)
+    | 'GENERATE'          // 監査ログ (レポート生成)
+    | 'ERROR'             // システム/監査ログ
+    | 'ANOMALY_DETECTED'; // 監査ログ (自動検知)
 
 export type TargetType =
     | 'auth'

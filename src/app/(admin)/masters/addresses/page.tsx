@@ -38,7 +38,7 @@ export default function AddressListPage() {
 }
 
 function AddressListContent() {
-    const { addresses, addAddress, updateAddress, deleteAddress, addLog, areas } = useData();
+    const { addresses, addAddress, updateAddress, deleteAddress, areas } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -227,7 +227,7 @@ function AddressListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('addresses', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                // Manual log removed - already covered by DB triggers for each record
             }
 
             await confirm({
@@ -274,7 +274,6 @@ function AddressListContent() {
                 for (const id of selectedIds) {
                     await deleteAddress(id, true, true);
                 }
-                await addLog('addresses', 'delete', `住所一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 await confirm({
                     title: '削除完了',

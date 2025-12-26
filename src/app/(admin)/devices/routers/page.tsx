@@ -37,7 +37,7 @@ export default function RouterListPage() {
 }
 
 function RouterListContent() {
-    const { routers, addRouter, updateRouter, deleteRouter, addLog, employees, addresses } = useData();
+    const { routers, addRouter, updateRouter, deleteRouter, employees, addresses } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -87,7 +87,6 @@ function RouterListContent() {
                 for (const id of selectedIds) {
                     await deleteRouter(id, true, true);
                 }
-                await addLog('routers', 'delete', `ルーター一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 await confirm({
                     title: '削除完了',
@@ -352,7 +351,7 @@ function RouterListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('routers', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                // Manual log removed - covered by DB triggers
             }
 
             await confirm({

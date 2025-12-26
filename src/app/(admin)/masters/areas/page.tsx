@@ -36,7 +36,7 @@ export default function AreaListPage() {
 }
 
 function AreaListContent() {
-    const { areas, addArea, updateArea, deleteArea, addLog } = useData();
+    const { areas, addArea, updateArea, deleteArea } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -176,7 +176,7 @@ function AreaListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('areas', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                // Manual log removed - covered by DB triggers
             }
 
             await confirm({
@@ -222,7 +222,6 @@ function AreaListContent() {
                 for (const id of selectedIds) {
                     await deleteArea(id, true, true);
                 }
-                await addLog('areas', 'delete', `エリア一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 await confirm({
                     title: '削除完了',

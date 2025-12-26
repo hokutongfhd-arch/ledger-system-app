@@ -37,7 +37,7 @@ export default function FeaturePhoneListPage() {
 }
 
 function FeaturePhoneListContent() {
-    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog, employees, addresses } = useData();
+    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, employees, addresses } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -87,7 +87,6 @@ function FeaturePhoneListContent() {
                 for (const id of selectedIds) {
                     await deleteFeaturePhone(id, true, true);
                 }
-                await addLog('featurePhones', 'delete', `ガラホ一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 await confirm({
                     title: '削除完了',
@@ -336,7 +335,7 @@ function FeaturePhoneListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('featurePhones', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                // Manual log removed - covered by DB triggers
             }
 
             await confirm({

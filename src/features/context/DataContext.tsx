@@ -38,7 +38,6 @@ interface DataContextType {
     addAddress: (item: Omit<Address, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateAddress: (item: Address, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     deleteAddress: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    addLog: (endpoint: string, action: 'add' | 'update' | 'delete' | 'import', details: string) => Promise<void>;
     fetchLogRange: (startDate: string, endDate: string) => Promise<void>;
     fetchLogMinDate: () => Promise<string | null>;
     logs: Log[];
@@ -368,47 +367,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchData();
     }, []);
 
-    const logAction = useCallback(async (endpoint: string, action: 'add' | 'update' | 'delete' | 'import', details: string) => {
-        try {
-            const targetType = TARGET_MAP[endpoint.toLowerCase()] || 'unknown';
-
-            let actionType: LogActionType = 'UPDATE';
-            if (action === 'add') actionType = 'CREATE';
-            if (action === 'delete') actionType = 'DELETE';
-            if (action === 'import') actionType = 'IMPORT';
-
-            await logger.info({
-                action: actionType,
-                targetType: targetType,
-                message: details,
-                actor: user ? { employeeCode: user.code, name: user.name } : undefined,
-                metadata: { details }
-            });
-
-            // Optimistic update for UI
-            const tempLog: Log = {
-                id: 'temp-' + Date.now(),
-                timestamp: new Date().toISOString(),
-                user: user?.name || 'Unknown',
-                actorName: user?.name || 'Unknown',
-                actorEmployeeCode: user?.code || '',
-                target: TARGET_MAP[endpoint.toLowerCase()] ? logService.mapLogFromDb({ target_type: TARGET_MAP[endpoint.toLowerCase()] }).target : endpoint,
-                targetRaw: endpoint,
-                targetId: '',
-                action,
-                actionRaw: actionType,
-                result: 'success',
-                metadata: { details },
-                ipAddress: '',
-                details: details,
-            };
-            setLogs(prev => [tempLog, ...prev]);
-
-        } catch (error: any) {
-            console.error('Failed to log action:', error);
-        }
-    }, [user]);
-
     // Generic CRUD helpers
     const addItem = useCallback(async <T,>(
         table: string,
@@ -427,9 +385,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const newItem = mapperFromDb(data);
             setState(prev => [...prev, newItem]);
 
-            if (!skipLog) {
-                await logAction(table, 'add', '新規登録');
-            }
             if (!skipToast) {
                 showToast('登録しました', 'success');
             }
@@ -440,7 +395,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             throw error;
         }
-    }, [logAction, showToast]);
+    }, [showToast]);
 
     const updateItem = useCallback(async <T extends { id: string }>(
         table: string,
@@ -452,20 +407,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         skipToast: boolean = false
     ) => {
         try {
-            const oldItem = currentData.find(d => d.id === item.id);
-            const changedColumns = oldItem
-                ? Object.keys(item).filter(key => item[key as keyof T] !== oldItem[key as keyof T] && key !== 'id')
-                : [];
-
             const dbItem = mapperToDb(item);
             const { error } = await supabase.from(table).update(dbItem).eq('id', item.id);
             if (error) throw error;
 
             setState(prev => prev.map(p => p.id === item.id ? item : p));
 
-            if (!skipLog && changedColumns.length > 0) {
-                await logAction(table, 'update', `修正: ${changedColumns.join(', ')}`);
-            }
             if (!skipToast) {
                 showToast('更新しました', 'success');
             }
@@ -476,7 +423,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             throw error;
         }
-    }, [logAction, showToast]);
+    }, [showToast]);
 
     const deleteItem = useCallback(async <T extends { id: string }>(table: string, id: string, setState: React.Dispatch<React.SetStateAction<T[]>>, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
@@ -484,9 +431,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (error) throw error;
 
             setState(prev => prev.filter(p => p.id !== id));
-            if (!skipLog) {
-                await logAction(table, 'delete', '削除');
-            }
             if (!skipToast) {
                 showToast('削除しました', 'success');
             }
@@ -497,7 +441,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             throw error;
         }
-    }, [logAction, showToast]);
+    }, [showToast]);
 
     // Specific implementations
     const addTablet = (item: Omit<Tablet, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('tablets', item, mapTabletToDb, mapTabletFromDb, setTablets, skipLog, skipToast);
@@ -534,7 +478,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const authResult = await response.json();
                 if (authResult.userId) {
                     (item as any).auth_id = authResult.userId;
-                    await logAction('employees', 'add', `Authユーザー作成: ${authResult.userId}`);
+                    // Security event: Auth User creation remains in Audit Logs
+                    await logger.info({
+                        action: 'CREATE',
+                        targetType: 'auth',
+                        message: `管理者特権による認証ユーザー作成: ${authResult.userId} (社員CD: ${item.code})`,
+                        actor: user ? { employeeCode: user.code, name: user.name } : undefined
+                    });
                 }
             }
         } catch (e) {
@@ -558,8 +508,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const deleteEmployee = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('employees', id, setEmployees, skipLog, skipToast);
 
     const addArea = (item: Omit<Area, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('areas', item, mapAreaToDb, mapAreaFromDb, setAreas, skipLog, skipToast);
-    const updateArea = (item: Area, skipLog: boolean = false, skipToast: boolean = false) => updateItem('areas', item, mapAreaToDb, areas, setAreas, skipLog, skipToast);
+    const updateArea = async (item: Area, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const dbItem = mapAreaToDb(item);
+            // DB PK is area_code. TS Area.id matches areaCode.
+            const { error } = await supabase.from('areas').update(dbItem).eq('area_code', item.id);
+            if (error) throw error;
 
+            setAreas(prev => prev.map(p => p.id === item.id ? item : p));
+
+            if (!skipToast) {
+                showToast('更新しました', 'success');
+            }
+        } catch (error: any) {
+            console.error(`Failed to update item in areas:`, error);
+            if (!skipToast) {
+                showToast('更新に失敗しました', 'error', error.message);
+            }
+            throw error;
+        }
+    };
     // Areas delete handling - assuming area_code is unique and we use it as ID for deletion if id matches areaCode
     const deleteArea = async (id: string, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
@@ -567,9 +535,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { error } = await supabase.from('areas').delete().eq('area_code', id);
             if (error) throw error;
             setAreas(prev => prev.filter(p => p.id !== id));
-            if (!skipLog) {
-                await logAction('areas', 'delete', '削除');
-            }
             if (!skipToast) {
                 showToast('削除しました', 'success');
             }
@@ -629,7 +594,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addEmployee, updateEmployee, deleteEmployee,
             addArea, updateArea, deleteArea,
             addAddress, updateAddress, deleteAddress,
-            addLog: logAction,
             fetchLogRange,
             fetchLogMinDate,
             logs

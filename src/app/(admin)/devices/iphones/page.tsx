@@ -38,7 +38,7 @@ export default function IPhoneListPage() {
 }
 
 function IPhoneListContent() {
-    const { iPhones, addIPhone, updateIPhone, deleteIPhone, addLog, employees, addresses } = useData();
+    const { iPhones, addIPhone, updateIPhone, deleteIPhone, employees, addresses } = useData();
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -113,7 +113,6 @@ function IPhoneListContent() {
                 for (const id of selectedIds) {
                     await deleteIPhone(id, true, true);
                 }
-                await addLog('iphones', 'delete', `iPhone一括削除: ${selectedIds.size}件`);
                 setSelectedIds(new Set());
                 await confirm({ // Use as Alert
                     title: '削除完了',
@@ -432,7 +431,7 @@ function IPhoneListContent() {
             }
 
             if (successCount > 0) {
-                await addLog('iphones', 'import', `Excelインポート: ${successCount}件追加 (${errorCount}件失敗)`);
+                // Manual log removed - covered by DB triggers
             }
 
             await confirm({
