@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { fetchAuditReportData, saveAuditReportHistory } from '@/app/actions/reports';
 import { useAuth } from '@/features/context/AuthContext';
 import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 import { logger } from '@/lib/logger';
 
 interface ReportGenerationModalProps {
@@ -50,26 +51,13 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
             if (!historyResult.success) throw new Error(historyResult.error);
 
             setGeneratedReport(historyResult.report);
-            toast.success('レポートの生成が完了しました。ダウンロードを開始します...');
-
-            // 自動ダウンロードをトリガー（不可視の iframe を使用して同一タブ内で処理）
-            const downloadUrl = `/audit/reports/print?startDate=${startDate}&endDate=${endDate}&type=${reportType}&download=true&hidden=true`;
-
-            // 既存の iframe があれば削除
-            const oldFrame = document.getElementById('pdf-download-frame');
-            if (oldFrame) oldFrame.remove();
-
-            const iframe = document.createElement('iframe');
-            iframe.id = 'pdf-download-frame';
-            iframe.style.display = 'none';
-            iframe.src = downloadUrl;
-            document.body.appendChild(iframe);
+            toast.success('レポートの生成が完了しました。プレビューから確認・ダウンロードが可能です。');
 
             // 監査ログに記録
             await logger.info({
                 action: 'GENERATE',
                 targetType: 'report',
-                message: `監査用PDFレポート（${reportType === 'summary' ? '概要' : '詳細'}）をダウンロードしました。対象期間: ${startDate} 〜 ${endDate}`,
+                message: `監査用PDFレポート（${reportType === 'summary' ? '概要' : '詳細'}）を生成しました。対象期間: ${startDate} 〜 ${endDate}`,
                 isAcknowledged: true, // 対応：完了 で登録
                 actor: {
                     authId: user?.authId,
@@ -130,32 +118,11 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest opacity-60">レポート種別</label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <button
-                                            onClick={() => setReportType('summary')}
-                                            className={clsx(
-                                                "p-4 border-2 font-bold transition-all flex flex-col items-center gap-2",
-                                                reportType === 'summary'
-                                                    ? "bg-[#0A0E27] text-white border-[#0A0E27] shadow-[4px_4px_0px_0px_#00F0FF]"
-                                                    : "bg-white text-[#0A0E27] border-[#0A0E27]/20 hover:border-[#0A0E27]"
-                                            )}
-                                        >
-                                            <FileText size={20} />
-                                            概要レポート
-                                        </button>
-                                        <button
-                                            onClick={() => setReportType('detailed')}
-                                            className={clsx(
-                                                "p-4 border-2 font-bold transition-all flex flex-col items-center gap-2",
-                                                reportType === 'detailed'
-                                                    ? "bg-[#0A0E27] text-white border-[#0A0E27] shadow-[4px_4px_0px_0px_#FF6B6B]"
-                                                    : "bg-white text-[#0A0E27] border-[#0A0E27]/20 hover:border-[#0A0E27]"
-                                            )}
-                                        >
-                                            <ShieldCheck size={20} />
-                                            詳細レポート
-                                        </button>
+                                    <div className="p-4 border-2 border-[#0A0E27] bg-[#0A0E27] text-white font-bold shadow-[4px_4px_0px_0px_#00F0FF] flex items-center gap-3">
+                                        <FileText size={20} />
+                                        概要レポート (Executive Summary)
                                     </div>
+                                    <p className="text-[10px] opacity-60 font-medium italic mt-1">※ 現在、監査レポートは概要版のみ提供されています。</p>
                                 </div>
                             </div>
 
@@ -192,13 +159,12 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <a
+                                <Link
                                     href={`/audit/reports/print?startDate=${startDate}&endDate=${endDate}&type=${reportType}`}
-                                    target="_blank"
-                                    className="block text-center py-3 bg-white border-2 border-[#0A0E27] font-bold shadow-[4px_4px_0px_0px_#0A0E27] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all text-sm"
+                                    className="block text-center py-3 bg-white border-2 border-[#0A0E27] font-bold shadow-[4px_4px_0px_0px_#0A0E27] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all text-sm leading-normal"
                                 >
                                     プレビューを表示
-                                </a>
+                                </Link>
                                 <button
                                     onClick={onClose}
                                     className="py-3 bg-[#0A0E27] text-white border-2 border-[#0A0E27] font-bold shadow-[4px_4px_0px_0px_#00F0FF] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all text-sm"
