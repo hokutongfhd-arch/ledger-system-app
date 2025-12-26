@@ -43,14 +43,14 @@ export const useAuditDashboard = () => {
 
             // Map raw server data to Log type
             const logs: Log[] = (logsData || []).map((d: any) => ({
-                id: d.id,
-                timestamp: d.occurred_at,
-                action: d.action_type, // Fallback to raw if logic is needed later
-                actionRaw: d.action_type,
-                result: d.result,
-                actorName: d.actor_name,
-                actorEmployeeCode: d.actor_employee_code,
-                severity: d.severity,
+                id: d.id || '',
+                timestamp: d.occurred_at || new Date().toISOString(),
+                action: d.action_type || 'unknown',
+                actionRaw: d.action_type || 'unknown',
+                result: d.result || 'failure',
+                actorName: d.actor_name || 'System',
+                actorEmployeeCode: d.actor_employee_code || '',
+                severity: d.severity || 'medium',
                 target: d.target_type || '',
                 targetRaw: d.target_type || '',
                 targetId: d.target_id || '',
@@ -214,8 +214,16 @@ export const useAuditDashboard = () => {
 
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
-            // Fallback empty data to stop loading and prevent hang
-            setData(prev => prev || null);
+            // Fallback empty data to stop loading and prevent 'No Data' crash
+            setData({
+                kpi: { todayActionCount: 0, todayFailureCount: 0, loginFailureCount24h: 0, unacknowledgedAnomalyCount: 0, adminActionCount: 0 },
+                trend: [],
+                distribution: [],
+                severityDistribution: [],
+                topActors: [],
+                topAnomalyActors: [],
+                recentAnomalies: []
+            });
         } finally {
             setLoading(false);
         }

@@ -2,12 +2,20 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 
-// Initialize Supabase Client with Service Role Key to bypass RLS
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Helper to get Supabase Admin client or fallback to Session client
+function getSupabaseClient() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (serviceRoleKey) {
+        return createClient(url, serviceRoleKey);
+    }
+
+    // Fallback: Use session-based client for Server Actions/Components
+    return createServerActionClient({ cookies });
+}
 
 export async function fetchAuditLogsServer(params: {
     page?: number;
@@ -26,7 +34,8 @@ export async function fetchAuditLogsServer(params: {
         // const cookieStore = cookies();
         // ... verify session ...
 
-        let query = supabaseAdmin
+        const supabase = getSupabaseClient();
+        let query = supabase
             .from('audit_logs')
             .select('*', { count: 'exact' });
 
@@ -81,41 +90,51 @@ export async function fetchAuditLogsServer(params: {
 
 export async function fetchDashboardStatsServer(startDateStr: string) {
     try {
+        const supabase = getSupabaseClient();
         // Fetch all logs since startDate
-        const { data: logs, error } = await supabaseAdmin
+        const { data: logs, error } = await supabase
             .from('audit_logs')
-            .select('occurred_at, action_type, result, actor_name, actor_employee_code, severity')
+            .select('id, occurred_at, action_type, result, actor_name, actor_employee_code, severity, target_type, target_id, ip_address')
             .gte('occurred_at', startDateStr)
             .order('occurred_at', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Fetch Logs Error:', error);
+            throw error;
+        }
 
-        // Fetch Login Failures count for last 24h (independent of the range)
+        // Fetch Login Failures count for last 24h
         const yesterday = new Date();
         yesterday.setHours(yesterday.getHours() - 24);
 
-        const { count: loginFail24h, error: kpiError } = await supabaseAdmin
+        const { count: loginFail24h, error: kpiError } = await supabase
             .from('audit_logs')
             .select('*', { count: 'exact', head: true })
             .gte('occurred_at', yesterday.toISOString())
             .eq('action_type', 'LOGIN_FAILURE')
             .eq('result', 'failure');
 
-        // Fetch Unacknowledged Anomalies Count (Total, not just in range)
-        const { count: unackCount, error: anomalyError } = await supabaseAdmin
+        if (kpiError) console.warn('KPI Fetch Error (Login failure):', kpiError);
+
+        // Fetch Unacknowledged Anomalies Count
+        const { count: unackCount, error: anomalyError } = await supabase
             .from('audit_logs')
             .select('*', { count: 'exact', head: true })
             .eq('action_type', 'ANOMALY_DETECTED')
             .eq('is_acknowledged', false);
 
-        // Fetch Unacknowledged Anomalies (Recent 5 for Dashboard)
-        const { data: recentAnomaliesData, error: recentError } = await supabaseAdmin
+        if (anomalyError) console.warn('Anomaly Count Error:', anomalyError);
+
+        // Fetch Unacknowledged Anomalies (Recent 5)
+        const { data: recentAnomaliesData, error: recentError } = await supabase
             .from('audit_logs')
             .select('*')
             .eq('action_type', 'ANOMALY_DETECTED')
             .eq('is_acknowledged', false)
             .order('occurred_at', { ascending: false })
             .limit(5);
+
+        if (recentError) console.warn('Recent Anomalies Error:', recentError);
 
         return {
             logs: logs || [],
@@ -138,6 +157,7 @@ export async function submitAnomalyResponseServer(params: {
     adminUserId: string;
 }) {
     try {
+        const supabase = getSupabaseClient();
         const isCompleted = params.status === 'completed';
 
         const updateData: any = {
@@ -153,7 +173,7 @@ export async function submitAnomalyResponseServer(params: {
             updateData.result = 'success';
         }
 
-        const { error } = await supabaseAdmin
+        const { error } = await supabase
             .from('audit_logs')
             .update(updateData)
             .eq('id', params.logId);
@@ -171,7 +191,8 @@ export async function submitAnomalyResponseServer(params: {
 }
 export async function fetchAuditLogByIdServer(id: string) {
     try {
-        const { data, error } = await supabaseAdmin
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase
             .from('audit_logs')
             .select('*')
             .eq('id', id)
