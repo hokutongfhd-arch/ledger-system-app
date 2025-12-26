@@ -24,6 +24,7 @@ export type TargetType =
     | 'area'
     | 'address'
     | 'report'
+    | 'audit_rule'
     | 'unknown';
 
 export interface LogEntry {
@@ -44,7 +45,7 @@ export interface LogEntry {
 class LoggerService {
     private client: any = null;
 
-    private getClient() {
+    protected getClient() {
         if (typeof window === 'undefined') return staticSupabase;
         if (this.client) return this.client;
 
@@ -65,12 +66,23 @@ class LoggerService {
             let actorEmployeeCode = entry.actor?.employeeCode;
             let actorName = entry.actor?.name;
 
-            if (!actorAuthId) {
-                // Only try to fetch session if definitely in the browser and not a login/auth related action 
-                if (typeof window !== 'undefined' && entry.targetType !== 'auth') {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
-                        actorAuthId = session.user.id;
+            if (typeof window !== 'undefined') {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    actorAuthId = actorAuthId || session.user.id;
+
+                    // If we have an authId but no name/code, fetch from employees table
+                    if (actorAuthId && (!actorName || !actorEmployeeCode)) {
+                        const { data: profile } = await supabase
+                            .from('employees')
+                            .select('name, employee_code')
+                            .eq('auth_id', actorAuthId)
+                            .single();
+
+                        if (profile) {
+                            actorName = actorName || profile.name;
+                            actorEmployeeCode = actorEmployeeCode || profile.employee_code;
+                        }
                     }
                 }
             }
@@ -89,7 +101,7 @@ class LoggerService {
                     message: entry.message,
                     ...entry.metadata
                 },
-                ip_address: null, // Client-side IP fetching is hard without a server endpoint, usually handled by RLS/Trigger or Edge Function.
+                ip_address: null,
             };
 
             // 3. Insert

@@ -94,6 +94,7 @@ const TARGET_NAMES: Record<string, string> = {
     manuals: 'マニュアル',
     admin: '管理コンソール',
     auth: '認証',
+    audit_rule: '不正検知ルール',
     employee_list: '社員一覧',
     employee_detail: '社員詳細',
     device_list: 'デバイス一覧',
