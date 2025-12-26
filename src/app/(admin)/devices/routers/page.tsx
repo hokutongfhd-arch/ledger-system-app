@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
@@ -39,6 +39,8 @@ export default function RouterListPage() {
 function RouterListContent() {
     const { routers, addRouter, updateRouter, deleteRouter, addLog, employees, addresses } = useData();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
     const highlightId = searchParams.get('highlight');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Router | undefined>(undefined);
@@ -105,11 +107,9 @@ function RouterListContent() {
         }
     };
 
-    const filteredData = routers.filter(item =>
+    const sortedData = [...routers].filter(item =>
         Object.values(item).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    const sortedData = [...filteredData].sort((a, b) => {
+    ).sort((a, b) => {
         for (const criterion of sortCriteria) {
             const { key, order } = criterion;
             let valA: any = key === 'userName' ? (employees.find(e => e.code === a.employeeCode)?.name || '') : a[key as keyof Router];
@@ -126,6 +126,7 @@ function RouterListContent() {
         return 0;
     });
 
+    const filteredData = sortedData;
     const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const handleCheckboxChange = (id: string) => {
@@ -420,8 +421,17 @@ function RouterListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ルーター 編集' : 'ルーター 新規登録'}>
                 <RouterForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateRouter({ ...data, id: editingItem.id } as Router);
-                    else await addRouter(data as Omit<Router, 'id'>);
+                    if (editingItem) {
+                        await updateRouter({ ...data, id: editingItem.id } as Router);
+                        if (editingItem.id === highlightId) {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete('highlight');
+                            params.delete('field');
+                            router.replace(`${pathname}?${params.toString()}`);
+                        }
+                    } else {
+                        await addRouter(data as Omit<Router, 'id'>);
+                    }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

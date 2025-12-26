@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
@@ -40,6 +40,8 @@ export default function AddressListPage() {
 function AddressListContent() {
     const { addresses, addAddress, updateAddress, deleteAddress, addLog, areas } = useData();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
     const highlightId = searchParams.get('highlight');
     const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -426,8 +428,17 @@ function AddressListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '住所 編集' : '住所 新規登録'}>
                 <AddressForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateAddress({ ...data, id: editingItem.id } as Address);
-                    else await addAddress(data as Omit<Address, 'id'>);
+                    if (editingItem) {
+                        await updateAddress({ ...data, id: editingItem.id } as Address);
+                        if (editingItem.id === highlightId) {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete('highlight');
+                            params.delete('field');
+                            router.replace(`${pathname}?${params.toString()}`);
+                        }
+                    } else {
+                        await addAddress(data as Omit<Address, 'id'>);
+                    }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

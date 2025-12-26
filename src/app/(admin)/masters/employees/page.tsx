@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
@@ -40,8 +40,10 @@ export default function EmployeeListPage() {
 function EmployeeListContent() {
     const { employees, addEmployee, updateEmployee, deleteEmployee, addLog, areas, addresses } = useData();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
     const highlightId = searchParams.get('highlight');
     const { user } = useAuth();
+    const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Employee | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Employee | undefined>(undefined);
@@ -437,8 +439,17 @@ function EmployeeListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '社員 編集' : '社員 新規登録'}>
                 <EmployeeForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateEmployee({ ...data, id: editingItem.id } as Employee);
-                    else await addEmployee(data as Omit<Employee, 'id'>);
+                    if (editingItem) {
+                        await updateEmployee({ ...data, id: editingItem.id } as Employee);
+                        if (editingItem.id === highlightId) {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete('highlight');
+                            params.delete('field');
+                            router.replace(`${pathname}?${params.toString()}`);
+                        }
+                    } else {
+                        await addEmployee(data as Omit<Employee, 'id'>);
+                    }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} isSelfEdit={editingItem?.id === user?.id} />
             </Modal>

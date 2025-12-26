@@ -63,22 +63,24 @@ function DashboardContent() {
         'Address': '#EC4899'
     };
 
-    const alertSegments = Object.entries(alertCounts).map(([source, count]) => ({
-        label: source,
-        value: count,
-        color: COLORS[source as AlertSource]
-    }));
+    const sourceOptions: AlertSource[] = [
+        'iPhone', 'FeaturePhone', 'Tablet', 'Router',
+        'Employee', 'Area', 'Address'
+    ];
+
+    const alertSegments = sourceOptions
+        .filter(source => alertCounts[source] > 0)
+        .map(source => ({
+            label: source,
+            value: alertCounts[source],
+            color: COLORS[source]
+        }));
 
     const [sortBy, setSortBy] = useState<'source' | 'message'>('source');
     const [selectedSources, setSelectedSources] = useState<Set<AlertSource>>(new Set([
         'iPhone', 'FeaturePhone', 'Tablet', 'Router',
         'Employee', 'Area', 'Address'
     ]));
-
-    const sourceOptions: AlertSource[] = [
-        'iPhone', 'FeaturePhone', 'Tablet', 'Router',
-        'Employee', 'Area', 'Address'
-    ];
 
     const toggleSource = (source: AlertSource) => {
         const newSelected = new Set(selectedSources);
@@ -95,7 +97,7 @@ function DashboardContent() {
 
         result.sort((a, b) => {
             if (sortBy === 'source') {
-                return a.source.localeCompare(b.source);
+                return sourceOptions.indexOf(a.source) - sourceOptions.indexOf(b.source);
             } else {
                 return a.message.localeCompare(b.message);
             }

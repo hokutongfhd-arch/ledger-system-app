@@ -178,10 +178,7 @@ function IPhoneListContent() {
     };
 
     const getRowClassName = (item: IPhone) => {
-        if (item.id === searchParams.get('highlight')) {
-            return 'bg-accent-coral/10';
-        }
-        return '';
+        return item.id === searchParams.get('highlight') ? 'bg-red-100 hover:bg-red-200' : '';
     };
 
     const filteredData = iPhones.filter(item =>

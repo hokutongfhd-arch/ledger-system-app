@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
@@ -59,6 +59,8 @@ const statusColorMap: Record<string, string> = {
 function TabletListContent() {
     const { tablets, addTablet, updateTablet, deleteTablet, addLog, employees, addresses } = useData();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
     const highlightId = searchParams.get('highlight');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Tablet | undefined>(undefined);
@@ -442,8 +444,17 @@ function TabletListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'タブレット 編集' : 'タブレット 新規登録'}>
                 <TabletForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateTablet({ ...data, id: editingItem.id } as Tablet);
-                    else await addTablet(data as Omit<Tablet, 'id'>);
+                    if (editingItem) {
+                        await updateTablet({ ...data, id: editingItem.id } as Tablet);
+                        if (editingItem.id === highlightId) {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete('highlight');
+                            params.delete('field');
+                            router.replace(`${pathname}?${params.toString()}`);
+                        }
+                    } else {
+                        await addTablet(data as Omit<Tablet, 'id'>);
+                    }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

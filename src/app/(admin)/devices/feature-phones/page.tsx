@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
@@ -39,6 +39,8 @@ export default function FeaturePhoneListPage() {
 function FeaturePhoneListContent() {
     const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, addLog, employees, addresses } = useData();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
     const highlightId = searchParams.get('highlight');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<FeaturePhone | undefined>(undefined);
@@ -404,8 +406,17 @@ function FeaturePhoneListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ガラホ 編集' : 'ガラホ 新規登録'}>
                 <FeaturePhoneForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateFeaturePhone({ ...data, id: editingItem.id } as FeaturePhone);
-                    else await addFeaturePhone(data as Omit<FeaturePhone, 'id'>);
+                    if (editingItem) {
+                        await updateFeaturePhone({ ...data, id: editingItem.id } as FeaturePhone);
+                        if (editingItem.id === highlightId) {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete('highlight');
+                            params.delete('field');
+                            router.replace(`${pathname}?${params.toString()}`);
+                        }
+                    } else {
+                        await addFeaturePhone(data as Omit<FeaturePhone, 'id'>);
+                    }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

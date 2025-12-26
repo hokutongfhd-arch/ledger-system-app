@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
@@ -9,7 +9,6 @@ import { Table } from '../../../../components/ui/Table';
 import type { Area } from '../../../../features/areas/area.types';
 import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { AreaForm } from '../../../../features/forms/AreaForm';
 import { AreaDetailModal } from '../../../../features/areas/components/AreaDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -40,6 +39,8 @@ function AreaListContent() {
     const { areas, addArea, updateArea, deleteArea, addLog } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
     const highlightId = searchParams.get('highlight');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Area | undefined>(undefined);
@@ -55,9 +56,6 @@ function AreaListContent() {
     const { confirm, ConfirmDialog } = useConfirm();
 
     const { showToast } = useToast();
-
-    const closeNotification = () => { };
-    const showNotification = () => { };
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
     const handleEdit = (item: Area) => { setEditingItem(item); setIsModalOpen(true); };
@@ -367,8 +365,17 @@ function AreaListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'エリア 編集' : 'エリア 新規登録'}>
                 <AreaForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) await updateArea({ ...data, id: editingItem.id } as Area);
-                    else await addArea(data as Omit<Area, 'id'>);
+                    if (editingItem) {
+                        await updateArea({ ...data, id: editingItem.id } as Area);
+                        if (editingItem.id === highlightId) {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete('highlight');
+                            params.delete('field');
+                            router.replace(`${pathname}?${params.toString()}`);
+                        }
+                    } else {
+                        await addArea(data as Omit<Area, 'id'>);
+                    }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
