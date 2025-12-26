@@ -242,7 +242,10 @@ export default function AuditDashboardPage() {
                                             axisLine={{ stroke: '#0A0E27', strokeWidth: 1 }}
                                             tickLine={false}
                                             tick={{ fill: '#0A0E27', fontSize: 10, fontWeight: 'bold' }}
-                                            tickFormatter={(val) => val.split('-').slice(1).join('.')}
+                                            tickFormatter={(val) => {
+                                                if (val.includes(':')) return val; // Time format HH:00
+                                                return val.split('-').slice(1).join('.'); // Date format MM.DD
+                                            }}
                                         />
                                         <YAxis
                                             axisLine={false}

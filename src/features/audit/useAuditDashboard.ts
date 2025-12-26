@@ -76,16 +76,39 @@ export const useAuditDashboard = () => {
                 ).length
             };
 
-            // Chart: Trend (Logs per day) - Multi-axis
+            // Chart: Trend (Logs per day/hour) - Multi-axis
             const trendMap = new Map<string, { count: number; failureCount: number; anomalyCount: number }>();
-            logs.forEach((log: any) => {
-                const day = log.timestamp.split('T')[0];
-                const current = trendMap.get(day) || { count: 0, failureCount: 0, anomalyCount: 0 };
-                current.count++;
-                if (log.result === 'failure') current.failureCount++;
-                if (log.actionRaw === 'ANOMALY_DETECTED') current.anomalyCount++;
-                trendMap.set(day, current);
-            });
+
+            if (range === 'today') {
+                // Hourly aggregation for business hours (08:00 - 20:00)
+                for (let h = 8; h <= 20; h++) {
+                    const hourStr = `${h.toString().padStart(2, '0')}:00`;
+                    trendMap.set(hourStr, { count: 0, failureCount: 0, anomalyCount: 0 });
+                }
+
+                logs.forEach((log: any) => {
+                    const date = new Date(log.timestamp);
+                    const hour = date.getHours();
+                    if (hour >= 8 && hour <= 20) {
+                        const hourStr = `${hour.toString().padStart(2, '0')}:00`;
+                        const current = trendMap.get(hourStr) || { count: 0, failureCount: 0, anomalyCount: 0 };
+                        current.count++;
+                        if (log.result === 'failure') current.failureCount++;
+                        if (log.actionRaw === 'ANOMALY_DETECTED') current.anomalyCount++;
+                        trendMap.set(hourStr, current);
+                    }
+                });
+            } else {
+                // Daily aggregation
+                logs.forEach((log: any) => {
+                    const day = log.timestamp.split('T')[0];
+                    const current = trendMap.get(day) || { count: 0, failureCount: 0, anomalyCount: 0 };
+                    current.count++;
+                    if (log.result === 'failure') current.failureCount++;
+                    if (log.actionRaw === 'ANOMALY_DETECTED') current.anomalyCount++;
+                    trendMap.set(day, current);
+                });
+            }
 
             const trend: DayStat[] = Array.from(trendMap.entries())
                 .map(([date, stats]) => ({ date, ...stats }))
