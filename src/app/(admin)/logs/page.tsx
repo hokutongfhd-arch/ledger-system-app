@@ -228,7 +228,7 @@ function AuditLogContent() {
                                             item.actionRaw === 'ANOMALY_DETECTED' ? 'bg-amber-100 text-amber-700 animate-pulse-subtle' :
                                                 item.result === 'failure' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                                     )}>
-                                        {item.is_acknowledged ? '完了' : '未対応'}
+                                        {item.is_acknowledged ? '対応済（判断記録あり）' : '未対応（判断未実施）'}
                                     </span>
                                 );
                             }

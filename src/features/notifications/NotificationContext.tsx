@@ -21,6 +21,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [maxSeverity, setMaxSeverity] = useState<SeverityLevel | null>(null);
     const router = useRouter();
     const routerRef = useRef(router);
+    const lastAnomalyRef = useRef<{ actor: string, target: string, timestamp: number } | null>(null);
 
     useEffect(() => {
         routerRef.current = router;
@@ -117,6 +118,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 (payload) => {
                     const newLog = payload.new as any;
                     const severity = newLog.severity || 'medium';
+                    const actorCode = newLog.actor_employee_code || 'N/A';
+                    const targetType = newLog.target_type || 'N/A';
+                    const now = Date.now();
+
+                    // Consecutive detection (same actor + same target + within 30s)
+                    const isConsecutive = lastAnomalyRef.current &&
+                        lastAnomalyRef.current.actor === actorCode &&
+                        lastAnomalyRef.current.target === targetType &&
+                        (now - lastAnomalyRef.current.timestamp < 30000);
+
+                    lastAnomalyRef.current = { actor: actorCode, target: targetType, timestamp: now };
 
                     setUnreadCount(prev => prev + 1);
                     setMaxSeverity(prev => isHigherSeverity(severity, prev) ? severity : prev);
@@ -133,7 +145,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     };
 
                     const icon = isCritical ? '🚨' : (isHigh ? '⚠️' : 'ℹ️');
-                    const title = isCritical ? '重大な異常検知' : (isHigh ? '異常検知(High)' : '異常検知');
+                    const title = isCritical ? '重大な異常検知(Critical)' : (isHigh ? '異常検知(High)' : '異常検知');
+                    const subtitle = isConsecutive ? '（連続検知）' : '';
+
+                    // Make Critical messages more specific
+                    let message = '不審な操作が検出されました。';
+                    if (isCritical) {
+                        const metaMsg = newLog.metadata?.message;
+                        if (metaMsg) {
+                            message = `${metaMsg}`;
+                        } else {
+                            message = `深刻なセキュリティリスクが検知されました: [${newLog.target_type}]`;
+                        }
+                    } else if (isHigh) {
+                        message = '警告レベルの異常が検出されました。確認が必要です。';
+                    }
 
                     toast.custom(
                         (t) => (
@@ -151,17 +177,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                             >
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-xl">{icon}</span>
-                                    <span className="font-bold text-sm">{title}</span>
+                                    <span className="font-bold text-sm">{title} <span className="text-[#FF6B6B]">{subtitle}</span></span>
                                 </div>
-                                <span className="text-xs font-medium">不審な操作が検出されました。</span>
-                                <div className="flex justify-between items-center mt-1">
-                                    <span className="text-xs opacity-80">User: {newLog.actor_name || 'System'}</span>
-                                    <span className="text-[10px] opacity-60">Just now</span>
+                                <span className="text-xs font-medium leading-relaxed">{message}</span>
+                                <div className="flex justify-between items-center mt-1 pt-1 border-t border-black/5">
+                                    <span className="text-[10px] font-bold">Actor: {newLog.actor_name || actorCode}</span>
+                                    <span className="text-[10px] opacity-60 uppercase font-display">Priority: {severity}</span>
                                 </div>
                             </div>
                         ),
                         {
-                            duration: isCritical ? Infinity : 8000,
+                            duration: isCritical ? Infinity : 10000,
                             position: 'top-right',
                             id: `anomaly-${newLog.id}-${Date.now()}`
                         }

@@ -15,7 +15,7 @@ interface LogDetailModalProps {
 const STATUS_MAP: Record<string, string> = {
     pending: '調査前',
     investigating: '調査中',
-    completed: '完了'
+    completed: '対応済（判断記録あり）'
 };
 
 const SEVERITY_LABELS: Record<string, string> = {
@@ -128,7 +128,7 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                                         </div>
                                         <div className={`text-sm font-bold bg-white px-2 py-1 rounded border w-fit ${log.is_acknowledged ? 'border-green-200 text-green-700' : 'border-amber-200 text-amber-700'}`}>
                                             {STATUS_MAP[log.response_status || ''] || log.response_status}
-                                            {log.is_acknowledged && <span className="ml-2 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest">完了</span>}
+                                            {log.is_acknowledged && <span className="ml-2 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest">記録済</span>}
                                         </div>
                                     </div>
                                     <div className="md:col-span-2 space-y-2">

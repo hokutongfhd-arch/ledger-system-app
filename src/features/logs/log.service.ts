@@ -114,6 +114,9 @@ const ACTION_NAMES: Record<string, string> = {
     EXPORT: 'エクスポート',
     VIEW_PAGE: 'ページ閲覧',
     ANOMALY_DETECTED: '異常検知',
+    GENERATE: 'レポート生成',
+    ANOMALY_RESPONSE: '不正対応登録',
+    DOWNLOAD_TEMPLATE: 'テンプレート読込',
     ERROR: 'エラー'
 };
 

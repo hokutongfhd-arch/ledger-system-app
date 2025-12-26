@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { Activity, AlertTriangle, ShieldAlert, ArrowRight, ShieldCheck, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { clsx } from 'clsx';
 import LogDetailModal from '../../../components/features/logs/LogDetailModal';
 import { useAuditLogs } from '../../../features/logs/useAuditLogs';
 import { ReportGenerationModal } from '../../../components/features/audit/ReportGenerationModal';
@@ -141,7 +142,10 @@ export default function AuditDashboardPage() {
                             </div>
                             {recentAnomalies.length > 0 && <span className="bg-[#FF6B6B] text-white px-3 py-1 text-xs font-bold font-display uppercase tracking-widest animate-pulse">緊急確認事項あり</span>}
                         </div>
-                        <div className={`bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8 ${recentAnomalies.length > 0 && recentAnomalies.some(a => a.severity === 'high' || a.severity === 'critical') ? 'ring-4 ring-[#FF6B6B] ring-inset' : ''}`}>
+                        <div className={clsx(
+                            "bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8",
+                            recentAnomalies.length > 0 && recentAnomalies.some(a => !a.is_acknowledged && (a.severity === 'high' || a.severity === 'critical')) && 'ring-4 ring-[#FF6B6B] ring-inset'
+                        )}>
                             {recentAnomalies.length > 0 ? (
                                 <div className="space-y-4 overflow-x-auto">
                                     <table className="w-full text-left min-w-[600px]">
@@ -155,27 +159,60 @@ export default function AuditDashboardPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#0A0E27]/5">
-                                            {recentAnomalies.map((log) => (
-                                                <tr key={log.id} className="group hover:bg-[#00F0FF]/5 transition-colors cursor-pointer" onClick={() => setSelectedLog(log)}>
-                                                    <td className="py-4 font-display font-medium text-sm">
-                                                        {format(new Date(log.timestamp), 'yyyy.MM.dd HH:mm:ss')}
-                                                    </td>
-                                                    <td className="py-4 font-bold">
-                                                        {log.actorName} <span className="text-xs opacity-50 font-display">({log.actorEmployeeCode})</span>
-                                                    </td>
-                                                    <td className="py-4">
-                                                        <span className="text-xs px-2 py-0.5 bg-[#0A0E27] text-white font-bold">{ACTION_LABELS[log.actionRaw] || log.actionRaw}</span>
-                                                    </td>
-                                                    <td className="py-4">
-                                                        <SeverityChip severity={log.severity || 'medium'} />
-                                                    </td>
-                                                    <td className="py-4 text-right px-4">
-                                                        <div className="flex items-center justify-end gap-3 text-[#00F0FF] opacity-0 group-hover:opacity-100 transition-opacity font-display font-bold text-xs uppercase">
-                                                            <span>対応する</span> <ArrowRight size={14} />
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {recentAnomalies.map((log) => {
+                                                const isUnacked = !log.is_acknowledged;
+                                                const isHighRisk = log.severity === 'high' || log.severity === 'critical';
+
+                                                return (
+                                                    <tr
+                                                        key={log.id}
+                                                        className={clsx(
+                                                            "group transition-colors cursor-pointer",
+                                                            isUnacked ? "hover:bg-[#00F0FF]/5" : "opacity-40 grayscale-[0.5] hover:opacity-70"
+                                                        )}
+                                                        onClick={() => setSelectedLog(log)}
+                                                    >
+                                                        <td className="py-4 font-display font-medium text-sm whitespace-nowrap">
+                                                            {format(new Date(log.timestamp), 'yyyy.MM.dd HH:mm:ss')}
+                                                        </td>
+                                                        <td className="py-4 font-bold">
+                                                            <div className="flex flex-col">
+                                                                <span>{log.actorName}</span>
+                                                                <span className="text-[10px] opacity-50 font-display font-medium">({log.actorEmployeeCode})</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-4">
+                                                            <span className={clsx(
+                                                                "text-[10px] px-2 py-0.5 font-bold shadow-sm whitespace-nowrap",
+                                                                isUnacked ? "bg-[#0A0E27] text-white" : "bg-gray-200 text-gray-600"
+                                                            )}>
+                                                                {ACTION_LABELS[log.actionRaw] || log.actionRaw}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <SeverityChip severity={log.severity || 'medium'} />
+                                                                {isUnacked && isHighRisk && (
+                                                                    <span className="text-[8px] font-black bg-[#FF6B6B] text-white px-1 animate-pulse">要対応</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-4 text-right px-4">
+                                                            <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                                                <span className={clsx(
+                                                                    "text-[10px] font-bold px-2 py-0.5 rounded shadow-sm",
+                                                                    isUnacked ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                                                                )}>
+                                                                    {isUnacked ? '未対応（判断未実施）' : '対応済（判断記録あり）'}
+                                                                </span>
+                                                                <div className="flex items-center text-[#00F0FF] opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                                                    <ArrowRight size={14} />
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -394,5 +431,7 @@ const ACTION_LABELS: Record<string, string> = {
     ANOMALY_DETECTED: '異常検知',
     EXPORT: 'エクスポート',
     IMPORT: 'インポート',
-    DOWNLOAD_TEMPLATE: 'テンプレート読込'
+    DOWNLOAD_TEMPLATE: 'テンプレート読込',
+    GENERATE: 'レポート生成',
+    ANOMALY_RESPONSE: '不正対応登録'
 };

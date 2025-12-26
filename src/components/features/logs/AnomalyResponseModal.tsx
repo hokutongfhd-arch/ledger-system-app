@@ -100,7 +100,7 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                             >
                                 <option value="pending">調査前</option>
                                 <option value="investigating">調査中</option>
-                                <option value="completed">完了</option>
+                                <option value="completed">対応済（判断記録あり）</option>
                             </select>
                         </div>
 
@@ -112,15 +112,16 @@ export const AnomalyResponseModal: React.FC<AnomalyResponseModalProps> = ({
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm min-h-[120px]"
-                                placeholder="判断理由や実施した対応内容を記入してください"
+                                placeholder={"記載例：\n・事象の確認結果\n・問題なし／是正済／調査継続と判断した理由"}
                                 required={isNoteRequired}
                             />
                         </div>
 
-                        <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-blue-700 space-y-1">
+                        <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-blue-800 space-y-1">
+                            <p className="font-bold flex items-center gap-1"><AlertCircle size={14} /> 提出前の確認事項</p>
                             <p>● 対応者: {user?.name || '管理者'}</p>
-                            <p>● 登録日時: 現在の日時が自動的に記録されます</p>
-                            <p>● 証跡保護: 「完了」として登録すると、ログの結果が「成功」になりアラートから除外されます</p>
+                            <p>● この内容は後から変更できず、監査・説明責任の対象となります</p>
+                            <p>● 「対応済」として登録すると、アラートから除外されます</p>
                         </div>
                     </div>
 

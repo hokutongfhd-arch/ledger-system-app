@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { fetchAuditReportData } from '@/app/actions/reports';
 import { format } from 'date-fns';
 import { ShieldAlert, Activity, AlertTriangle, ShieldCheck, User, Zap } from 'lucide-react';
+import { useAuth } from '@/features/context/AuthContext';
 import { clsx } from 'clsx';
 import Script from 'next/script';
 
@@ -13,6 +14,7 @@ export default function AuditReportPrintPage() {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const reportType = searchParams.get('type') || 'summary';
+    const { user } = useAuth();
 
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -111,8 +113,9 @@ export default function AuditReportPrintPage() {
                     </div>
 
                     <div className="pt-20">
-                        <h1 className="text-8xl font-black uppercase tracking-tighter leading-none mb-4 font-display">
-                            監査<br />レポート
+                        <h1 className="text-7xl font-black tracking-tighter leading-none mb-4 font-japanese">
+                            監査レポート<br />
+                            <span className="text-4xl">({format(new Date(period.start), 'yyyy/MM/dd')} 〜 {format(new Date(period.end), 'yyyy/MM/dd')})</span>
                         </h1>
                         <div className="h-4 bg-[#0A0E27] w-full mb-8"></div>
                         <div className="flex gap-12">
@@ -142,7 +145,7 @@ export default function AuditReportPrintPage() {
                         </div>
                         <div>
                             <label className="text-xs font-bold uppercase opacity-40 block mb-2">発行者</label>
-                            <div className="text-xl">丸井北斗 (システム管理者)</div>
+                            <div className="text-xl">{user?.name || 'システム管理者'} ({user?.code || 'admin'})</div>
                         </div>
                         <div>
                             <label className="text-xs font-bold uppercase opacity-40 block mb-2">レポート識別ID</label>
@@ -152,7 +155,7 @@ export default function AuditReportPrintPage() {
 
                     <p className="text-xs font-bold leading-relaxed opacity-60">
                         本レポートはシステム内の各操作ログおよび不正検知アルゴリズムによって自動生成された、改竄不可能な証跡記録です。<br />
-                        法令遵守および内部統制の観点から、適切に管理・保管を行ってください。
+                        生成時点のデータベース状態を反映しています。法令遵守および内部統制の観点から、適切に管理・保管を行ってください。
                     </p>
                 </div>
             </div>
@@ -212,7 +215,7 @@ export default function AuditReportPrintPage() {
                                         "text-xs font-black px-3 py-1 uppercase tracking-widest border-2",
                                         ano.status === 'completed' ? "border-[#00F0FF] text-[#0A0E27]" : "border-[#FF6B6B] text-[#FF6B6B]"
                                     )}>
-                                        状態: {ano.status === 'completed' ? '対応完了' : '未対応'}
+                                        状態: {ano.status === 'completed' ? '対応済（判断記録あり）' : '未対応（判断未実施）'}
                                     </div>
                                 </div>
                             </div>
