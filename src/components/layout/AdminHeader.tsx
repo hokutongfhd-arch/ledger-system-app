@@ -10,6 +10,11 @@ export const AdminHeader = () => {
     const { user, logout } = useAuth();
     const { unreadCount, maxSeverity } = useNotification();
     const router = useRouter();
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const getBadgeColor = () => {
         switch (maxSeverity) {
@@ -48,7 +53,7 @@ export const AdminHeader = () => {
                     className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
                 >
                     <Bell size={20} className="text-ink" />
-                    {unreadCount > 0 && (
+                    {isMounted && unreadCount > 0 && (
                         <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white ${getBadgeColor()}`}>
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
