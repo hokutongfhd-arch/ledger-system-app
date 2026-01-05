@@ -43,7 +43,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-bold text-center text-ink font-display tracking-tighter mb-2">LEDGER LOGIN</h1>
             <p className="text-center text-ink-light font-mono text-xs tracking-widest mb-10">AUTHORIZED PERSONNEL ONLY</p>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-8" autoComplete="off">
                 <div className="relative group">
                     <label className="block text-xs font-bold text-ink uppercase tracking-widest mb-2 font-display">
                         Employee ID
@@ -53,8 +53,12 @@ export default function LoginPage() {
                             type={showCode ? "text" : "password"}
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
+                            className="w-full pl-4 pr-12 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
                             placeholder="EMP001"
+                            name="employee-code"
+                            autoComplete="off"
+                            data-lpignore="true"
+                            data-form-type="other"
                             required
                         />
                         <button
@@ -76,8 +80,12 @@ export default function LoginPage() {
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
+                            className="w-full pl-4 pr-12 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
                             placeholder="••••••••"
+                            name="employee-password"
+                            autoComplete="new-password"
+                            data-lpignore="true"
+                            data-form-type="other"
                             required
                         />
                         <button

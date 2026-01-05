@@ -27,6 +27,22 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-ink hover:bg-accent-violet transition-colors;
   }
+
+  /* Hide browser password reveal icons */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+
+  input::-webkit-credentials-auto-fill-button,
+  input::-webkit-contacts-auto-fill-button {
+    visibility: hidden;
+    display: none !important;
+    pointer-events: none;
+    height: 0;
+    width: 0;
+    margin: 0;
+  }
 }
 
 @layer components {
