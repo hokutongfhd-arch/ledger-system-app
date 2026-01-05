@@ -78,11 +78,13 @@ export const Sidebar = () => {
                     <SidebarItem to="/device-manuals" icon={FileText} label="Device Manuals" />
                 </SidebarSection>
 
-                <SidebarSection label="MASTERS">
-                    <SidebarItem to="/masters/employees" icon={User} label="Employees" />
-                    <SidebarItem to="/masters/areas" icon={Database} label="Areas" />
-                    <SidebarItem to="/masters/addresses" icon={FileText} label="Addresses" />
-                </SidebarSection>
+                {user?.role === 'admin' && (
+                    <SidebarSection label="MASTERS">
+                        <SidebarItem to="/masters/employees" icon={User} label="Employees" />
+                        <SidebarItem to="/masters/areas" icon={Database} label="Areas" />
+                        <SidebarItem to="/masters/addresses" icon={FileText} label="Addresses" />
+                    </SidebarSection>
+                )}
 
                 <SidebarSection label="SYSTEM">
                     <SidebarItem to="/dashboard" icon={User} label="My Page" />

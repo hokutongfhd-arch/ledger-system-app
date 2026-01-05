@@ -41,6 +41,7 @@ export async function middleware(req: NextRequest) {
         path.startsWith('/logs') ||
         path.startsWith('/audit') ||
         path.startsWith('/audit-dashboard') ||
+        path.startsWith('/masters') ||
         path.startsWith('/admin');
 
     if (isStrictAdminPath && role !== 'admin') {
