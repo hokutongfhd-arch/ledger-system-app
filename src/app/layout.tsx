@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="ja" suppressHydrationWarning={true}>
-            <body className={inter.className}>
+            <body className={inter.className} suppressHydrationWarning={true}>
                 <GlobalErrorBoundary>
                     <Toaster position="top-right" />
                     <ToastProvider>
