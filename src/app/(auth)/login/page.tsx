@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../features/context/AuthContext';
-import { Database } from 'lucide-react';
+import { Database, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
+    const [showCode, setShowCode] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const { login } = useAuth();
     const router = useRouter();
@@ -46,28 +48,46 @@ export default function LoginPage() {
                     <label className="block text-xs font-bold text-ink uppercase tracking-widest mb-2 font-display">
                         Employee ID
                     </label>
-                    <input
-                        type="text"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
-                        placeholder="EMP001"
-                        required
-                    />
+                    <div className="relative">
+                        <input
+                            type={showCode ? "text" : "password"}
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
+                            placeholder="EMP001"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowCode(!showCode)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-ink-light hover:text-ink hover:bg-black/5 transition-colors rounded"
+                        >
+                            {showCode ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="relative group">
                     <label className="block text-xs font-bold text-ink uppercase tracking-widest mb-2 font-display">
                         Password
                     </label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
-                        placeholder="••••••••"
-                        required
-                    />
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
+                            placeholder="••••••••"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-ink-light hover:text-ink hover:bg-black/5 transition-colors rounded"
+                        >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                    </div>
                 </div>
 
                 {error && (
