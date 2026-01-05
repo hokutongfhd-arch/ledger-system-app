@@ -38,6 +38,7 @@ export default function RouterListPage() {
 
 function RouterListContent() {
     const { routers, addRouter, updateRouter, deleteRouter, employees, addresses } = useData();
+    const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -51,6 +52,12 @@ function RouterListContent() {
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { confirm, ConfirmDialog } = useConfirm();
+
+    const isAdmin = user?.role === 'admin';
+    const hasPermission = (item: Router) => {
+        if (isAdmin) return true;
+        return user?.code === item.employeeCode;
+    };
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
     const handleEdit = (item: Router) => { setEditingItem(item); setIsModalOpen(true); };
@@ -403,6 +410,8 @@ function RouterListContent() {
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                canEdit={hasPermission}
+                canDelete={hasPermission}
             />
 
             <Pagination

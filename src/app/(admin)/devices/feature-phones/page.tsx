@@ -38,6 +38,7 @@ export default function FeaturePhoneListPage() {
 
 function FeaturePhoneListContent() {
     const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, employees, addresses } = useData();
+    const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -51,6 +52,12 @@ function FeaturePhoneListContent() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
     const { confirm, ConfirmDialog } = useConfirm();
+
+    const isAdmin = user?.role === 'admin';
+    const hasPermission = (item: FeaturePhone) => {
+        if (isAdmin) return true;
+        return user?.code === item.employeeId;
+    };
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
     const handleEdit = (item: FeaturePhone) => { setEditingItem(item); setIsModalOpen(true); };
@@ -388,6 +395,8 @@ function FeaturePhoneListContent() {
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                canEdit={hasPermission}
+                canDelete={hasPermission}
             />
 
             <Pagination

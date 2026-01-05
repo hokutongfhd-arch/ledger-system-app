@@ -35,18 +35,18 @@ export async function middleware(req: NextRequest) {
     // Admin: /, /masters/*, /devices/*, /logs, /design-preview
     // User: /user-dashboard, /dashboard (if exists in user group)
 
-    // Define Admin Paths
-    const isAdminPath =
+    // Define strict Admin Paths (only for admin)
+    const isStrictAdminPath =
         path === '/' ||
-        path.startsWith('/masters') ||
-        path.startsWith('/devices') ||
         path.startsWith('/logs') ||
-        path.startsWith('/device-manuals'); // Assuming this is admin
+        path.startsWith('/audit') ||
+        path.startsWith('/audit-dashboard') ||
+        path.startsWith('/admin');
 
-    if (isAdminPath && role !== 'admin') {
+    if (isStrictAdminPath && role !== 'admin') {
         // Redirect unauthorized user to user dashboard
         const redirectUrl = req.nextUrl.clone();
-        redirectUrl.pathname = '/dashboard'; // Adjust if valid user path differs
+        redirectUrl.pathname = '/dashboard';
         return NextResponse.redirect(redirectUrl);
     }
 
