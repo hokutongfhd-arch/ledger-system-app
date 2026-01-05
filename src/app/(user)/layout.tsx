@@ -4,9 +4,8 @@ import React from 'react';
 
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../features/context/AuthContext';
-import { LogOut, Bell } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useNotification } from '../../features/notifications/NotificationContext';
 
 export default function UserLayout({
     children,
@@ -14,23 +13,7 @@ export default function UserLayout({
     children: React.ReactNode;
 }) {
     const { user, logout } = useAuth();
-    const { unreadCount, maxSeverity } = useNotification();
     const router = useRouter();
-    const [isMounted, setIsMounted] = React.useState(false);
-
-    React.useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    const getBadgeColor = () => {
-        switch (maxSeverity) {
-            case 'critical': return 'bg-red-600';
-            case 'high': return 'bg-orange-500';
-            case 'medium': return 'bg-yellow-500 text-black';
-            case 'low': return 'bg-gray-500';
-            default: return 'bg-red-500';
-        }
-    };
 
     const handleLogout = async () => {
         await logout();
@@ -52,18 +35,6 @@ export default function UserLayout({
                         <span className="text-accent-violet ml-1">.</span>
                     </h2>
                     <div className="flex items-center gap-6">
-                        {/* Notification Bell */}
-                        <button
-                            onClick={() => router.push('/audit-dashboard')}
-                            className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
-                        >
-                            <Bell size={20} className="text-ink" />
-                            {isMounted && unreadCount > 0 && (
-                                <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white ${getBadgeColor()}`}>
-                                    {unreadCount > 99 ? '99+' : unreadCount}
-                                </span>
-                            )}
-                        </button>
 
                         <div className="text-right">
                             <p className="font-bold text-ink text-sm font-display tracking-tight">{user?.name}</p>

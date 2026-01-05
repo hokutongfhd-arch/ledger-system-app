@@ -47,18 +47,20 @@ export const AdminHeader = () => {
             </h2>
             <div className="flex items-center gap-6">
 
-                {/* Notification Bell */}
-                <button
-                    onClick={handleNotificationClick}
-                    className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
-                >
-                    <Bell size={20} className="text-ink" />
-                    {isMounted && unreadCount > 0 && (
-                        <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white ${getBadgeColor()}`}>
-                            {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                    )}
-                </button>
+                {/* Notification Bell - Admin Only */}
+                {user?.role === 'admin' && (
+                    <button
+                        onClick={handleNotificationClick}
+                        className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <Bell size={20} className="text-ink" />
+                        {isMounted && unreadCount > 0 && (
+                            <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white ${getBadgeColor()}`}>
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
+                )}
 
                 <div className="text-right">
                     <p className="font-bold text-ink text-sm font-display tracking-tight">{user?.name ?? ''}</p>
