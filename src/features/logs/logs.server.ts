@@ -83,8 +83,13 @@ export async function fetchAuditLogsServer(params: {
         return { logs: data || [], total: count || 0 };
 
     } catch (error: any) {
-        console.error('Server Action Error:', error);
-        return { logs: [], total: 0, error: error.message };
+        // Log simple error for reference but keep details on server console
+        console.error('Fetch Audit Logs Error:', error.message);
+        return {
+            logs: [],
+            total: 0,
+            error: error.message || 'Failed to fetch audit logs.'
+        };
     }
 }
 
