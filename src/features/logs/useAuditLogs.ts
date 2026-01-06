@@ -4,6 +4,7 @@ import { logService } from './log.service';
 import type { Log } from '../../lib/types';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { fetchAuditLogsServer, submitAnomalyResponseServer, fetchAuditLogByIdServer } from './logs.server';
+import { toast } from 'react-hot-toast';
 
 export type LogFilterState = {
     startDate: string;
@@ -70,15 +71,24 @@ export const useAuditLogs = () => {
 
             if (error) {
                 console.error('Server fetch error:', error);
+                // Attempt to display a more user-friendly error if it's JSON
+                let displayError = error;
+                try {
+                    const parsed = JSON.parse(error);
+                    displayError = parsed.message || error;
+                } catch (e) {
+                    // Not JSON, keep as is
+                }
+                toast.error(`ログ取得エラー: ${displayError}`, { id: 'fetch-error' });
             }
 
             // Map server data (raw DB) to Log type using service mapper
             const mappedLogs = (data || []).map(logService.mapLogFromDb);
             setLogs(mappedLogs);
             setTotalCount(total);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch audit logs:', error);
-            // In a real app, you might expose an error state
+            toast.error('監査ログの取得に失敗しました');
         } finally {
             setLoading(false);
         }

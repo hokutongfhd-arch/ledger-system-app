@@ -39,16 +39,18 @@ export async function fetchAuditLogsServer(params: {
             .from('audit_logs')
             .select('*', { count: 'exact' });
 
-        // Archive Filter: Exclusive mode
+        // Archive Filter
         if (params.includeArchived) {
             query = query.eq('is_archived', true);
         } else {
-            query = query.eq('is_archived', false); // Default: Active only
+            // Note: If is_archived doesn't exist yet, this will fail.
+            // But we treat it as an active requirement.
+            query = query.eq('is_archived', false);
         }
 
-        // Filters
-        if (params.startDate) query = query.gte('occurred_at', params.startDate);
-        if (params.endDate) query = query.lte('occurred_at', params.endDate);
+        // Filters (with empty string protection)
+        if (params.startDate && params.startDate !== '') query = query.gte('occurred_at', params.startDate);
+        if (params.endDate && params.endDate !== '') query = query.lte('occurred_at', params.endDate);
         if (params.actionType) query = query.eq('action_type', params.actionType);
         if (params.result) query = query.eq('result', params.result);
         if (params.target) query = query.eq('target_type', params.target);
@@ -77,14 +79,14 @@ export async function fetchAuditLogsServer(params: {
 
         if (error) {
             console.error('Fetch Logs Server Error:', error);
-            throw new Error(error.message);
+            // Return error object as string to help debugging on client
+            return { logs: [], total: 0, error: JSON.stringify(error) };
         }
 
         return { logs: data || [], total: count || 0 };
 
     } catch (error: any) {
-        // Log simple error for reference but keep details on server console
-        console.error('Fetch Audit Logs Error:', error.message);
+        console.error('Fetch Audit Logs Catch Error:', error);
         return {
             logs: [],
             total: 0,
