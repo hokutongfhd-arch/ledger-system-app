@@ -4,6 +4,8 @@ import { Address, Area } from '../../../lib/types';
 import { Building, Phone, MapPin, Tag, FileText, Router } from 'lucide-react';
 import { SectionHeader, DetailRow } from '../../../components/ui/DetailView';
 import { AddressDeviceList } from '../../components/AddressDeviceList';
+import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
+import { formatZipCode } from '../../../lib/utils/zipCodeUtils';
 
 interface AddressDetailModalProps {
     isOpen: boolean;
@@ -31,10 +33,10 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h3 className="text-2xl font-bold text-gray-800 tracking-tight">{item.officeName}</h3>
-                            <span className="px-3 py-1 text-xs font-bold rounded-full border bg-blue-100 text-blue-700 border-blue-200">
-                                {item.type}
-                            </span>
                         </div>
+                        <p className="text-gray-600 text-sm font-medium mb-1">
+                            〒{formatZipCode(item.zipCode)}
+                        </p>
                         <p className="text-gray-500 text-sm flex items-center gap-1">
                             <MapPin size={14} />
                             {item.address}
@@ -60,9 +62,8 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
 
                         <SectionHeader icon={<Phone size={18} />} title="連絡先 (Contact)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="TEL" value={item.tel} />
-                            <DetailRow label="FAX" value={item.fax} />
-                            <DetailRow label="ZIP" value={item.zipCode} />
+                            <DetailRow label="TEL" value={formatPhoneNumber(item.tel)} />
+                            <DetailRow label="FAX" value={formatPhoneNumber(item.fax)} />
                             <DetailRow label="住所" value={item.address} className="col-span-2" />
                         </div>
                     </div>

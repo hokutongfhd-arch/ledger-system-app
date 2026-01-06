@@ -16,6 +16,8 @@ import { useConfirm } from '../../../../hooks/useConfirm';
 import { AddressDeviceList } from '../../../../features/components/AddressDeviceList';
 import * as XLSX from 'xlsx';
 import { useToast } from '../../../../features/context/ToastContext';
+import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
+import { formatZipCode } from '../../../../lib/utils/zipCodeUtils';
 
 type SortKey = 'addressCode' | 'tel' | 'fax' | 'zipCode';
 type SortOrder = 'asc' | 'desc';
@@ -224,16 +226,16 @@ function AddressListContent() {
                     officeName: String(rowData['事業所名'] || ''),
                     division: String(rowData['事業部'] || ''),
                     area: areaName,
-                    tel: String(rowData['TEL'] || ''),
-                    fax: String(rowData['FAX'] || ''),
-                    zipCode: String(rowData['〒'] || ''),
+                    tel: formatPhoneNumber(String(rowData['TEL'] || '')),
+                    fax: formatPhoneNumber(String(rowData['FAX'] || '')),
+                    zipCode: formatZipCode(String(rowData['〒'] || '')),
                     address: String(rowData['住所'] || ''),
                     type: String(rowData['区分'] || ''),
                     mainPerson: String(rowData['主担当'] || ''),
                     branchNumber: String(rowData['枝番'] || ''),
                     specialNote: String(rowData['※'] || ''),
                     labelName: String(rowData['宛名ラベル用'] || ''),
-                    labelZip: String(rowData['宛名ラベル用〒'] || ''),
+                    labelZip: formatZipCode(String(rowData['宛名ラベル用〒'] || '')),
                     labelAddress: String(rowData['宛名ラベル用住所'] || ''),
                     notes: String(rowData['備考'] || ''),
                     attentionNote: String(rowData['注意書き'] || '')
@@ -415,9 +417,9 @@ function AddressListContent() {
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>住所コード{getSortIcon('addressCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.addressCode}</button> },
                     { header: '事業所名', accessor: 'officeName' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('tel')}>ＴＥＬ{getSortIcon('tel')}</div>, accessor: 'tel' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('fax')}>ＦＡＸ{getSortIcon('fax')}</div>, accessor: 'fax' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('zipCode')}>〒{getSortIcon('zipCode')}</div>, accessor: 'zipCode' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('tel')}>ＴＥＬ{getSortIcon('tel')}</div>, accessor: (item) => formatPhoneNumber(item.tel) },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('fax')}>ＦＡＸ{getSortIcon('fax')}</div>, accessor: (item) => formatPhoneNumber(item.fax) },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('zipCode')}>〒{getSortIcon('zipCode')}</div>, accessor: (item) => formatZipCode(item.zipCode) },
                     { header: '住所', accessor: 'address' },
                 ]}
                 onEdit={handleEdit}
