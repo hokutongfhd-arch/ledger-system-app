@@ -57,7 +57,7 @@ const statusColorMap: Record<string, string> = {
 };
 
 function TabletListContent() {
-    const { tablets, addTablet, updateTablet, deleteTablet, employees, addresses } = useData();
+    const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -112,24 +112,10 @@ function TabletListContent() {
 
         if (confirmed) {
             try {
-                for (const id of selectedIds) {
-                    await deleteTablet(id, true, true);
-                }
+                await deleteManyTablets(Array.from(selectedIds));
                 setSelectedIds(new Set());
-                await confirm({
-                    title: '削除完了',
-                    description: '削除しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             } catch (error) {
                 console.error("Bulk delete failed", error);
-                await confirm({
-                    title: 'エラー',
-                    description: '一部の削除に失敗しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             }
         }
     };

@@ -22,5 +22,8 @@ export const deviceApi = {
     },
     deleteDevice: async (table: string, id: string) => {
         return await supabase.from(table).delete().eq('id', id);
+    },
+    deleteDevices: async (table: string, ids: string[]) => {
+        return await supabase.from(table).delete().in('id', ids);
     }
 };

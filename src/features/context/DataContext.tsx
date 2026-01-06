@@ -38,6 +38,13 @@ interface DataContextType {
     addAddress: (item: Omit<Address, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateAddress: (item: Address, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     deleteAddress: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteManyIPhones: (ids: string[]) => Promise<void>;
+    deleteManyFeaturePhones: (ids: string[]) => Promise<void>;
+    deleteManyTablets: (ids: string[]) => Promise<void>;
+    deleteManyRouters: (ids: string[]) => Promise<void>;
+    deleteManyEmployees: (ids: string[]) => Promise<void>;
+    deleteManyAreas: (ids: string[]) => Promise<void>;
+    deleteManyAddresses: (ids: string[]) => Promise<void>;
     fetchLogRange: (startDate: string, endDate: string) => Promise<void>;
     fetchLogMinDate: () => Promise<string | null>;
     logs: Log[];
@@ -443,6 +450,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [showToast]);
 
+    const deleteItems = useCallback(async <T extends { id: string }>(table: string, ids: string[], setState: React.Dispatch<React.SetStateAction<T[]>>, isArea: boolean = false) => {
+        try {
+            const pkField = isArea ? 'area_code' : 'id';
+            const { error } = await supabase.from(table).delete().in(pkField, ids);
+            if (error) throw error;
+
+            setState(prev => prev.filter(p => !ids.includes(p.id)));
+            showToast(`${ids.length}件、削除しました`, 'success');
+        } catch (error: any) {
+            console.error(`Failed to delete items from ${table}:`, error);
+            showToast('削除に失敗しました', 'error', error.message);
+            throw error;
+        }
+    }, [showToast]);
+
     // Specific implementations
     const addTablet = (item: Omit<Tablet, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('tablets', item, mapTabletToDb, mapTabletFromDb, setTablets, skipLog, skipToast);
     const updateTablet = (item: Tablet, skipLog: boolean = false, skipToast: boolean = false) => updateItem('tablets', item, mapTabletToDb, tablets, setTablets, skipLog, skipToast);
@@ -551,6 +573,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updateAddress = (item: Address, skipLog: boolean = false, skipToast: boolean = false) => updateItem('addresses', item, mapAddressToDb, addresses, setAddresses, skipLog, skipToast);
     const deleteAddress = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('addresses', id, setAddresses, skipLog, skipToast);
 
+    const deleteManyIPhones = (ids: string[]) => deleteItems('iphones', ids, setIPhones);
+    const deleteManyFeaturePhones = (ids: string[]) => deleteItems('featurephones', ids, setFeaturePhones);
+    const deleteManyTablets = (ids: string[]) => deleteItems('tablets', ids, setTablets);
+    const deleteManyRouters = (ids: string[]) => deleteItems('routers', ids, setRouters);
+    const deleteManyEmployees = (ids: string[]) => deleteItems('employees', ids, setEmployees);
+    const deleteManyAreas = (ids: string[]) => deleteItems('areas', ids, setAreas, true);
+    const deleteManyAddresses = (ids: string[]) => deleteItems('addresses', ids, setAddresses);
+
     const fetchLogRange = useCallback(async (startDate: string, endDate: string) => {
         try {
             const { data, error } = await supabase
@@ -594,6 +624,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addEmployee, updateEmployee, deleteEmployee,
             addArea, updateArea, deleteArea,
             addAddress, updateAddress, deleteAddress,
+            deleteManyIPhones, deleteManyFeaturePhones, deleteManyTablets, deleteManyRouters,
+            deleteManyEmployees, deleteManyAreas, deleteManyAddresses,
             fetchLogRange,
             fetchLogMinDate,
             logs

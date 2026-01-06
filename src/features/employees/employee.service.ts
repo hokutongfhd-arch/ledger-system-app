@@ -75,5 +75,8 @@ export const employeeService = {
 
     deleteEmployee: async (id: string) => {
         return await employeeApi.deleteEmployee(id);
+    },
+    deleteEmployees: async (ids: string[]) => {
+        return await employeeApi.deleteEmployees(ids);
     }
 };

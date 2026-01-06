@@ -36,7 +36,7 @@ export default function AreaListPage() {
 }
 
 function AreaListContent() {
-    const { areas, addArea, updateArea, deleteArea } = useData();
+    const { areas, addArea, updateArea, deleteArea, deleteManyAreas } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -237,24 +237,10 @@ function AreaListContent() {
 
         if (confirmed) {
             try {
-                for (const id of selectedIds) {
-                    await deleteArea(id, true, true);
-                }
+                await deleteManyAreas(Array.from(selectedIds));
                 setSelectedIds(new Set());
-                await confirm({
-                    title: '削除完了',
-                    description: '削除しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             } catch (error) {
                 console.error("Bulk delete failed", error);
-                await confirm({
-                    title: 'エラー',
-                    description: '一部の削除に失敗しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             }
         }
     };

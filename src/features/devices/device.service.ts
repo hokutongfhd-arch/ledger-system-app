@@ -189,5 +189,8 @@ export const deviceService = {
 
     deleteDevice: async (table: string, id: string) => {
         return await deviceApi.deleteDevice(table, id);
+    },
+    deleteDevices: async (table: string, ids: string[]) => {
+        return await deviceApi.deleteDevices(table, ids);
     }
 };

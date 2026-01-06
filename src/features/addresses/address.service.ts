@@ -15,6 +15,9 @@ export const addressApi = {
     },
     deleteAddress: async (id: string) => {
         return await supabase.from('addresses').delete().eq('id', id);
+    },
+    deleteAddresses: async (ids: string[]) => {
+        return await supabase.from('addresses').delete().in('id', ids);
     }
 };
 
@@ -78,5 +81,8 @@ export const addressService = {
 
     deleteAddress: async (id: string) => {
         return await addressApi.deleteAddress(id);
+    },
+    deleteAddresses: async (ids: string[]) => {
+        return await addressApi.deleteAddresses(ids);
     }
 };

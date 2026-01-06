@@ -16,6 +16,9 @@ export const areaApi = {
     deleteArea: async (id: string) => {
         // DB PK is area_code
         return await supabase.from('areas').delete().eq('area_code', id);
+    },
+    deleteAreas: async (ids: string[]) => {
+        return await supabase.from('areas').delete().in('area_code', ids);
     }
 };
 
@@ -47,5 +50,8 @@ export const areaService = {
 
     deleteArea: async (id: string) => {
         return await areaApi.deleteArea(id);
+    },
+    deleteAreas: async (ids: string[]) => {
+        return await areaApi.deleteAreas(ids);
     }
 };

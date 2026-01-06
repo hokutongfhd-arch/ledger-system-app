@@ -38,7 +38,7 @@ export default function AddressListPage() {
 }
 
 function AddressListContent() {
-    const { addresses, addAddress, updateAddress, deleteAddress, areas } = useData();
+    const { addresses, addAddress, updateAddress, deleteAddress, deleteManyAddresses, areas } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -292,24 +292,10 @@ function AddressListContent() {
 
         if (confirmed) {
             try {
-                for (const id of selectedIds) {
-                    await deleteAddress(id, true, true);
-                }
+                await deleteManyAddresses(Array.from(selectedIds));
                 setSelectedIds(new Set());
-                await confirm({
-                    title: '削除完了',
-                    description: '削除しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             } catch (error) {
                 console.error("Bulk delete failed", error);
-                await confirm({
-                    title: 'エラー',
-                    description: '一部の削除に失敗しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             }
         }
     };

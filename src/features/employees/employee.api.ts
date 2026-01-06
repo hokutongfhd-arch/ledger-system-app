@@ -12,5 +12,8 @@ export const employeeApi = {
     },
     deleteEmployee: async (id: string) => {
         return await supabase.from('employees').delete().eq('id', id);
+    },
+    deleteEmployees: async (ids: string[]) => {
+        return await supabase.from('employees').delete().in('id', ids);
     }
 };

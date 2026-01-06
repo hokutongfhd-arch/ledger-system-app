@@ -38,7 +38,7 @@ export default function FeaturePhoneListPage() {
 }
 
 function FeaturePhoneListContent() {
-    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, employees, addresses } = useData();
+    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, deleteManyFeaturePhones, employees, addresses } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -92,24 +92,10 @@ function FeaturePhoneListContent() {
 
         if (confirmed) {
             try {
-                for (const id of selectedIds) {
-                    await deleteFeaturePhone(id, true, true);
-                }
+                await deleteManyFeaturePhones(Array.from(selectedIds));
                 setSelectedIds(new Set());
-                await confirm({
-                    title: '削除完了',
-                    description: '削除しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             } catch (error) {
                 console.error("Bulk delete failed", error);
-                await confirm({
-                    title: 'エラー',
-                    description: '一部の削除に失敗しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             }
         }
     };

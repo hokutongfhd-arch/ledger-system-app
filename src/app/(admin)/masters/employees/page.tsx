@@ -38,7 +38,7 @@ export default function EmployeeListPage() {
 }
 
 function EmployeeListContent() {
-    const { employees, addEmployee, updateEmployee, deleteEmployee, areas, addresses } = useData();
+    const { employees, addEmployee, updateEmployee, deleteEmployee, deleteManyEmployees, areas, addresses } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const highlightId = searchParams.get('highlight');
@@ -92,24 +92,10 @@ function EmployeeListContent() {
 
         if (confirmed) {
             try {
-                for (const id of selectedIds) {
-                    await deleteEmployee(id, true, true);
-                }
+                await deleteManyEmployees(Array.from(selectedIds));
                 setSelectedIds(new Set());
-                await confirm({
-                    title: '削除完了',
-                    description: '削除しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             } catch (error) {
                 console.error("Bulk delete failed", error);
-                await confirm({
-                    title: 'エラー',
-                    description: '一部の削除に失敗しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             }
         }
     };

@@ -39,7 +39,7 @@ export default function IPhoneListPage() {
 }
 
 function IPhoneListContent() {
-    const { iPhones, addIPhone, updateIPhone, deleteIPhone, employees, addresses } = useData();
+    const { iPhones, addIPhone, updateIPhone, deleteIPhone, deleteManyIPhones, employees, addresses } = useData();
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -111,24 +111,10 @@ function IPhoneListContent() {
 
         if (confirmed) {
             try {
-                for (const id of selectedIds) {
-                    await deleteIPhone(id, true, true);
-                }
+                await deleteManyIPhones(Array.from(selectedIds));
                 setSelectedIds(new Set());
-                await confirm({ // Use as Alert
-                    title: '削除完了',
-                    description: '削除しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             } catch (error) {
                 console.error("Bulk delete failed", error);
-                await confirm({
-                    title: 'エラー',
-                    description: '一部の削除に失敗しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             }
         }
     };

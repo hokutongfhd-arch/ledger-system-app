@@ -37,7 +37,7 @@ export default function RouterListPage() {
 }
 
 function RouterListContent() {
-    const { routers, addRouter, updateRouter, deleteRouter, employees, addresses } = useData();
+    const { routers, addRouter, updateRouter, deleteRouter, deleteManyRouters, employees, addresses } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -91,24 +91,10 @@ function RouterListContent() {
 
         if (confirmed) {
             try {
-                for (const id of selectedIds) {
-                    await deleteRouter(id, true, true);
-                }
+                await deleteManyRouters(Array.from(selectedIds));
                 setSelectedIds(new Set());
-                await confirm({
-                    title: '削除完了',
-                    description: '削除しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             } catch (error) {
                 console.error("Bulk delete failed", error);
-                await confirm({
-                    title: 'エラー',
-                    description: '一部の削除に失敗しました',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
             }
         }
     };
