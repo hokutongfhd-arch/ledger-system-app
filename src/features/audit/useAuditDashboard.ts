@@ -14,7 +14,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 export const useAuditDashboard = () => {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [range, setRange] = useState<DateRange>('7days');
+    const [range, setRange] = useState<DateRange>('today');
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -62,16 +62,13 @@ export const useAuditDashboard = () => {
 
             // --- Aggregation ---
 
-            // KPI: Today's numbers
-            const todayStart = startOfDay(now).toISOString();
-            const todayLogs = logs.filter((l: any) => l.timestamp >= todayStart);
-
+            // KPI: Range-based numbers
             const kpi: KPIStats = {
-                todayActionCount: todayLogs.length,
-                todayFailureCount: todayLogs.filter((l: any) => l.result === 'failure').length,
-                loginFailureCount24h: loginFailcount24h || 0,
+                todayActionCount: logs.length,
+                todayFailureCount: logs.filter((l: any) => l.result === 'failure').length,
+                loginFailureCount24h: logs.filter((l: any) => l.actionRaw === 'LOGIN_FAILURE' && l.result === 'failure').length,
                 unacknowledgedAnomalyCount: unacknowledgedAnomalyCount || 0,
-                adminActionCount: todayLogs.filter((l: any) =>
+                adminActionCount: logs.filter((l: any) =>
                     ['CREATE', 'UPDATE', 'DELETE'].includes(l.actionRaw)
                 ).length
             };

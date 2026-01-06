@@ -106,7 +106,7 @@ export default function AuditDashboardPage() {
                             icon={<ShieldAlert size={20} />}
                         />
                         <KPICard
-                            title="本日の総操作数"
+                            title={`${range === 'today' ? '本日' : '期間中'}の総操作数`}
                             value={kpi.todayActionCount}
                             subtext="記録された全ログ数"
                             icon={<Activity size={20} />}
@@ -114,13 +114,13 @@ export default function AuditDashboardPage() {
                         <KPICard
                             title="操作失敗件数"
                             value={kpi.todayFailureCount}
-                            subtext="実行時エラー/拒否"
+                            subtext={`${range === 'today' ? '本日' : '表示期間中'}の実行失敗`}
                             icon={<ShieldAlert size={20} />}
                         />
                         <KPICard
                             title="ログイン失敗数"
                             value={kpi.loginFailureCount24h}
-                            subtext="直近24時間の集計"
+                            subtext={`${range === 'today' ? '本日' : '表示期間中'}の失敗件数`}
                             icon={<User size={20} />}
                         />
                         <KPICard
