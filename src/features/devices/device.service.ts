@@ -1,5 +1,6 @@
 import { deviceApi } from './device.api';
 import type { Tablet, IPhone, FeaturePhone, Router, DeviceStatus } from './device.types';
+import { formatPhoneNumber } from '../../lib/utils/phoneUtils';
 
 // --- Data Mappers ---
 const s = (val: any) => (val === null || val === undefined) ? '' : String(val);
@@ -54,7 +55,7 @@ export const deviceService = {
     }),
     mapIPhoneToDb: (t: Partial<IPhone>) => ({
         carrier: t.carrier,
-        phone_number: t.phoneNumber,
+        phone_number: t.phoneNumber ? formatPhoneNumber(t.phoneNumber) : t.phoneNumber,
         management_number: t.managementNumber,
         employee_code: t.employeeId,
         address_code: t.addressCode,

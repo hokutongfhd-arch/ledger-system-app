@@ -2,7 +2,8 @@ import React from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { IPhone } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
-import { Smartphone, MapPin, Calendar, FileText, User, Shield } from 'lucide-react';
+import { Smartphone, MapPin, Calendar, FileText, User, Shield, Phone } from 'lucide-react';
+import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 
 interface IPhoneDetailModalProps {
     isOpen: boolean;
@@ -50,6 +51,10 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
                         <p className="text-gray-500 text-sm flex items-center gap-1">
                             <Smartphone size={14} />
                             {item.modelName} / {item.carrier}
+                        </p>
+                        <p className="text-blue-600 font-bold text-lg flex items-center gap-1 mt-1">
+                            <Phone size={16} />
+                            {formatPhoneNumber(item.phoneNumber)}
                         </p>
                     </div>
                     <div className="text-right">
@@ -99,7 +104,7 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
 
                 {/* Footer / Meta */}
                 <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between">
-                    <span>Phone Number: {item.phoneNumber}</span>
+                    <span>デバイス管理システム</span>
                     <span>Last Updated: -</span>
                 </div>
             </div>

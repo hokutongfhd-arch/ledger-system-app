@@ -14,6 +14,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { IPhoneDetailModal } from '../../../../features/devices/components/IPhoneDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
+import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -306,6 +307,21 @@ function IPhoneListContent() {
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
+
+        // 1000行分をシートの範囲として明示的に設定する
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: totalRows, c: headers.length - 1 }
+        });
+
+        // 電話番号列 (インデックス 2 = C列) を文字列形式に設定
+        for (let R = 1; R <= totalRows; ++R) {
+            const ref = XLSX.utils.encode_cell({ r: R, c: 2 });
+            // セルを明示的に文字列タイプとして初期化し、テキスト書式を適用
+            ws[ref] = { t: 's', v: '', z: '@' };
+        }
+
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
         XLSX.writeFile(wb, 'iPhoneエクセルフォーマット.xlsx');
     };
@@ -404,7 +420,7 @@ function IPhoneListContent() {
 
                 const newIPhone: Omit<IPhone, 'id'> & { id?: string } = {
                     carrier: String(rowData['キャリア'] || ''),
-                    phoneNumber: String(rowData['電話番号'] || ''),
+                    phoneNumber: formatPhoneNumber(String(rowData['電話番号'] || '').trim()),
                     managementNumber: String(rowData['管理番号'] || ''),
                     employeeId: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['住所コード'] || ''),
@@ -487,7 +503,7 @@ function IPhoneListContent() {
                         accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.managementNumber}</button>
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('modelName')}>機種名{getSortIcon('modelName')}</div>, accessor: 'modelName' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: 'phoneNumber' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: (item) => formatPhoneNumber(item.phoneNumber) },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('userName')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('lendDate')}>貸与日{getSortIcon('lendDate')}</div>, accessor: 'lendDate' },
