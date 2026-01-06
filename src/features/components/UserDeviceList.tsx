@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { formatPhoneNumber } from '../../lib/utils/phoneUtils';
 
 interface UserDeviceListProps {
     targetCode?: string;
@@ -76,7 +77,7 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
                                     </div>
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">電話番号</p>
-                                        <p className="font-medium text-text-main">{device.phoneNumber}</p>
+                                        <p className="font-medium text-text-main">{formatPhoneNumber(device.phoneNumber)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">キャリア</p>
@@ -119,7 +120,7 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
                                     </div>
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">電話番号</p>
-                                        <p className="font-medium text-text-main">{device.phoneNumber}</p>
+                                        <p className="font-medium text-text-main">{formatPhoneNumber(device.phoneNumber)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">キャリア</p>
@@ -162,7 +163,7 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
                                     </div>
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">SIM電番</p>
-                                        <p className="font-medium text-text-main">{device.simNumber}</p>
+                                        <p className="font-medium text-text-main">{formatPhoneNumber(device.simNumber)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-text-secondary mb-1">キャリア</p>
