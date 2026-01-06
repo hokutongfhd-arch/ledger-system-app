@@ -4,6 +4,7 @@ import { FeaturePhone } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
 import { Phone, MapPin, Calendar, FileText, User, Building } from 'lucide-react';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
+import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 
 interface FeaturePhoneDetailModalProps {
     isOpen: boolean;
@@ -86,7 +87,7 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                                 <DetailRow label="貸与日" value={item.lendDate} />
                                 <DetailRow label="返却日" value={item.returnDate} />
                                 <DetailRow label="受領提出日" value={item.receiptDate} />
-                                <DetailRow label="契約年数" value={item.contractYears} />
+                                <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                             </div>
                         </div>
 

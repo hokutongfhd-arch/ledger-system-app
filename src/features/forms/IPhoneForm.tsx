@@ -3,6 +3,7 @@ import type { IPhone } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
+import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 interface IPhoneFormProps {
     initialData?: IPhone;
@@ -117,7 +118,8 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         e.preventDefault();
         // Final normalization before submit
         const finalPhone = formatPhoneNumber(formData.phoneNumber);
-        onSubmit({ ...formData, phoneNumber: finalPhone });
+        const finalContractYears = normalizeContractYear(formData.contractYears || '');
+        onSubmit({ ...formData, phoneNumber: finalPhone, contractYears: finalContractYears });
     };
 
     return (

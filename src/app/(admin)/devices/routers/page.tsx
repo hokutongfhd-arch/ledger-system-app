@@ -342,7 +342,7 @@ function RouterListContent() {
 
                 const newRouter: Omit<Router, 'id'> = {
                     no: String(rowData['No.'] || ''),
-                    contractStatus: String(rowData['契約状況'] || ''),
+                    contractStatus: normalizeContractYear(String(rowData['契約状況'] || '')),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['通信キャリア'] || ''),
                     modelNumber: String(rowData['機種型番'] || ''),
@@ -421,7 +421,7 @@ function RouterListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('simNumber')}>SIM電番{getSortIcon('simNumber')}</div>, accessor: (item) => formatPhoneNumber(item.simNumber || '') },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('actualLenderName')}>実貸与先名{getSortIcon('actualLenderName')}</div>, accessor: 'actualLenderName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('userName')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: 'contractYears' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: (item) => normalizeContractYear(item.contractYears || '') },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}

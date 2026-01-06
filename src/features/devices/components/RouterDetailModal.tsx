@@ -4,6 +4,7 @@ import { Router } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
 import { Wifi, MapPin, Calendar, FileText, User, Server, DollarSign, History, Phone } from 'lucide-react';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
+import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 
 interface RouterDetailModalProps {
     isOpen: boolean;
@@ -81,7 +82,7 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
 
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <DetailRow label="契約年数" value={item.contractYears} />
+                                <DetailRow label="契約年数" value={normalizeContractYear(item.contractStatus || '')} />
                                 <DetailRow label="請求元" value={item.biller} />
                                 <DetailRow label="負担先" value={item.costBearer} />
                                 <DetailRow label="費用" value={item.cost ? `¥${item.cost.toLocaleString()}` : '-'} isCode />

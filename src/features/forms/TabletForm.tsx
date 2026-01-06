@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Tablet } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
+import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 interface TabletFormProps {
     initialData?: Tablet;
@@ -60,7 +61,8 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        const finalContractYears = normalizeContractYear(formData.contractYears || '');
+        onSubmit({ ...formData, contractYears: finalContractYears });
     };
 
     return (

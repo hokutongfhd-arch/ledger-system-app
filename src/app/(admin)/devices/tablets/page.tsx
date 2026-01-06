@@ -228,7 +228,7 @@ function TabletListContent() {
                 item.maker || '',
                 item.modelNumber,
                 statusMap[item.status] || item.status,
-                item.contractYears || '',
+                normalizeContractYear(item.contractYears || ''),
                 item.employeeCode || '',
                 item.addressCode || '',
                 item.officeCode || '',
@@ -420,7 +420,7 @@ function TabletListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('officeCode')}>事業所CD{getSortIcon('officeCode')}</div>, accessor: 'officeCode' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('userName')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: 'contractYears' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: (item) => normalizeContractYear(item.contractYears || '') },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('status')}>状況{getSortIcon('status')}</div>, accessor: (item) => (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColorMap[item.status] || 'bg-gray-100 text-gray-800'}`}>

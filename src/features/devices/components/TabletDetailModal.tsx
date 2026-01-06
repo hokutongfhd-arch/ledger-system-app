@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../components/ui/Modal';
+import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Tablet, DeviceStatus } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
 import { Tablet as TabletIcon, MapPin, FileText, User, Building, History } from 'lucide-react';
@@ -68,10 +69,6 @@ export const TabletDetailModal: React.FC<TabletDetailModalProps> = ({
                             {item.maker} / {item.modelNumber}
                         </p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Contract Years</p>
-                        <p className="font-mono text-gray-600 font-bold">{item.contractYears || '-'}</p>
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -87,6 +84,7 @@ export const TabletDetailModal: React.FC<TabletDetailModalProps> = ({
                         <SectionHeader icon={<Building size={18} />} title="管理情報 (Management)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="事業所コード" value={item.officeCode} />
+                            <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                         </div>
                     </div>
 

@@ -3,6 +3,7 @@ import type { Router } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
+import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 interface RouterFormProps {
     initialData?: Router;
@@ -166,9 +167,17 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Final normalization before submit
-        const finalSim = is14Digit ? normalizePhoneNumber(formData.simNumber) : formatPhoneNumber(formData.simNumber);
-        onSubmit({ ...formData, simNumber: finalSim });
+        // Normalize SIM number (ensure no delimiters if 14 digit, else format)
+        const normalizedSim = formatPhoneNumber(formData.simNumber);
+        const normalizedContractStatus = normalizeContractYear(formData.contractStatus || '');
+        const normalizedContractYears = normalizeContractYear(formData.contractYears || '');
+
+        onSubmit({
+            ...formData,
+            simNumber: normalizedSim,
+            contractStatus: normalizedContractStatus,
+            contractYears: normalizedContractYears
+        });
     };
 
     return (

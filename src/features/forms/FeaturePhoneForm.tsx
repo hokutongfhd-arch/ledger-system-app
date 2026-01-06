@@ -3,6 +3,7 @@ import type { FeaturePhone } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
+import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
 interface FeaturePhoneFormProps {
     initialData?: FeaturePhone;
@@ -117,7 +118,8 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         e.preventDefault();
         // Final normalization before submit
         const finalPhone = formatPhoneNumber(formData.phoneNumber);
-        onSubmit({ ...formData, phoneNumber: finalPhone });
+        const finalContractYears = normalizeContractYear(formData.contractYears || '');
+        onSubmit({ ...formData, phoneNumber: finalPhone, contractYears: finalContractYears });
     };
 
     return (
