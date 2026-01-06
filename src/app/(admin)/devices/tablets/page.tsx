@@ -15,6 +15,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { TabletDetailModal } from '../../../../features/devices/components/TabletDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
+import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'terminalCode' | 'contractYears' | 'status' | 'officeCode' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -73,6 +74,7 @@ function TabletListContent() {
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { confirm, ConfirmDialog } = useConfirm();
+    const { showToast } = useToast();
 
     const isAdmin = user?.role === 'admin';
     const hasPermission = (item: Tablet) => {
@@ -378,12 +380,9 @@ function TabletListContent() {
                 // Manual log removed - covered by DB triggers
             }
 
-            await confirm({
-                title: 'インポート完了',
-                description: `成功: ${successCount}件\n失敗: ${errorCount}件`,
-                confirmText: 'OK',
-                cancelText: ''
-            });
+            if (successCount > 0 || errorCount > 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            }
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);

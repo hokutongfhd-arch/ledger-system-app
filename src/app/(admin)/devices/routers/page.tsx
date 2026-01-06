@@ -15,6 +15,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { RouterDetailModal } from '../../../../features/devices/components/RouterDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
+import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'terminalCode' | 'carrier' | 'simNumber' | 'actualLenderName' | 'userName' | 'contractYears';
 type SortOrder = 'asc' | 'desc';
@@ -52,6 +53,7 @@ function RouterListContent() {
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { confirm, ConfirmDialog } = useConfirm();
+    const { showToast } = useToast();
 
     const isAdmin = user?.role === 'admin';
     const hasPermission = (item: Router) => {
@@ -361,12 +363,9 @@ function RouterListContent() {
                 // Manual log removed - covered by DB triggers
             }
 
-            await confirm({
-                title: 'インポート完了',
-                description: `成功: ${successCount}件\n失敗: ${errorCount}件`,
-                confirmText: 'OK',
-                cancelText: ''
-            });
+            if (successCount > 0 || errorCount > 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            }
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);

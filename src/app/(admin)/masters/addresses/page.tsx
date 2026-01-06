@@ -251,12 +251,9 @@ function AddressListContent() {
                 // Manual log removed - already covered by DB triggers for each record
             }
 
-            await confirm({
-                title: 'インポート完了',
-                description: `成功: ${successCount}件\n失敗: ${errorCount}件`,
-                confirmText: 'OK',
-                cancelText: ''
-            });
+            if (successCount > 0 || errorCount > 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            }
 
             if (event.target) event.target.value = '';
         };

@@ -16,6 +16,7 @@ import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { FeaturePhoneDetailModal } from '../../../../features/devices/components/FeaturePhoneDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
+import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -53,6 +54,7 @@ function FeaturePhoneListContent() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
     const { confirm, ConfirmDialog } = useConfirm();
+    const { showToast } = useToast();
 
     const isAdmin = user?.role === 'admin';
     const hasPermission = (item: FeaturePhone) => {
@@ -360,12 +362,9 @@ function FeaturePhoneListContent() {
                 // Manual log removed - covered by DB triggers
             }
 
-            await confirm({
-                title: 'インポート完了',
-                description: `成功: ${successCount}件\n失敗: ${errorCount}件`,
-                confirmText: 'OK',
-                cancelText: ''
-            });
+            if (successCount > 0 || errorCount > 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            }
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);

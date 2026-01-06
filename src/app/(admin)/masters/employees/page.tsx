@@ -299,10 +299,8 @@ function EmployeeListContent() {
                 }
             }
 
-            if (successCount > 0) {
-                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'success');
-            } else {
-                showToast(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件`, 'info');
+            if (successCount > 0 || errorCount > 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
             }
             if (event.target) event.target.value = '';
         };
