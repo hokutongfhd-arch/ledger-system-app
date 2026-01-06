@@ -2,6 +2,7 @@
 import { useData } from '../context/DataContext';
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { formatPhoneNumber } from '../../lib/utils/phoneUtils';
 
 interface AddressDeviceListProps {
     addressCode: string;
@@ -70,7 +71,7 @@ export const AddressDeviceList: React.FC<AddressDeviceListProps> = ({ addressCod
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">電話番号</p>
-                                        <p className="font-medium text-gray-900">{device.phoneNumber}</p>
+                                        <p className="font-medium text-gray-900">{formatPhoneNumber(device.phoneNumber)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">キャリア</p>
@@ -119,7 +120,7 @@ export const AddressDeviceList: React.FC<AddressDeviceListProps> = ({ addressCod
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">電話番号</p>
-                                        <p className="font-medium text-gray-900">{device.phoneNumber}</p>
+                                        <p className="font-medium text-gray-900">{formatPhoneNumber(device.phoneNumber)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">キャリア</p>
@@ -168,7 +169,7 @@ export const AddressDeviceList: React.FC<AddressDeviceListProps> = ({ addressCod
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">SIM電番</p>
-                                        <p className="font-medium text-gray-900">{device.simNumber}</p>
+                                        <p className="font-medium text-gray-900">{formatPhoneNumber(device.simNumber)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">キャリア</p>
