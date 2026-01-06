@@ -132,6 +132,16 @@ function RouterListContent() {
         return 0;
     });
 
+    // データの削除などにより現在のページが無効になった場合に調整する
+    useEffect(() => {
+        const totalPages = Math.ceil(sortedData.length / pageSize);
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+        } else if (totalPages === 0 && currentPage !== 1) {
+            setCurrentPage(1);
+        }
+    }, [sortedData.length, pageSize, currentPage]);
+
     const filteredData = sortedData;
     const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -316,6 +326,10 @@ function RouterListContent() {
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
+
+                // 行が実質的に空（すべてのセルが空）であるかチェック
+                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
+                if (isRowEmpty) continue;
 
                 const rowData: any = {};
                 headers.forEach((header, index) => {

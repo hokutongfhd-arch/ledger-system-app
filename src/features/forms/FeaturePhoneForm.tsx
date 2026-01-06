@@ -2,16 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { FeaturePhone } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
 
 interface FeaturePhoneFormProps {
     initialData?: FeaturePhone;
-    onSubmit: (data: Omit<FeaturePhone, 'id'>) => void;
+    onSubmit: (data: Omit<FeaturePhone, 'id'> & { id?: string }) => void;
     onCancel: () => void;
 }
 
 export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData, onSubmit, onCancel }) => {
     const { employees, addresses } = useData();
-    const [formData, setFormData] = useState<Omit<FeaturePhone, 'id'>>({
+    const [formData, setFormData] = useState<Omit<FeaturePhone, 'id'> & { id?: string }>({
+        id: '',
         carrier: '',
         phoneNumber: '',
         managementNumber: '',
@@ -27,6 +29,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         contractYears: '',
         status: '貸出準備中',
     });
+    const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
 
     // Prepare Options
     const employeeOptions = useMemo(() => {
@@ -47,8 +50,46 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
 
     useEffect(() => {
         if (initialData) {
-            const { id, ...rest } = initialData;
-            setFormData(rest);
+            setFormData(initialData);
+
+            const normalized = normalizePhoneNumber(initialData.phoneNumber || '');
+
+            // 補完後の正規化番号を取得（iPhoneフォームと同様のロジック）
+            let processed = normalized;
+            if (processed.length > 0 && processed[0] !== '0') {
+                if (processed.length === 10 || processed.length === 9) {
+                    processed = '0' + processed;
+                }
+            }
+
+            if (processed.length === 11) {
+                setPhoneParts({
+                    part1: processed.slice(0, 3),
+                    part2: processed.slice(3, 7),
+                    part3: processed.slice(7, 11),
+                });
+            } else if (processed.length === 10) {
+                if (processed.startsWith('03') || processed.startsWith('06')) {
+                    setPhoneParts({
+                        part1: processed.slice(0, 2),
+                        part2: processed.slice(2, 6),
+                        part3: processed.slice(6, 10),
+                    });
+                } else {
+                    setPhoneParts({
+                        part1: processed.slice(0, 3),
+                        part2: processed.slice(3, 6),
+                        part3: processed.slice(6, 10),
+                    });
+                }
+            } else if (initialData.phoneNumber?.includes('-')) {
+                const parts = initialData.phoneNumber.split('-');
+                setPhoneParts({
+                    part1: parts[0] || '',
+                    part2: parts[1] || '',
+                    part3: parts[2] || '',
+                });
+            }
         }
     }, [initialData]);
 
@@ -61,9 +102,22 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        const onlyNums = value.replace(/[^0-9]/g, '');
+        const newParts = { ...phoneParts, [name]: onlyNums };
+        setPhoneParts(newParts);
+
+        // Update main phoneNumber field
+        const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
+        setFormData(prev => ({ ...prev, phoneNumber: combined }));
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        // Final normalization before submit
+        const finalPhone = formatPhoneNumber(formData.phoneNumber);
+        onSubmit({ ...formData, phoneNumber: finalPhone });
     };
 
     return (
@@ -96,14 +150,40 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
-                            <input
-                                type="tel"
-                                name="phoneNumber"
-                                value={formData.phoneNumber}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                required
-                            />
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    name="part1"
+                                    value={phoneParts.part1}
+                                    onChange={handlePhoneChange}
+                                    maxLength={3}
+                                    className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    placeholder="090"
+                                    required
+                                />
+                                <span className="text-gray-500">-</span>
+                                <input
+                                    type="text"
+                                    name="part2"
+                                    value={phoneParts.part2}
+                                    onChange={handlePhoneChange}
+                                    maxLength={4}
+                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    placeholder="1234"
+                                    required
+                                />
+                                <span className="text-gray-500">-</span>
+                                <input
+                                    type="text"
+                                    name="part3"
+                                    value={phoneParts.part3}
+                                    onChange={handlePhoneChange}
+                                    maxLength={4}
+                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    placeholder="5678"
+                                    required
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">キャリア</label>

@@ -15,6 +15,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { FeaturePhoneDetailModal } from '../../../../features/devices/components/FeaturePhoneDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
+import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
 type SortOrder = 'asc' | 'desc';
@@ -144,6 +145,16 @@ function FeaturePhoneListContent() {
         return 0;
     });
 
+    // データの削除などにより現在のページが無効になった場合に調整する
+    useEffect(() => {
+        const totalPages = Math.ceil(sortedData.length / pageSize);
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+        } else if (totalPages === 0 && currentPage !== 1) {
+            setCurrentPage(1);
+        }
+    }, [sortedData.length, pageSize, currentPage]);
+
     const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,6 +231,20 @@ function FeaturePhoneListContent() {
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
+
+        // 1000行分をシートの範囲として明示的に設定する
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: totalRows, c: headers.length - 1 }
+        });
+
+        // 電話番号列 (インデックス 2 = C列) を文字列形式に設定
+        for (let R = 1; R <= totalRows; ++R) {
+            const ref = XLSX.utils.encode_cell({ r: R, c: 2 });
+            ws[ref] = { t: 's', v: '', z: '@' };
+        }
+
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
         XLSX.writeFile(wb, 'ガラホエクセルフォーマット.xlsx');
     };
@@ -301,6 +326,10 @@ function FeaturePhoneListContent() {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
 
+                // 行が実質的に空（すべてのセルが空）であるかチェック
+                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
+                if (isRowEmpty) continue;
+
                 const rowData: any = {};
                 headers.forEach((header, index) => {
                     rowData[header] = row[index];
@@ -317,7 +346,7 @@ function FeaturePhoneListContent() {
 
                 const newFeaturePhone: Omit<FeaturePhone, 'id'> = {
                     carrier: String(rowData['キャリア'] || ''),
-                    phoneNumber: String(rowData['電話番号'] || ''),
+                    phoneNumber: formatPhoneNumber(String(rowData['電話番号'] || '').trim()),
                     managementNumber: String(rowData['管理番号'] || ''),
                     employeeId: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['住所コード'] || ''),
@@ -387,7 +416,7 @@ function FeaturePhoneListContent() {
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('managementNumber')}>管理番号{getSortIcon('managementNumber')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.managementNumber}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('modelName')}>機種名{getSortIcon('modelName')}</div>, accessor: 'modelName' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: 'phoneNumber' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: (item) => formatPhoneNumber(item.phoneNumber) },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('userName')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('lendDate')}>貸与日{getSortIcon('lendDate')}</div>, accessor: 'lendDate' },

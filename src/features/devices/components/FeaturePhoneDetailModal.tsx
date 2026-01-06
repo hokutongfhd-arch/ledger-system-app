@@ -3,6 +3,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { FeaturePhone } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
 import { Phone, MapPin, Calendar, FileText, User, Building } from 'lucide-react';
+import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 
 interface FeaturePhoneDetailModalProps {
     isOpen: boolean;
@@ -47,10 +48,16 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                                 {item.status}
                             </span>
                         </div>
-                        <p className="text-gray-500 text-sm flex items-center gap-1">
-                            <Phone size={14} />
-                            {item.modelName} / {item.carrier}
-                        </p>
+                        <div className="space-y-1">
+                            <p className="text-gray-500 text-sm flex items-center gap-1">
+                                <Phone size={14} />
+                                {item.modelName} / {item.carrier}
+                            </p>
+                            <p className="text-blue-600 font-bold text-lg flex items-center gap-2">
+                                <span className="text-xs text-gray-400 font-normal">TEL:</span>
+                                {formatPhoneNumber(item.phoneNumber)}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -93,8 +100,7 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                 </div>
 
                 {/* Footer */}
-                <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between">
-                    <span>Phone Number: {item.phoneNumber}</span>
+                <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-end">
                     <span>Device ID: {item.id}</span>
                 </div>
             </div>

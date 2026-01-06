@@ -108,6 +108,23 @@ function AddressListContent() {
     const handleDownloadTemplate = () => {
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
+
+        // 1000行分をシートの範囲として明示的に設定する
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: totalRows, c: headers.length - 1 }
+        });
+
+        // テキスト形式として扱うべき列を設定 (住所コード: B, エリアコード: E, TEL: F, FAX: G, 〒: H)
+        const textCols = [1, 4, 5, 6, 7];
+        for (let R = 1; R <= totalRows; ++R) {
+            textCols.forEach(C => {
+                const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                ws[ref] = { t: 's', v: '', z: '@' };
+            });
+        }
+
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
         XLSX.writeFile(wb, '住所マスタエクセルフォーマット.xlsx');
     };
@@ -181,6 +198,10 @@ function AddressListContent() {
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
+
+                // 行が実質的に空（すべてのセルが空）であるかチェック
+                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
+                if (isRowEmpty) continue;
 
                 const rowData: any = {};
                 fileHeaders.forEach((header, index) => {
@@ -318,6 +339,16 @@ function AddressListContent() {
         }
         return 0;
     });
+
+    // データの削除などにより現在のページが無効になった場合に調整する
+    useEffect(() => {
+        const totalPages = Math.ceil(sortedData.length / pageSize);
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+        } else if (totalPages === 0 && currentPage !== 1) {
+            setCurrentPage(1);
+        }
+    }, [sortedData.length, pageSize, currentPage]);
 
     const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
