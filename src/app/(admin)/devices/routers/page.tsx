@@ -16,6 +16,7 @@ import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { RouterDetailModal } from '../../../../features/devices/components/RouterDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { useToast } from '../../../../features/context/ToastContext';
+import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
 
 type SortKey = 'terminalCode' | 'carrier' | 'simNumber' | 'actualLenderName' | 'userName' | 'contractYears';
 type SortOrder = 'asc' | 'desc';
@@ -232,6 +233,21 @@ function RouterListContent() {
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers]);
+
+        // 1000行分をシートの範囲として明示的に設定する
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: totalRows, c: headers.length - 1 }
+        });
+
+        // SIM電番列 (インデックス 5 = F列) を文字列形式に設定
+        for (let R = 1; R <= totalRows; ++R) {
+            const ref = XLSX.utils.encode_cell({ r: R, c: 5 });
+            // セルを明示的に文字列タイプとして初期化し、テキスト書式を適用
+            ws[ref] = { t: 's', v: '', z: '@' };
+        }
+
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
         XLSX.writeFile(wb, 'モバイルルーターエクセルフォーマット.xlsx');
     };
@@ -330,7 +346,7 @@ function RouterListContent() {
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['通信キャリア'] || ''),
                     modelNumber: String(rowData['機種型番'] || ''),
-                    simNumber: String(rowData['SIM電番'] || ''),
+                    simNumber: formatPhoneNumber(String(rowData['SIM電番'] || '').trim()),
                     dataCapacity: String(rowData['通信容量'] || ''),
                     terminalCode: String(rowData['端末CD'] || ''),
                     employeeCode: String(rowData['社員コード'] || ''),
@@ -402,7 +418,7 @@ function RouterListContent() {
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>通信キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('simNumber')}>SIM電番{getSortIcon('simNumber')}</div>, accessor: 'simNumber' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('simNumber')}>SIM電番{getSortIcon('simNumber')}</div>, accessor: (item) => formatPhoneNumber(item.simNumber || '') },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('actualLenderName')}>実貸与先名{getSortIcon('actualLenderName')}</div>, accessor: 'actualLenderName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('userName')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: 'contractYears' },

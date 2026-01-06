@@ -23,6 +23,11 @@ export const formatPhoneNumber = (phone: string): string => {
         }
     }
 
+    // 14桁 (例外ルール: ハイフンなし)
+    if (normalized.length === 14) {
+        return normalized;
+    }
+
     // 11桁 (携帯電話など) -> 3-4-4
     if (normalized.length === 11) {
         return `${normalized.slice(0, 3)}-${normalized.slice(3, 7)}-${normalized.slice(7, 11)}`;
@@ -38,5 +43,6 @@ export const formatPhoneNumber = (phone: string): string => {
         return `${normalized.slice(0, 3)}-${normalized.slice(3, 6)}-${normalized.slice(6, 10)}`;
     }
 
-    return phone;
+    // それ以外は正規化されたものを返す（ハイフン除去などの最低限の整形）
+    return normalized || phone;
 };

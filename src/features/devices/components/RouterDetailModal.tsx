@@ -2,7 +2,8 @@ import React from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { Router } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
-import { Wifi, MapPin, Calendar, FileText, User, Server, DollarSign, History } from 'lucide-react';
+import { Wifi, MapPin, Calendar, FileText, User, Server, DollarSign, History, Phone } from 'lucide-react';
+import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 
 interface RouterDetailModalProps {
     isOpen: boolean;
@@ -25,14 +26,6 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
     // Logic for Address vs OfficeCode display could be unified, typically finding by addressCode
     const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
 
-    // Status logic for Router is strictly 'contractStatus' text-based in current type
-    // We can colorize based on common values if known, or just use default.
-    const getStatusColor = (status: string) => {
-        if (!status) return 'bg-gray-50 text-gray-500 border-gray-100';
-        if (status.includes('解約') || status.includes('休止')) return 'bg-red-100 text-red-700 border-red-200';
-        if (status.includes('未')) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-        return 'bg-green-100 text-green-700 border-green-200';
-    };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="ルーター デバイス詳細">
@@ -41,16 +34,17 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                 {/* Header Section */}
                 <div className="flex justify-between items-start border-b border-gray-100 pb-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-2xl font-bold text-gray-800 tracking-tight">{item.terminalCode}</h3>
-                            <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.contractStatus)}`}>
-                                {item.contractStatus || 'ステータス不明'}
-                            </span>
+                        <h3 className="text-2xl font-bold text-gray-800 tracking-tight mb-1">{item.terminalCode}</h3>
+                        <div className="text-gray-500 text-sm space-y-1">
+                            <div className="flex items-center gap-1">
+                                <Wifi size={14} />
+                                {item.modelNumber} / {item.carrier}
+                            </div>
+                            <div className="text-blue-600 font-bold text-lg flex items-center gap-1 mt-1">
+                                <Phone size={16} />
+                                {formatPhoneNumber(item.simNumber || '')}
+                            </div>
                         </div>
-                        <p className="text-gray-500 text-sm flex items-center gap-1">
-                            <Wifi size={14} />
-                            {item.carrier} / {item.modelNumber}
-                        </p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Data Cap</p>
@@ -88,7 +82,6 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <DetailRow label="契約年数" value={item.contractYears} />
-                                <DetailRow label="SIM番号" value={item.simNumber} isCode />
                                 <DetailRow label="請求元" value={item.biller} />
                                 <DetailRow label="負担先" value={item.costBearer} />
                                 <DetailRow label="費用" value={item.cost ? `¥${item.cost.toLocaleString()}` : '-'} isCode />

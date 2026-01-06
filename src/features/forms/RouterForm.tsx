@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Router } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
 
 interface RouterFormProps {
     initialData?: Router;
@@ -37,6 +38,8 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         contractYears: '',
         employeeCode: '',
     });
+    const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
+    const [is14Digit, setIs14Digit] = useState(false);
 
     // Prepare Options
     const employeeOptions = useMemo(() => {
@@ -66,6 +69,54 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             }
 
             setFormData({ ...rest, notes: mergedNotes, returnDate: '' });
+
+            const simNum = initialData.simNumber || '';
+            const normalized = normalizePhoneNumber(simNum);
+
+            if (normalized.length === 14) {
+                setIs14Digit(true);
+                setPhoneParts({ part1: normalized, part2: '', part3: '' });
+            } else {
+                setIs14Digit(false);
+                // 補完後の正規化番号を取得
+                let processed = normalized;
+                if (processed.length > 0 && processed[0] !== '0') {
+                    if (processed.length === 10 || processed.length === 9) {
+                        processed = '0' + processed;
+                    }
+                }
+
+                if (processed.length === 11) {
+                    setPhoneParts({
+                        part1: processed.slice(0, 3),
+                        part2: processed.slice(3, 7),
+                        part3: processed.slice(7, 11),
+                    });
+                } else if (processed.length === 10) {
+                    if (processed.startsWith('03') || processed.startsWith('06')) {
+                        setPhoneParts({
+                            part1: processed.slice(0, 2),
+                            part2: processed.slice(2, 6),
+                            part3: processed.slice(6, 10),
+                        });
+                    } else {
+                        setPhoneParts({
+                            part1: processed.slice(0, 3),
+                            part2: processed.slice(3, 6),
+                            part3: processed.slice(6, 10),
+                        });
+                    }
+                } else if (simNum.includes('-')) {
+                    const parts = simNum.split('-');
+                    setPhoneParts({
+                        part1: parts[0] || '',
+                        part2: parts[1] || '',
+                        part3: parts[2] || '',
+                    });
+                } else {
+                    setPhoneParts({ part1: normalized, part2: '', part3: '' });
+                }
+            }
         }
     }, [initialData]);
 
@@ -81,9 +132,43 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        const onlyNums = value.replace(/[^0-9]/g, '');
+
+        if (is14Digit) {
+            setPhoneParts({ part1: onlyNums, part2: '', part3: '' });
+            setFormData(prev => ({ ...prev, simNumber: onlyNums }));
+        } else {
+            const newParts = { ...phoneParts, [name]: onlyNums };
+            setPhoneParts(newParts);
+            const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
+            setFormData(prev => ({ ...prev, simNumber: combined }));
+        }
+    };
+
+    const togglePhoneMode = () => {
+        const nextMode = !is14Digit;
+        setIs14Digit(nextMode);
+        // Reset or convert current value
+        const currentSim = normalizePhoneNumber(formData.simNumber);
+        if (nextMode) {
+            // To 14-digit mode
+            setPhoneParts({ part1: currentSim, part2: '', part3: '' });
+            setFormData(prev => ({ ...prev, simNumber: currentSim }));
+        } else {
+            // To normal mode (try to split)
+            setPhoneParts({ part1: currentSim.slice(0, 3), part2: currentSim.slice(3, 7), part3: currentSim.slice(7, 11) });
+            const combined = formatPhoneNumber(currentSim);
+            setFormData(prev => ({ ...prev, simNumber: combined }));
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        // Final normalization before submit
+        const finalSim = is14Digit ? normalizePhoneNumber(formData.simNumber) : formatPhoneNumber(formData.simNumber);
+        onSubmit({ ...formData, simNumber: finalSim });
     };
 
     return (
@@ -126,8 +211,59 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <input type="text" name="modelNumber" value={formData.modelNumber} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">SIM電番</label>
-                            <input type="text" name="simNumber" value={formData.simNumber} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <div className="flex justify-between items-end mb-1">
+                                <label className="block text-sm font-medium text-gray-700">SIM電番</label>
+                                <button
+                                    type="button"
+                                    onClick={togglePhoneMode}
+                                    className="text-[10px] text-blue-600 hover:underline"
+                                >
+                                    {is14Digit ? '通常(11桁)入力へ' : '14桁入力へ'}
+                                </button>
+                            </div>
+                            {is14Digit ? (
+                                <input
+                                    type="text"
+                                    name="part1"
+                                    value={phoneParts.part1}
+                                    onChange={handlePhoneChange}
+                                    maxLength={14}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono"
+                                    placeholder="14桁の番号を入力"
+                                />
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        name="part1"
+                                        value={phoneParts.part1}
+                                        onChange={handlePhoneChange}
+                                        maxLength={3}
+                                        className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                        placeholder="090"
+                                    />
+                                    <span className="text-gray-500">-</span>
+                                    <input
+                                        type="text"
+                                        name="part2"
+                                        value={phoneParts.part2}
+                                        onChange={handlePhoneChange}
+                                        maxLength={4}
+                                        className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                        placeholder="1234"
+                                    />
+                                    <span className="text-gray-500">-</span>
+                                    <input
+                                        type="text"
+                                        name="part3"
+                                        value={phoneParts.part3}
+                                        onChange={handlePhoneChange}
+                                        maxLength={4}
+                                        className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                        placeholder="5678"
+                                    />
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">通信容量</label>
