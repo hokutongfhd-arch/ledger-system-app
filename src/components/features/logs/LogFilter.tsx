@@ -64,7 +64,7 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                 </div>
 
                 {/* Actor Search */}
-                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
+                <div className="col-span-12 sm:col-span-6 lg:col-span-4 flex flex-col gap-1">
                     <label className="text-xs text-text-muted font-medium flex items-center gap-1">
                         <Search size={12} /> 実行者 (氏名 or 社員CD)
                     </label>
@@ -75,6 +75,20 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                         onChange={(e) => onUpdate('actor', e.target.value)}
                         className="w-full text-sm border border-border rounded px-3 py-1.5 bg-background-subtle focus:ring-2 focus:ring-blue-100 outline-none"
                     />
+                </div>
+
+                {/* Response Status */}
+                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
+                    <label className="text-xs text-text-muted font-medium">対応</label>
+                    <select
+                        value={filters.responseStatus}
+                        onChange={(e) => onUpdate('responseStatus', e.target.value)}
+                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
+                    >
+                        <option value="all">すべて</option>
+                        <option value="responded">対応済</option>
+                        <option value="pending">未対応</option>
+                    </select>
                 </div>
 
                 {/* Result */}
@@ -90,34 +104,6 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                         <option value="">すべて</option>
                         <option value="success">成功</option>
                         <option value="failure">失敗</option>
-                    </select>
-                </div>
-
-                {/* Target */}
-                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
-                    <label className="text-xs text-text-muted font-medium">対象種別</label>
-                    <select
-                        value={filters.target}
-                        onChange={(e) => onUpdate('target', e.target.value)}
-                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
-                    >
-                        <option value="">すべて</option>
-                        {Object.entries(TARGET_NAMES).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                        ))}
-                    </select>
-                </div>
-                {/* Response Status */}
-                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
-                    <label className="text-xs text-text-muted font-medium">対応</label>
-                    <select
-                        value={filters.responseStatus}
-                        onChange={(e) => onUpdate('responseStatus', e.target.value)}
-                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
-                    >
-                        <option value="all">すべて</option>
-                        <option value="responded">対応済</option>
-                        <option value="pending">未対応</option>
                     </select>
                 </div>
             </div>

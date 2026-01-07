@@ -159,17 +159,21 @@ export async function saveAuditReportHistory(report: Partial<AuditReport>) {
 
         if (error) throw error;
 
-        // 操作ログに記録
-        await supabaseAdmin.from('logs').insert([{
-            table_name: 'audit_reports',
-            operation: 'INSERT',
-            action: 'report_generate',
-            target: `REPORT: ${report.report_type}`,
-            new_data: report,
+        // 監査ログに記録 (操作ログ 'logs' ではなく 'audit_logs')
+        await supabaseAdmin.from('audit_logs').insert([{
+            action_type: 'GENERATE',
+            target_type: 'report',
+            target_id: data.id,
+            result: 'success',
+            actor_employee_code: report.generated_by || 'SYSTEM',
             actor_name: report.generated_by_name || 'SYSTEM',
-            actor_code: report.generated_by || 'SYSTEM',
             occurred_at: new Date().toISOString(),
-            created_at: new Date().toISOString()
+            metadata: {
+                report_type: report.report_type,
+                period_start: report.period_start,
+                period_end: report.period_end,
+                message: `監査レポート生成: ${report.report_type}`
+            }
         }]);
 
         return { success: true, report: data };
