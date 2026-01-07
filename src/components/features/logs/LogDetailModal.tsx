@@ -52,9 +52,9 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
     const isLargeMetadata = metadataStr.length > 2000;
 
     // Determine if this log needs a response or already has one
-    const needsResponse = isAnomaly ||
+    const needsResponse = (isAnomaly ||
         isFailure ||
-        (log.severity && log.severity !== 'low');
+        (log.severity && log.severity !== 'low')) && log.actionRaw !== 'GENERATE';
     const hasResponse = !!log.response_status || log.is_acknowledged;
     const showResponseSection = needsResponse || hasResponse;
 

@@ -61,8 +61,10 @@ export async function fetchAuditLogsServer(params: {
             query = query.eq('is_acknowledged', true);
         } else if (params.responseStatus === 'pending') {
             // "Pending" means not acknowledged AND needs response
+            // Exclude GENERATE from pending list unless it's a failure
             query = query.eq('is_acknowledged', false)
-                .or('action_type.eq.ANOMALY_DETECTED,result.eq.failure,severity.neq.low');
+                .or('action_type.eq.ANOMALY_DETECTED,result.eq.failure,severity.neq.low')
+                .neq('action_type', 'GENERATE');
         }
 
         if (params.actor) {

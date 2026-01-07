@@ -53,19 +53,6 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
             setGeneratedReport(historyResult.report);
             toast.success('レポートの生成が完了しました。プレビューから確認・ダウンロードが可能です。');
 
-            // 監査ログに記録
-            await logger.info({
-                action: 'GENERATE',
-                targetType: 'report',
-                message: `監査用PDFレポート（${reportType === 'summary' ? '概要' : '詳細'}）を生成しました。対象期間: ${startDate} 〜 ${endDate}`,
-                isAcknowledged: true, // 対応：完了 で登録
-                actor: {
-                    authId: user?.authId,
-                    employeeCode: user?.code,
-                    name: user?.name
-                }
-            });
-
         } catch (error: any) {
             console.error('Report Generation Error:', error);
             toast.error(`生成に失敗しました: ${error.message}`);
