@@ -258,7 +258,14 @@ function EmployeeListContent() {
                     rowData[header] = row[index];
                 });
 
-                const code = String(rowData['社員コード'] || '');
+                const toHalfWidth = (str: string) => {
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+                    });
+                };
+
+                const rawCode = String(rowData['社員コード'] || '');
+                const code = toHalfWidth(rawCode).trim();
                 if (!code) {
                     // checks are implicitly handled by empty string check later or server side, 
                     // but here we focus on uniqueness.
@@ -300,8 +307,8 @@ function EmployeeListContent() {
                     nameKana: String(rowData['氏名カナ'] || ''),
                     birthDate: formatDate(rowData['生年月日']),
                     age: parseNumber(rowData['年齢']),
-                    areaCode: String(rowData['エリアコード'] || ''),
-                    addressCode: String(rowData['住所コード'] || ''),
+                    areaCode: toHalfWidth(String(rowData['エリアコード'] || '')).trim(),
+                    addressCode: toHalfWidth(String(rowData['住所コード'] || '')).trim(),
                     joinDate: formatDate(rowData['入社年月日']),
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
@@ -313,7 +320,7 @@ function EmployeeListContent() {
                     role: String(rowData['権限'] || '') === '管理者' ? 'admin' : 'user',
                     password: String(rowData['パスワード'] || ''),
                     companyNo: '',
-                    departmentCode: '',
+                    departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),
                     email: ''
                 };
 

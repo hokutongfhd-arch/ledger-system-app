@@ -164,6 +164,11 @@ function AreaListContent() {
                 }
             }
 
+            // Uniqueness Check Preparation
+            const existingCodes = new Set(areas.map(a => a.areaCode));
+            const processedCodes = new Set<string>();
+            const errors: string[] = [];
+
             let successCount = 0;
             let errorCount = 0;
 
@@ -180,17 +185,55 @@ function AreaListContent() {
                     rowData[header] = row[index];
                 });
 
+                const toHalfWidth = (str: string) => {
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+                    });
+                };
+
+                const rawCode = String(rowData['エリアコード'] || '');
+                const code = toHalfWidth(rawCode).trim();
+
+                // Check for duplicates
+                if (existingCodes.has(code)) {
+                    errors.push(`${i + 2}行目: エリアコード「${code}」は既に存在します`);
+                    errorCount++;
+                    continue;
+                }
+                if (processedCodes.has(code)) {
+                    errors.push(`${i + 2}行目: エリアコード「${code}」がファイル内で重複しています`);
+                    errorCount++;
+                    continue;
+                }
+
                 const newArea: Omit<Area, 'id'> = {
-                    areaCode: String(rowData['エリアコード'] || ''),
+                    areaCode: code,
                     areaName: String(rowData['エリア名'] || '')
                 };
 
                 try {
                     await addArea(newArea, true, true);
+                    processedCodes.add(code);
                     successCount++;
                 } catch (error) {
                     errorCount++;
                 }
+            }
+
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <ul className="list-disc pl-5 text-sm text-red-600">
+                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
             }
 
             if (successCount > 0) {

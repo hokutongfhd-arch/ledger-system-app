@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Area } from '../../lib/types';
 
+import { useData } from '../context/DataContext';
 
 interface AreaFormProps {
     initialData?: Area;
@@ -13,6 +14,9 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
         areaCode: '',
         areaName: '',
     });
+    const { areas } = useData();
+    const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+    const codeRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (initialData) {
@@ -28,6 +32,25 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Uniqueness Check
+        const isDuplicate = areas.some(area =>
+            area.areaCode === formData.areaCode &&
+            (!initialData || area.id !== initialData.id)
+        );
+
+        if (isDuplicate) {
+            setErrorFields(prev => new Set(prev).add('areaCode'));
+            setFormData(prev => ({ ...prev, areaCode: '' }));
+
+            // Scroll to the code input
+            if (codeRef.current) {
+                codeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                codeRef.current.focus();
+            }
+            return;
+        }
+
         onSubmit(formData);
     };
 
@@ -40,13 +63,24 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">エリアコード</label>
                             <input
+                                ref={codeRef}
                                 type="text"
                                 name="areaCode"
                                 value={formData.areaCode}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(e) => {
+                                    handleChange(e);
+                                    if (errorFields.has('areaCode')) {
+                                        const next = new Set(errorFields);
+                                        next.delete('areaCode');
+                                        setErrorFields(next);
+                                    }
+                                }}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('areaCode') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                 required
                             />
+                            {errorFields.has('areaCode') && (
+                                <p className="text-red-500 text-sm mt-1">既に登録されているエリアコードです</p>
+                            )}
                         </div>
 
                         <div>
