@@ -13,6 +13,8 @@ import { clsx } from 'clsx';
 import LogDetailModal from '../../../components/features/logs/LogDetailModal';
 import { useAuditLogs } from '../../../features/logs/useAuditLogs';
 import { ReportGenerationModal } from '../../../components/features/audit/ReportGenerationModal';
+import { fetchAuditLogByIdServer } from '../../../features/logs/logs.server';
+import { logService } from '../../../features/logs/log.service';
 
 export default function AuditDashboardPage() {
     const { data, loading, range, setRange, refresh } = useAuditDashboard();
@@ -368,8 +370,23 @@ export default function AuditDashboardPage() {
                     onSubmitResponse={async (logId, status, note, adminUserId) => {
                         const res = await submitResponse(logId, status, note, adminUserId);
                         if (res.success) {
+                            // 1. Refresh dashboard data (this might remove the log from recentAnomalies list)
                             refresh();
+
+                            // 2. Refresh notifications
                             setTimeout(() => refreshNotifications(), 500);
+
+                            // 3. Manually fetch the updated log to keep the modal open and up-to-date
+                            //    because 'refresh()' might remove it from the 'recentAnomalies' list if it's now acknowledged.
+                            try {
+                                const { log: updatedDbLog } = await fetchAuditLogByIdServer(logId);
+                                if (updatedDbLog) {
+                                    const mappedLog = logService.mapLogFromDb(updatedDbLog);
+                                    setSelectedLog(mappedLog);
+                                }
+                            } catch (error) {
+                                console.error('Failed to refresh selected log:', error);
+                            }
                         }
                         return res;
                     }}
