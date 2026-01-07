@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { FeaturePhone } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
@@ -12,7 +12,10 @@ interface FeaturePhoneFormProps {
 }
 
 export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData, onSubmit, onCancel }) => {
-    const { employees, addresses } = useData();
+    const { employees, addresses, featurePhones } = useData();
+    const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+    const managementNumberRef = useRef<HTMLInputElement>(null);
+    const phoneNumberRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState<Omit<FeaturePhone, 'id'> & { id?: string }>({
         id: '',
         carrier: '',
@@ -97,6 +100,12 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (errorFields.has(name)) {
+            const next = new Set(errorFields);
+            next.delete(name);
+            setErrorFields(next);
+        }
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -109,6 +118,12 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         const newParts = { ...phoneParts, [name]: onlyNums };
         setPhoneParts(newParts);
 
+        if (errorFields.has('phoneNumber')) {
+            const next = new Set(errorFields);
+            next.delete('phoneNumber');
+            setErrorFields(next);
+        }
+
         // Update main phoneNumber field
         const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
         setFormData(prev => ({ ...prev, phoneNumber: combined }));
@@ -116,6 +131,49 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrorFields = new Set<string>();
+        let firstErrorField: HTMLElement | null = null;
+
+        // Check Management Number Uniqueness
+        const isManagementNumberDuplicate = featurePhones.some(item =>
+            item.managementNumber === formData.managementNumber &&
+            (!initialData || item.id !== initialData.id)
+        );
+        if (isManagementNumberDuplicate) {
+            newErrorFields.add('managementNumber');
+            if (!firstErrorField) firstErrorField = managementNumberRef.current;
+        }
+
+        // Check Phone Number Uniqueness (normalize for comparison)
+        const currentPhone = `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
+        const isPhoneNumberDuplicate = featurePhones.some(item =>
+            normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(currentPhone) &&
+            (!initialData || item.id !== initialData.id)
+        );
+        if (isPhoneNumberDuplicate) {
+            newErrorFields.add('phoneNumber');
+            if (!firstErrorField) firstErrorField = phoneNumberRef.current; // Focus on the first part
+        }
+
+        if (newErrorFields.size > 0) {
+            setErrorFields(newErrorFields);
+
+            if (newErrorFields.has('managementNumber')) {
+                setFormData(prev => ({ ...prev, managementNumber: '' }));
+            }
+            if (newErrorFields.has('phoneNumber')) {
+                setPhoneParts({ part1: '', part2: '', part3: '' });
+                setFormData(prev => ({ ...prev, phoneNumber: '' }));
+            }
+
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
+            }
+            return;
+        }
+
         // Final normalization before submit
         const finalPhone = formatPhoneNumber(formData.phoneNumber);
         const finalContractYears = normalizeContractYear(formData.contractYears || '');
@@ -134,10 +192,13 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 type="text"
                                 name="managementNumber"
                                 value={formData.managementNumber}
+
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('managementNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                 required
+                                ref={managementNumberRef}
                             />
+                            {errorFields.has('managementNumber') && <p className="text-red-500 text-sm mt-1">既に登録されている管理番号です</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">機種名</label>
@@ -157,11 +218,13 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                     type="text"
                                     name="part1"
                                     value={phoneParts.part1}
+
                                     onChange={handlePhoneChange}
                                     maxLength={3}
-                                    className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    className={`w-16 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('phoneNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                     placeholder="090"
                                     required
+                                    ref={phoneNumberRef}
                                 />
                                 <span className="text-gray-500">-</span>
                                 <input
@@ -170,7 +233,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                     value={phoneParts.part2}
                                     onChange={handlePhoneChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('phoneNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                     placeholder="1234"
                                     required
                                 />
@@ -181,11 +244,12 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                     value={phoneParts.part3}
                                     onChange={handlePhoneChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('phoneNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                     placeholder="5678"
                                     required
                                 />
                             </div>
+                            {errorFields.has('phoneNumber') && <p className="text-red-500 text-sm mt-1">既に登録されている電話番号です</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">キャリア</label>

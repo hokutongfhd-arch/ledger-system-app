@@ -310,6 +310,12 @@ function FeaturePhoneListContent() {
             let successCount = 0;
             let errorCount = 0;
 
+            const existingManagementNumbers = new Set(featurePhones.map(d => d.managementNumber));
+            const existingPhoneNumbers = new Set(featurePhones.map(d => d.phoneNumber.replace(/-/g, '')));
+            const processedManagementNumbers = new Set<string>();
+            const processedPhoneNumbers = new Set<string>();
+            const errors: string[] = [];
+
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -323,6 +329,64 @@ function FeaturePhoneListContent() {
                     rowData[header] = row[index];
                 });
 
+                const toHalfWidth = (str: string) => {
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+                    });
+                };
+
+                const normalizePhone = (phone: string) => {
+                    const hw = toHalfWidth(phone).trim();
+                    return hw.replace(/-/g, '');
+                };
+
+                let rowHasError = false;
+
+                // Check Management Number
+                const rawManagementNumber = String(rowData['管理番号'] || '');
+                const managementNumber = toHalfWidth(rawManagementNumber).trim();
+
+                if (!managementNumber) {
+                    errors.push(`${i + 2}行目: 管理番号が空です`);
+                    rowHasError = true;
+                } else {
+                    if (existingManagementNumbers.has(managementNumber)) {
+                        errors.push(`${i + 2}行目: 管理番号「${managementNumber}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedManagementNumbers.has(managementNumber)) {
+                        errors.push(`${i + 2}行目: 管理番号「${managementNumber}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                // Check Phone Number
+                const rawPhoneNumber = String(rowData['電話番号'] || '');
+                const phoneNumber = formatPhoneNumber(toHalfWidth(rawPhoneNumber).trim());
+
+                // Re-calculate derived values since we need them for insertion
+                const normalizedPhone = normalizePhone(phoneNumber);
+
+                if (!phoneNumber) {
+                    errors.push(`${i + 2}行目: 電話番号が空です`);
+                    rowHasError = true;
+                } else {
+                    if (existingPhoneNumbers.has(normalizedPhone)) {
+                        errors.push(`${i + 2}行目: 電話番号「${phoneNumber}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedPhoneNumbers.has(normalizedPhone)) {
+                        errors.push(`${i + 2}行目: 電話番号「${phoneNumber}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                if (rowHasError) {
+                    errorCount++;
+                    continue;
+                }
+
+                processedManagementNumbers.add(managementNumber);
+                processedPhoneNumbers.add(normalizedPhone);
+
                 const formatDate = (val: any) => {
                     if (!val) return '';
                     if (typeof val === 'number') {
@@ -334,8 +398,8 @@ function FeaturePhoneListContent() {
 
                 const newFeaturePhone: Omit<FeaturePhone, 'id'> = {
                     carrier: String(rowData['キャリア'] || ''),
-                    phoneNumber: formatPhoneNumber(String(rowData['電話番号'] || '').trim()),
-                    managementNumber: String(rowData['管理番号'] || ''),
+                    phoneNumber: phoneNumber,
+                    managementNumber: managementNumber,
                     employeeId: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['住所コード'] || ''),
                     lendDate: formatDate(rowData['貸与日']),
@@ -356,6 +420,24 @@ function FeaturePhoneListContent() {
                 } catch (error) {
                     errorCount++;
                 }
+            }
+
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-[60vh] overflow-y-auto">
+                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <ul className="list-disc pl-5 space-y-1 text-sm text-red-600">
+                                {errors.map((err, index) => (
+                                    <li key={index}>{err}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
             }
 
             if (successCount > 0) {
