@@ -14,7 +14,7 @@ import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { IPhoneDetailModal } from '../../../../features/devices/components/IPhoneDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
-import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../../../lib/utils/phoneUtils';
 import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'managementNumber' | 'lendDate' | 'contractYears' | 'modelName' | 'phoneNumber' | 'carrier' | 'userName';
@@ -396,7 +396,14 @@ function IPhoneListContent() {
             }
 
             let successCount = 0;
+
             let errorCount = 0;
+
+            const existingManagementNumbers = new Set(iPhones.map(d => d.managementNumber));
+            const existingPhoneNumbers = new Set(iPhones.map(d => d.phoneNumber.replace(/-/g, ''))); // Normalize existing
+            const processedManagementNumbers = new Set<string>();
+            const processedPhoneNumbers = new Set<string>();
+            const errors: string[] = [];
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
@@ -411,6 +418,63 @@ function IPhoneListContent() {
                     rowData[header] = row[index];
                 });
 
+                const toHalfWidth = (str: string) => {
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+                    });
+                };
+
+                const normalizePhone = (phone: string) => {
+                    const hw = toHalfWidth(phone).trim();
+                    return hw.replace(/-/g, '');
+                };
+
+                let rowHasError = false;
+
+                // Check Management Number
+                const rawManagementNumber = String(rowData['管理番号'] || '');
+                const managementNumber = toHalfWidth(rawManagementNumber).trim();
+
+                if (!managementNumber) {
+                    errors.push(`${i + 2}行目: 管理番号が空です`);
+                    rowHasError = true;
+                } else {
+                    if (existingManagementNumbers.has(managementNumber)) {
+                        errors.push(`${i + 2}行目: 管理番号「${managementNumber}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedManagementNumbers.has(managementNumber)) {
+                        errors.push(`${i + 2}行目: 管理番号「${managementNumber}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                // Check Phone Number
+                const rawPhoneNumber = String(rowData['電話番号'] || '');
+                const phoneNumber = formatPhoneNumber(toHalfWidth(rawPhoneNumber).trim());
+
+                // Re-calculate derived values since we need them for insertion and we aren't using the loop-scoped vars if we want to be safe (though they are available, just being explicit)
+                const normalizedPhone = normalizePhone(phoneNumber);
+
+                if (!phoneNumber) {
+                    errors.push(`${i + 2}行目: 電話番号が空です`);
+                    rowHasError = true;
+                } else {
+                    // Compare normalized versions (digits only)
+
+                    if (existingPhoneNumbers.has(normalizedPhone)) {
+                        errors.push(`${i + 2}行目: 電話番号「${phoneNumber}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedPhoneNumbers.has(normalizedPhone)) {
+                        errors.push(`${i + 2}行目: 電話番号「${phoneNumber}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                if (rowHasError) {
+                    errorCount++;
+                    continue;
+                }
+
                 const formatDate = (val: any) => {
                     if (!val) return '';
                     if (typeof val === 'number') {
@@ -422,8 +486,8 @@ function IPhoneListContent() {
 
                 const newIPhone: Omit<IPhone, 'id'> & { id?: string } = {
                     carrier: String(rowData['キャリア'] || ''),
-                    phoneNumber: formatPhoneNumber(String(rowData['電話番号'] || '').trim()),
-                    managementNumber: String(rowData['管理番号'] || ''),
+                    phoneNumber: phoneNumber,
+                    managementNumber: managementNumber,
                     employeeId: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['住所コード'] || ''),
                     smartAddressId: String(rowData['SMARTアドレス帳ID'] || ''),
@@ -442,10 +506,28 @@ function IPhoneListContent() {
 
                 try {
                     await addIPhone(newIPhone as Omit<IPhone, 'id'>, true, true);
+                    processedManagementNumbers.add(managementNumber);
+                    processedPhoneNumbers.add(normalizedPhone);
                     successCount++;
                 } catch (error) {
                     errorCount++;
                 }
+            }
+
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <ul className="list-disc pl-5 text-sm text-red-600">
+                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
             }
 
             if (successCount > 0) {
