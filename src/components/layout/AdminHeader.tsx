@@ -47,8 +47,8 @@ export const AdminHeader = () => {
             </h2>
             <div className="flex items-center gap-6">
 
-                {/* Notification Bell - Admin Only */}
-                {user?.role === 'admin' && (
+                {/* Notification Bell - Admin Only (Hide for setup account) */}
+                {user?.role === 'admin' && user?.id !== 'INITIAL_SETUP_ACCOUNT' && (
                     <button
                         onClick={handleNotificationClick}
                         className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"

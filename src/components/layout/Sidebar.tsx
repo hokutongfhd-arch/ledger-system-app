@@ -63,38 +63,46 @@ export const Sidebar = () => {
             </div>
 
             <div className="flex-1 py-4">
-                {user?.role === 'admin' && (
-                    <SidebarSection>
-                        <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" />
-                        <SidebarItem to="/logs" icon={Bell} label="log" />
-                    </SidebarSection>
-                )}
-
-                <SidebarSection label="DEVICES">
-                    <SidebarItem to="/devices/iphones" icon={Smartphone} label="iPhone" />
-                    <SidebarItem to="/devices/feature-phones" icon={Phone} label="Feature Phone" />
-                    <SidebarItem to="/devices/tablets" icon={Tablet} label="Tablet" />
-                    <SidebarItem to="/devices/routers" icon={RouterIcon} label="WiFi Router" />
-                    <SidebarItem to="/device-manuals" icon={FileText} label="Device Manuals" />
-                </SidebarSection>
-
-                {user?.role === 'admin' && (
+                {user?.id === 'INITIAL_SETUP_ACCOUNT' ? (
                     <SidebarSection label="MASTERS">
                         <SidebarItem to="/masters/employees" icon={User} label="Employees" />
-                        <SidebarItem to="/masters/areas" icon={Database} label="Areas" />
-                        <SidebarItem to="/masters/addresses" icon={FileText} label="Addresses" />
                     </SidebarSection>
-                )}
+                ) : (
+                    <>
+                        {user?.role === 'admin' && (
+                            <SidebarSection>
+                                <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" />
+                                <SidebarItem to="/logs" icon={Bell} label="log" />
+                            </SidebarSection>
+                        )}
 
-                <SidebarSection label="SYSTEM">
-                    <SidebarItem to="/dashboard" icon={User} label="My Page" />
-                    {user?.role === 'admin' && (
-                        <>
-                            <SidebarItem to="/audit-dashboard" icon={Activity} label="Audit Dashboard" />
-                            <SidebarItem to="/admin/audit/anomaly-rules" icon={Shield} label="Anomaly Rules" indent />
-                        </>
-                    )}
-                </SidebarSection>
+                        <SidebarSection label="DEVICES">
+                            <SidebarItem to="/devices/iphones" icon={Smartphone} label="iPhone" />
+                            <SidebarItem to="/devices/feature-phones" icon={Phone} label="Feature Phone" />
+                            <SidebarItem to="/devices/tablets" icon={Tablet} label="Tablet" />
+                            <SidebarItem to="/devices/routers" icon={RouterIcon} label="WiFi Router" />
+                            <SidebarItem to="/device-manuals" icon={FileText} label="Device Manuals" />
+                        </SidebarSection>
+
+                        {user?.role === 'admin' && (
+                            <SidebarSection label="MASTERS">
+                                <SidebarItem to="/masters/employees" icon={User} label="Employees" />
+                                <SidebarItem to="/masters/areas" icon={Database} label="Areas" />
+                                <SidebarItem to="/masters/addresses" icon={FileText} label="Addresses" />
+                            </SidebarSection>
+                        )}
+
+                        <SidebarSection label="SYSTEM">
+                            <SidebarItem to="/dashboard" icon={User} label="My Page" />
+                            {user?.role === 'admin' && (
+                                <>
+                                    <SidebarItem to="/audit-dashboard" icon={Activity} label="Audit Dashboard" />
+                                    <SidebarItem to="/admin/audit/anomaly-rules" icon={Shield} label="Anomaly Rules" indent />
+                                </>
+                            )}
+                        </SidebarSection>
+                    </>
+                )}
             </div>
 
             {/* Profile Section */}
@@ -112,8 +120,8 @@ export const Sidebar = () => {
                             <User size={20} />
                         )}
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-sm font-bold text-ink font-display truncate max-w-[120px]">
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-bold text-ink font-display truncate">
                             {currentUser?.name || user?.name || 'GUEST'}
                         </span>
 

@@ -12,7 +12,28 @@ export async function middleware(req: NextRequest) {
 
     const path = req.nextUrl.pathname;
 
-    // 1. Auth Check: If no session, redirect to login
+    // 1. Setup Account Check
+    const isSetup = req.cookies.get('is_initial_setup')?.value === 'true';
+
+    if (isSetup) {
+        // Initial setup account can ONLY access employee master
+        // Exempt public paths
+        if (path === '/login' || path.startsWith('/_next') || path.startsWith('/api/auth')) {
+            return res;
+        }
+
+        // Allow ONLY /masters/employees
+        if (path === '/masters/employees') {
+            return res;
+        }
+
+        // Otherwise, redirect to employee master
+        const redirectUrl = req.nextUrl.clone();
+        redirectUrl.pathname = '/masters/employees';
+        return NextResponse.redirect(redirectUrl);
+    }
+
+    // 2. Auth Check: If no session, redirect to login
     // Exempt public paths: login, api (if public), etc.
     if (!session) {
         if (path === '/login' || path.startsWith('/_next') || path.startsWith('/api/auth')) {

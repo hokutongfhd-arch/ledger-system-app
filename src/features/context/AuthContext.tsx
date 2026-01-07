@@ -5,6 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Employee } from '../../lib/types';
 // import { supabase } from '../../lib/supabaseClient'; // REMOVE: Don't use static client for auth
 import { logger } from '../../lib/logger';
+import { loginInitialSetup, getSetupUserServer, logoutSetupAccount } from '../../app/actions/auth_setup';
 
 interface AuthContextType {
     user: Employee | null;
@@ -80,6 +81,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
                     await refreshUser();
+                } else {
+                    // Check for setup account session
+                    const setupUser = await getSetupUserServer();
+                    if (setupUser) {
+                        setUser(setupUser as Employee);
+                    }
                 }
             } catch (error) {
                 console.error('Session init error:', error);
@@ -93,6 +100,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (employeeCode: string, password: string) => {
         try {
             // Supabase Auth Login (Pseudo-Email Strategy)
+            if (employeeCode === '999999') {
+                const setupResult = await loginInitialSetup(password);
+                if (setupResult.success) {
+                    const setupUser = {
+                        id: 'INITIAL_SETUP_ACCOUNT',
+                        code: '999999',
+                        name: '初期セットアップアカウント',
+                        role: 'admin' as const,
+                    } as Employee;
+                    setUser(setupUser);
+                    return setupUser;
+                }
+                return null;
+            }
+
             const email = `${employeeCode}@ledger-system.local`;
 
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -208,6 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
         }
         await supabase.auth.signOut();
+        await logoutSetupAccount();
         setUser(null);
     };
 

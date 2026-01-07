@@ -8,6 +8,7 @@ import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
+import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin } from '../../app/actions/employee_setup';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -514,6 +515,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // 2. Insert into DB (now includes auth_id if successful)
+        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
+            try {
+                const result = await createEmployeeBySetupAdmin(item);
+                const newItem = mapEmployeeFromDb(result);
+                setEmployees(prev => [...prev, newItem]);
+                if (!skipToast) showToast('登録しました (Setup)', 'success');
+                return;
+            } catch (error: any) {
+                console.error('Setup Admin DB Insert Failed:', error);
+                if (!skipToast) showToast('DB登録に失敗しました', 'error', error.message);
+                throw error;
+            }
+        }
+
         return addItem('employees', item, mapEmployeeToDb, mapEmployeeFromDb, setEmployees, skipLog, skipToast);
     };
     const updateEmployee = async (item: Employee, skipLog: boolean = false, skipToast: boolean = false) => {
@@ -525,9 +540,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('Failed to save profile image to localStorage', e);
             }
         }
+
+        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
+            try {
+                await updateEmployeeBySetupAdmin(item);
+                setEmployees(prev => prev.map(p => p.id === item.id ? item : p));
+                if (!skipToast) showToast('更新しました (Setup)', 'success');
+                return;
+            } catch (error: any) {
+                console.error('Setup Admin DB Update Failed:', error);
+                if (!skipToast) showToast('更新に失敗しました', 'error', error.message);
+                throw error;
+            }
+        }
+
         return updateItem('employees', item, mapEmployeeToDb, employees, setEmployees, skipLog, skipToast);
     };
-    const deleteEmployee = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('employees', id, setEmployees, skipLog, skipToast);
+    const deleteEmployee = (id: string, skipLog: boolean = false, skipToast: boolean = false) => {
+        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
+            return (async () => {
+                try {
+                    await deleteEmployeeBySetupAdmin(id);
+                    setEmployees(prev => prev.filter(p => p.id !== id));
+                    if (!skipToast) showToast('削除しました (Setup)', 'success');
+                } catch (error: any) {
+                    console.error('Setup Admin DB Delete Failed:', error);
+                    if (!skipToast) showToast('削除に失敗しました', 'error', error.message);
+                    throw error;
+                }
+            })();
+        }
+        return deleteItem('employees', id, setEmployees, skipLog, skipToast);
+    };
 
     const addArea = (item: Omit<Area, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('areas', item, mapAreaToDb, mapAreaFromDb, setAreas, skipLog, skipToast);
     const updateArea = async (item: Area, skipLog: boolean = false, skipToast: boolean = false) => {
