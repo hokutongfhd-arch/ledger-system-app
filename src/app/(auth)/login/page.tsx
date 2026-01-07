@@ -64,6 +64,7 @@ export default function LoginPage() {
                         <button
                             type="button"
                             onClick={() => setShowCode(!showCode)}
+                            tabIndex={-1}
                             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-ink-light hover:text-ink hover:bg-black/5 transition-colors rounded"
                         >
                             {showCode ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -91,6 +92,7 @@ export default function LoginPage() {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
+                            tabIndex={-1}
                             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-ink-light hover:text-ink hover:bg-black/5 transition-colors rounded"
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
