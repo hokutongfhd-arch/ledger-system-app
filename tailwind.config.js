@@ -45,7 +45,11 @@ export default {
           success: '#10B981',
           warning: '#F59E0B',
           error: '#FF6B6B', // Using Coral for error
-        }
+        },
+        destructive: {
+          DEFAULT: '#FF6B6B',
+          foreground: '#FFFFFF',
+        },
       },
       fontFamily: {
         sans: ['"UD Shin Go"', '"UDShinGoPr6N"', '"UD New Go"', '"Zen Kaku Gothic New"', 'sans-serif'],
