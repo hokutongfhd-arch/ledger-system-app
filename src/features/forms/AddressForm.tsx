@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Address } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
@@ -10,36 +10,46 @@ interface AddressFormProps {
     onCancel: () => void;
 }
 
+interface AddressInputFieldProps {
+    label: string;
+    name: string;
+    value: string | number;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    type?: string;
+    required?: boolean;
+    inputRef?: React.Ref<HTMLInputElement>;
+    error?: string;
+}
+
 const AddressInputField = ({
     label,
     name,
     value,
     onChange,
     type = 'text',
-    required = false
-}: {
-    label: string;
-    name: string;
-    value: string | number;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    type?: string;
-    required?: boolean
-}) => (
+    required = false,
+    inputRef,
+    error
+}: AddressInputFieldProps) => (
     <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <input
+            ref={inputRef}
             type={type}
             name={name}
             value={value}
             onChange={onChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
             required={required}
         />
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
 );
 
 export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit, onCancel }) => {
-    const { areas } = useData();
+    const { areas, addresses } = useData();
+    const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+    const codeRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState<Omit<Address, 'id'>>({
         no: '',
         addressCode: '',
@@ -143,6 +153,12 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (name === 'addressCode' && errorFields.has('addressCode')) {
+            const next = new Set(errorFields);
+            next.delete('addressCode');
+            setErrorFields(next);
+        }
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -187,6 +203,25 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Uniqueness Check
+        const isDuplicate = addresses.some(addr =>
+            addr.addressCode === formData.addressCode &&
+            (!initialData || addr.id !== initialData.id)
+        );
+
+        if (isDuplicate) {
+            setErrorFields(prev => new Set(prev).add('addressCode'));
+            setFormData(prev => ({ ...prev, addressCode: '' }));
+
+            // Scroll to the code input
+            if (codeRef.current) {
+                codeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                codeRef.current.focus();
+            }
+            return;
+        }
+
         // Final normalization
         const finalTel = formatPhoneNumber(formData.tel);
         const finalFax = formatPhoneNumber(formData.fax);
@@ -201,7 +236,15 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                     <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <AddressInputField label="No." name="no" value={formData.no} onChange={handleChange} />
-                        <AddressInputField label="住所コード" name="addressCode" value={formData.addressCode} onChange={handleChange} required />
+                        <AddressInputField
+                            label="住所コード"
+                            name="addressCode"
+                            value={formData.addressCode}
+                            onChange={handleChange}
+                            required
+                            inputRef={codeRef}
+                            error={errorFields.has('addressCode') ? '既に登録されている住所コードです' : undefined}
+                        />
                         <AddressInputField label="事業所名" name="officeName" value={formData.officeName} onChange={handleChange} required />
                         <AddressInputField label="事業部" name="division" value={formData.division} onChange={handleChange} />
                         <div>

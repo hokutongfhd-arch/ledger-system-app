@@ -197,6 +197,10 @@ function AddressListContent() {
             let successCount = 0;
             let errorCount = 0;
 
+            const existingCodes = new Set(addresses.map(a => a.addressCode));
+            const processedCodes = new Set<string>();
+            const errors: string[] = [];
+
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -210,19 +214,40 @@ function AddressListContent() {
                     rowData[header] = row[index];
                 });
 
-                // Address Code Check (Simple validation)
-                if (!rowData['住所コード']) {
+                const toHalfWidth = (str: string) => {
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+                    });
+                };
+
+                // Address Code Check
+                const rawCode = String(rowData['住所コード'] || '');
+                const code = toHalfWidth(rawCode).trim();
+
+                if (!code) {
                     errorCount++;
                     continue;
                 }
 
-                const areaCode = String(rowData['エリアコード'] || '');
+                if (existingCodes.has(code)) {
+                    errors.push(`${i + 2}行目: 住所コード「${code}」は既に存在します`);
+                    errorCount++;
+                    continue;
+                }
+                if (processedCodes.has(code)) {
+                    errors.push(`${i + 2}行目: 住所コード「${code}」がファイル内で重複しています`);
+                    errorCount++;
+                    continue;
+                }
+
+                const areaCodeRaw = String(rowData['エリアコード'] || '');
+                const areaCode = toHalfWidth(areaCodeRaw).trim();
                 const matchedArea = areas.find(a => a.areaCode === areaCode);
                 const areaName = matchedArea ? matchedArea.areaName : '';
 
                 const newAddress: Omit<Address, 'id'> = {
                     no: String(rowData['No.'] || ''),
-                    addressCode: String(rowData['住所コード'] || ''),
+                    addressCode: code,
                     officeName: String(rowData['事業所名'] || ''),
                     division: String(rowData['事業部'] || ''),
                     area: areaName,
@@ -243,10 +268,27 @@ function AddressListContent() {
 
                 try {
                     await addAddress(newAddress, true, true);
+                    processedCodes.add(code);
                     successCount++;
                 } catch (error) {
                     errorCount++;
                 }
+            }
+
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <ul className="list-disc pl-5 text-sm text-red-600">
+                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
             }
 
             if (successCount > 0) {
