@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Calendar, Filter } from 'lucide-react';
 import type { LogFilterState } from '../../../features/logs/useAuditLogs';
+import { TARGET_NAMES } from '../../../features/logs/log.service';
 
 interface LogFilterProps {
     filters: LogFilterState;
@@ -63,7 +64,7 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                 </div>
 
                 {/* Actor Search */}
-                <div className="col-span-12 sm:col-span-6 lg:col-span-3 flex flex-col gap-1">
+                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
                     <label className="text-xs text-text-muted font-medium flex items-center gap-1">
                         <Search size={12} /> 実行者 (氏名 or 社員CD)
                     </label>
@@ -76,43 +77,20 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                     />
                 </div>
 
-                {/* Result & Action */}
-                <div className="col-span-12 sm:col-span-6 lg:col-span-3 flex gap-2">
-                    <div className="flex-1 flex flex-col gap-1">
-                        <label className="text-xs text-text-muted font-medium flex items-center gap-1">
-                            <Filter size={12} /> 結果
-                        </label>
-                        <select
-                            value={filters.result}
-                            onChange={(e) => onUpdate('result', e.target.value)}
-                            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
-                        >
-                            <option value="">すべて</option>
-                            <option value="success">成功</option>
-                            <option value="failure">失敗</option>
-                        </select>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                        <label className="text-xs text-text-muted font-medium">アクション種別</label>
-                        <select
-                            value={filters.actionType}
-                            onChange={(e) => onUpdate('actionType', e.target.value)}
-                            className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
-                        >
-                            <option value="">すべて</option>
-                            <option value="CREATE">登録</option>
-                            <option value="UPDATE">更新</option>
-                            <option value="DELETE">削除</option>
-                            <option value="IMPORT">インポート</option>
-                            <option value="EXPORT">エクスポート</option>
-                            <option value="LOGIN_SUCCESS">ログイン</option>
-                            <option value="LOGIN_FAILURE">ログイン失敗</option>
-                            <option value="LOGOUT">ログアウト</option>
-                            <option value="VIEW_PAGE">ページ閲覧</option>
-                            <option value="ANOMALY_DETECTED">異常検知</option>
-                            <option value="ERROR">エラー</option>
-                        </select>
-                    </div>
+                {/* Result */}
+                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
+                    <label className="text-xs text-text-muted font-medium flex items-center gap-1">
+                        <Filter size={12} /> 結果
+                    </label>
+                    <select
+                        value={filters.result}
+                        onChange={(e) => onUpdate('result', e.target.value)}
+                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
+                    >
+                        <option value="">すべて</option>
+                        <option value="success">成功</option>
+                        <option value="failure">失敗</option>
+                    </select>
                 </div>
 
                 {/* Target */}
@@ -124,22 +102,22 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filters, onUpdate, readOnl
                         className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
                     >
                         <option value="">すべて</option>
-                        <option value="auth">認証</option>
-                        <option value="employee">社員マスタ</option>
-                        <option value="employee_list">社員一覧</option>
-                        <option value="employee_detail">社員詳細</option>
-                        <option value="area">エリアマスタ</option>
-                        <option value="address">住所マスタ</option>
-                        <option value="iphone">iPhone</option>
-                        <option value="feature_phone">ガラホ</option>
-                        <option value="tablet">勤怠タブレット</option>
-                        <option value="router">モバイルルーター</option>
-                        <option value="device_list">デバイス一覧</option>
-                        <option value="device_detail">デバイス詳細</option>
-                        <option value="manual">マニュアル</option>
-                        <option value="admin">管理コンソール</option>
-                        <option value="dashboard">ダッシュボード</option>
-                        <option value="unknown">その他</option>
+                        {Object.entries(TARGET_NAMES).map(([key, label]) => (
+                            <option key={key} value={key}>{label}</option>
+                        ))}
+                    </select>
+                </div>
+                {/* Response Status */}
+                <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex flex-col gap-1">
+                    <label className="text-xs text-text-muted font-medium">対応</label>
+                    <select
+                        value={filters.responseStatus}
+                        onChange={(e) => onUpdate('responseStatus', e.target.value)}
+                        className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background-subtle outline-none"
+                    >
+                        <option value="all">すべて</option>
+                        <option value="responded">対応済</option>
+                        <option value="pending">未対応</option>
                     </select>
                 </div>
             </div>

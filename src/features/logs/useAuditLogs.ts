@@ -13,10 +13,11 @@ export type LogFilterState = {
     actionType: string;
     result: 'success' | 'failure' | '';
     target: string;
+    responseStatus: 'all' | 'responded' | 'pending';
 };
 
 export type SortState = {
-    field: 'occurred_at' | 'actor_name';
+    field: 'occurred_at' | 'actor_name' | 'is_acknowledged';
     order: 'asc' | 'desc';
 };
 
@@ -39,7 +40,8 @@ export const useAuditLogs = () => {
         actor: searchParams.get('actor') || '',
         actionType: searchParams.get('actionType') || '',
         result: '',
-        target: searchParams.get('target') || ''
+        target: searchParams.get('target') || '',
+        responseStatus: 'all'
     });
 
     // Sort
@@ -65,6 +67,7 @@ export const useAuditLogs = () => {
                 actionType: filters.actionType,
                 result: filters.result === '' ? undefined : filters.result,
                 target: filters.target,
+                responseStatus: filters.responseStatus,
                 sort: sort,
                 includeArchived: showArchived
             });
@@ -74,10 +77,16 @@ export const useAuditLogs = () => {
                 // Attempt to display a more user-friendly error if it's JSON
                 let displayError = error;
                 try {
-                    const parsed = JSON.parse(error);
-                    displayError = parsed.message || error;
+                    // Try to parse if it looks like JSON
+                    if (error.trim().startsWith('{')) {
+                        const parsed = JSON.parse(error);
+                        displayError = parsed.message || parsed.error || error;
+                    } else {
+                        displayError = error;
+                    }
                 } catch (e) {
                     // Not JSON, keep as is
+                    displayError = error;
                 }
                 toast.error(`ログ取得エラー: ${displayError}`, { id: 'fetch-error' });
             }
@@ -122,7 +131,7 @@ export const useAuditLogs = () => {
         setCurrentPage(1); // Reset page on filter change
     };
 
-    const handleSort = (field: 'occurred_at' | 'actor_name') => {
+    const handleSort = (field: 'occurred_at' | 'actor_name' | 'is_acknowledged') => {
         setSort(prev => ({
             field,
             order: prev.field === field && prev.order === 'desc' ? 'asc' : 'desc'
@@ -144,6 +153,7 @@ export const useAuditLogs = () => {
                 actionType: filters.actionType,
                 result: filters.result === '' ? undefined : filters.result,
                 target: filters.target,
+                responseStatus: filters.responseStatus,
                 sort: sort,
                 includeArchived: showArchived
             });

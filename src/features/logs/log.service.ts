@@ -75,32 +75,15 @@ export const logApi = {
     }
 };
 
-const TARGET_NAMES: Record<string, string> = {
-    tablet: '勤怠タブレット',
-    tablets: '勤怠タブレット',
-    iphone: 'iPhone',
-    iphones: 'iPhone',
-    feature_phone: 'ガラホ',
-    feature_phones: 'ガラホ',
-    router: 'モバイルルーター',
-    routers: 'モバイルルーター',
-    employee: '社員マスタ',
-    employees: '社員マスタ',
-    area: 'エリアマスタ',
-    areas: 'エリアマスタ',
-    address: '住所マスタ',
-    addresses: '住所マスタ',
+export const TARGET_NAMES: Record<string, string> = {
     manual: 'マニュアル',
-    manuals: 'マニュアル',
     admin: '管理コンソール',
     auth: '認証',
     audit_rule: '不正検知ルール',
-    employee_list: '社員一覧',
-    employee_detail: '社員詳細',
-    device_list: 'デバイス一覧',
-    device_detail: 'デバイス詳細',
     manual_list: 'マニュアル一覧',
     dashboard: 'ダッシュボード',
+    system: 'システム',
+    report: 'レポート',
     unknown: 'その他'
 };
 

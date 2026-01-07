@@ -115,7 +115,7 @@ function AuditLogContent() {
         }
     }, [logs, selectedLog]);
 
-    const getSortIcon = (field: 'occurred_at' | 'actor_name') => {
+    const getSortIcon = (field: 'occurred_at' | 'actor_name' | 'is_acknowledged') => {
         if (sort.field !== field) return <ArrowUpDown size={14} className="ml-1 text-gray-300" />;
         return sort.order === 'asc'
             ? <ArrowUp size={14} className="ml-1 text-blue-600" />
@@ -211,9 +211,8 @@ function AuditLogContent() {
                                 </div>
                             )
                         },
-                        { header: '対象', accessor: 'target' },
                         {
-                            header: '対応',
+                            header: <div className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => handleSort('is_acknowledged')}>対応{getSortIcon('is_acknowledged')}</div>,
                             accessor: (item) => {
                                 const needsResponse = item.actionRaw === 'ANOMALY_DETECTED' ||
                                     item.result === 'failure' ||
@@ -325,7 +324,8 @@ function OperationLogContent() {
         tablets: '勤怠タブレット',
         iphones: 'iPhone',
         featurephones: 'ガラホ',
-        routers: 'モバイルルーター'
+        routers: 'モバイルルーター',
+        audit_reports: '監査レポート履歴'
     };
 
     const getSortIcon = (field: 'created_at' | 'actor_name') => {

@@ -26,7 +26,8 @@ export async function fetchAuditLogsServer(params: {
     actionType?: string;
     result?: 'success' | 'failure';
     target?: string;
-    sort?: { field: 'occurred_at' | 'actor_name'; order: 'asc' | 'desc' };
+    responseStatus?: 'all' | 'responded' | 'pending';
+    sort?: { field: 'occurred_at' | 'actor_name' | 'is_acknowledged'; order: 'asc' | 'desc' };
     includeArchived?: boolean;
 }) {
     try {
@@ -55,6 +56,15 @@ export async function fetchAuditLogsServer(params: {
         if (params.result) query = query.eq('result', params.result);
         if (params.target) query = query.eq('target_type', params.target);
 
+        // Response Status Filter
+        if (params.responseStatus === 'responded') {
+            query = query.eq('is_acknowledged', true);
+        } else if (params.responseStatus === 'pending') {
+            // "Pending" means not acknowledged AND needs response
+            query = query.eq('is_acknowledged', false)
+                .or('action_type.eq.ANOMALY_DETECTED,result.eq.failure,severity.neq.low');
+        }
+
         if (params.actor) {
             if (/^[0-9]+$/.test(params.actor)) {
                 query = query.like('actor_employee_code', `%${params.actor}%`);
@@ -80,7 +90,11 @@ export async function fetchAuditLogsServer(params: {
         if (error) {
             console.error('Fetch Logs Server Error:', error);
             // Return error object as string to help debugging on client
-            return { logs: [], total: 0, error: JSON.stringify(error) };
+            return {
+                logs: [],
+                total: 0,
+                error: (error as any).message || JSON.stringify(error)
+            };
         }
 
         return { logs: data || [], total: count || 0 };
