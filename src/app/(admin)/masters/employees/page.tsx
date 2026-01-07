@@ -237,6 +237,11 @@ function EmployeeListContent() {
                 }
             }
 
+            // Uniqueness Check Preparation
+            const existingCodes = new Set(employees.map(e => e.code));
+            const processedCodes = new Set<string>();
+            const errors: string[] = [];
+
             let successCount = 0;
             let errorCount = 0;
 
@@ -253,6 +258,27 @@ function EmployeeListContent() {
                     rowData[header] = row[index];
                 });
 
+                const code = String(rowData['社員コード'] || '');
+                if (!code) {
+                    // checks are implicitly handled by empty string check later or server side, 
+                    // but here we focus on uniqueness.
+                    // If no code, maybe skip or let addEmployee handle validation.
+                    // For now, let's treat it as usual flow, but uniqueness check on empty string might be tricky.
+                    // We'll assume valid codes are non-empty.
+                }
+
+                // Check for duplicates
+                if (existingCodes.has(code)) {
+                    errors.push(`${i + 2}行目: 社員コード「${code}」は既に存在します`);
+                    errorCount++;
+                    continue;
+                }
+                if (processedCodes.has(code)) {
+                    errors.push(`${i + 2}行目: 社員コード「${code}」がファイル内で重複しています`);
+                    errorCount++;
+                    continue;
+                }
+
                 const formatDate = (val: any) => {
                     if (!val) return '';
                     if (typeof val === 'number') {
@@ -268,7 +294,7 @@ function EmployeeListContent() {
                 };
 
                 const newEmployee: Omit<Employee, 'id'> & { id?: string } = {
-                    code: String(rowData['社員コード'] || ''),
+                    code: code,
                     gender: String(rowData['性別'] || ''),
                     name: String(rowData['氏名'] || ''),
                     nameKana: String(rowData['氏名カナ'] || ''),
@@ -293,15 +319,34 @@ function EmployeeListContent() {
 
                 try {
                     await addEmployee(newEmployee as Omit<Employee, 'id'>, true, true);
+                    processedCodes.add(code);
                     successCount++;
                 } catch (error) {
                     errorCount++;
                 }
             }
 
-            if (successCount > 0 || errorCount > 0) {
-                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <ul className="list-disc pl-5 text-sm text-red-600">
+                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            } else if (successCount > 0) {
+                showToast(`インポート完了 - ${successCount}件登録しました`, 'success');
+            } else if (errorCount > 0 && errors.length === 0) {
+                // In case errors happened outside of uniqueness check (backend errors)
+                showToast(`インポート失敗 - ${errorCount}件のエラーが発生しました`, 'error');
             }
+
             if (event.target) event.target.value = '';
         };
         reader.readAsArrayBuffer(file);

@@ -76,8 +76,10 @@ export const useConfirm = () => {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{config.title}</DialogTitle>
-                    <DialogDescription>
-                        {config.description}
+                    <DialogDescription asChild>
+                        <div>
+                            {config.description}
+                        </div>
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="gap-2 sm:gap-0">
@@ -89,6 +91,7 @@ export const useConfirm = () => {
                     <Button
                         variant={config.variant === 'destructive' ? 'destructive' : 'default'}
                         onClick={handleConfirm}
+                        className="text-white"
                     >
                         {config.confirmText}
                     </Button>

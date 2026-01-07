@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Employee } from '../../lib/types';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -13,7 +13,7 @@ interface EmployeeFormProps {
 
 export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmit, onCancel, isSelfEdit = false }) => {
     const { user } = useAuth();
-    const { areas, addresses } = useData();
+    const { employees, areas, addresses } = useData();
     const isAdmin = user?.role === 'admin';
 
     const [formData, setFormData] = useState<Omit<Employee, 'id'>>({
@@ -40,6 +40,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         roleTitle: '',
         jobType: '',
     });
+    const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+    const codeRef = useRef<HTMLInputElement>(null);
 
     // Prepare Options
     const areaOptions = useMemo(() => {
@@ -76,6 +78,25 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Uniqueness Check
+        const isDuplicate = employees.some(emp =>
+            emp.code === formData.code &&
+            (!initialData || emp.id !== initialData.id)
+        );
+
+        if (isDuplicate) {
+            setErrorFields(prev => new Set(prev).add('code'));
+            setFormData(prev => ({ ...prev, code: '' }));
+
+            // Scroll to the code input
+            if (codeRef.current) {
+                codeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                codeRef.current.focus();
+            }
+            return;
+        }
+
         onSubmit(formData);
     };
 
@@ -89,14 +110,25 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
                             <input
+                                ref={codeRef}
                                 type="text"
                                 name="code"
                                 value={formData.code}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(e) => {
+                                    handleChange(e);
+                                    if (errorFields.has('code')) {
+                                        const next = new Set(errorFields);
+                                        next.delete('code');
+                                        setErrorFields(next);
+                                    }
+                                }}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('code') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                 required
                                 disabled={isSelfEdit}
                             />
+                            {errorFields.has('code') && (
+                                <p className="text-red-500 text-sm mt-1">既に登録されている社員コードです</p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
