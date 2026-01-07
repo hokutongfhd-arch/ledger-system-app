@@ -333,6 +333,10 @@ function TabletListContent() {
             let successCount = 0;
             let errorCount = 0;
 
+            const existingTerminalCodes = new Set(tablets.map(t => t.terminalCode));
+            const processedTerminalCodes = new Set<string>();
+            const errors: string[] = [];
+
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -346,11 +350,41 @@ function TabletListContent() {
                     rowData[header] = row[index];
                 });
 
+                const toHalfWidth = (str: string) => {
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+                    });
+                };
+
+                const rawTerminalCode = String(rowData['端末CD'] || '');
+                const terminalCode = toHalfWidth(rawTerminalCode).trim();
+                let rowHasError = false;
+
+                if (!terminalCode) {
+                    errors.push(`${i + 2}行目: 端末CDが空です`);
+                    rowHasError = true;
+                } else {
+                    if (existingTerminalCodes.has(terminalCode)) {
+                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedTerminalCodes.has(terminalCode)) {
+                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                if (rowHasError) {
+                    errorCount++;
+                    continue;
+                }
+
+                processedTerminalCodes.add(terminalCode);
+
                 const statusValue = String(rowData['状況'] || '');
                 const status = reverseStatusMap[statusValue] || 'available';
 
                 const newTablet: Omit<Tablet, 'id'> = {
-                    terminalCode: String(rowData['端末CD'] || ''),
+                    terminalCode: terminalCode,
                     maker: String(rowData['メーカー'] || ''),
                     modelNumber: String(rowData['型番'] || ''),
                     status: status as any, // Cast to TabletStatus
@@ -364,16 +398,30 @@ function TabletListContent() {
                 };
 
                 try {
-                    // Skip Toast for individual items in bulk import, but keep Log (or skip log too? Original was skipLog=true. Let's keep strict logging? 
-                    // Wait, original code had `addTablet(newTablet, true)`. 
-                    // If we want detailed logs for every import item, it will be 100 logs. 
-                    // The original code did a SUMMARY log at the end.
-                    // So we should KEEP skipLog=true, and ALSO skipToast=true.
+                    // Skip Toast for individual items in bulk import, but keep Log
                     await addTablet(newTablet, true, true);
                     successCount++;
                 } catch (error) {
                     errorCount++;
                 }
+            }
+
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-[60vh] overflow-y-auto">
+                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <ul className="list-disc pl-5 space-y-1 text-sm text-red-600">
+                                {errors.map((err, index) => (
+                                    <li key={index}>{err}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
             }
 
             if (successCount > 0) {

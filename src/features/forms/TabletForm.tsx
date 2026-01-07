@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Tablet } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
@@ -11,7 +11,9 @@ interface TabletFormProps {
 }
 
 export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, onCancel }) => {
-    const { employees, addresses } = useData();
+    const { employees, addresses, tablets } = useData();
+    const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+    const terminalCodeRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState<Omit<Tablet, 'id'>>({
         terminalCode: '',
         maker: '',
@@ -53,6 +55,12 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (errorFields.has(name)) {
+            const next = new Set(errorFields);
+            next.delete(name);
+            setErrorFields(next);
+        }
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -61,6 +69,25 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrorFields = new Set<string>();
+
+        // Check Terminal Code Uniqueness
+        const isTerminalCodeDuplicate = tablets.some(item =>
+            item.terminalCode === formData.terminalCode &&
+            (!initialData || item.id !== initialData.id)
+        );
+
+        if (isTerminalCodeDuplicate) {
+            newErrorFields.add('terminalCode');
+            setErrorFields(newErrorFields);
+            setFormData(prev => ({ ...prev, terminalCode: '' }));
+
+            terminalCodeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            terminalCodeRef.current?.focus();
+            return;
+        }
+
         const finalContractYears = normalizeContractYear(formData.contractYears || '');
         onSubmit({ ...formData, contractYears: finalContractYears });
     };
@@ -78,9 +105,11 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 name="terminalCode"
                                 value={formData.terminalCode}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('terminalCode') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                 required
+                                ref={terminalCodeRef}
                             />
+                            {errorFields.has('terminalCode') && <p className="text-red-500 text-sm mt-1">既に登録されている端末CDです</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">メーカー</label>
