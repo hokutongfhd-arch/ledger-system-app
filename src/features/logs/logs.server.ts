@@ -88,6 +88,24 @@ export async function fetchAuditLogsServer(params: {
         query = query.range(from, to);
 
         const { data, count, error } = await query;
+        let logs = data || [];
+
+        // Attach responder names if there are any acknowledged logs
+        const responderIds = Array.from(new Set(logs.filter(l => l.acknowledged_by).map(l => l.acknowledged_by)));
+        if (responderIds.length > 0) {
+            const { data: employees } = await supabase
+                .from('employees')
+                .select('auth_id, name')
+                .in('auth_id', responderIds);
+
+            if (employees) {
+                const nameMap = new Map(employees.map(e => [e.auth_id, e.name]));
+                logs = logs.map(l => ({
+                    ...l,
+                    acknowledged_by_name: l.acknowledged_by ? nameMap.get(l.acknowledged_by) : undefined
+                }));
+            }
+        }
 
         if (error) {
             console.error('Fetch Logs Server Error:', error);
@@ -99,7 +117,7 @@ export async function fetchAuditLogsServer(params: {
             };
         }
 
-        return { logs: data || [], total: count || 0 };
+        return { logs: logs, total: count || 0 };
 
     } catch (error: any) {
         console.error('Fetch Audit Logs Catch Error:', error);

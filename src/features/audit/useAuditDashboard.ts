@@ -41,24 +41,8 @@ export const useAuditDashboard = () => {
                 throw new Error(error);
             }
 
-            // Map raw server data to Log type
-            const logs: Log[] = (logsData || []).map((d: any) => ({
-                id: d.id || '',
-                timestamp: d.occurred_at || new Date().toISOString(),
-                action: d.action_type || 'unknown',
-                actionRaw: d.action_type || 'unknown',
-                result: d.result || 'failure',
-                actorName: d.actor_name || 'System',
-                actorEmployeeCode: d.actor_employee_code || '',
-                severity: d.severity || 'medium',
-                target: d.target_type || '',
-                targetRaw: d.target_type || '',
-                targetId: d.target_id || '',
-                ipAddress: d.ip_address || '',
-                details: '',
-                user: d.actor_name || '',
-                metadata: d.metadata || {},
-            }));
+            // Map raw server data to Log type using central service
+            const logs: Log[] = (logsData || []).map(logService.mapLogFromDb);
 
             // --- Aggregation ---
 
@@ -202,25 +186,8 @@ export const useAuditDashboard = () => {
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 5);
 
-            // Map Recent Anomalies
-            const recentAnomalies: Log[] = (rAnomaliesRaw || []).map((d: any) => ({
-                id: d.id,
-                timestamp: d.occurred_at,
-                action: d.action_type,
-                actionRaw: d.action_type,
-                result: d.result,
-                actorName: d.actor_name,
-                actorEmployeeCode: d.actor_employee_code,
-                severity: d.severity,
-                target: d.target_type || '',
-                targetRaw: d.target_type || '',
-                targetId: d.target_id || '',
-                ipAddress: d.ip_address || '',
-                details: '',
-                user: d.actor_name || '',
-                metadata: d.metadata || {},
-                is_acknowledged: d.is_acknowledged,
-            }));
+            // Map Recent Anomalies using central service
+            const recentAnomalies: Log[] = (rAnomaliesRaw || []).map(logService.mapLogFromDb);
 
             setData({
                 kpi,

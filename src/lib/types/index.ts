@@ -159,6 +159,7 @@ export interface Log {
     archived_at?: string;
     is_acknowledged?: boolean;
     acknowledged_by?: string;      // UUID (Admin User ID)
+    acknowledged_by_name?: string; // Display Name
     acknowledged_at?: string;
     response_status?: AnomalyResponseStatus;
     response_note?: string;

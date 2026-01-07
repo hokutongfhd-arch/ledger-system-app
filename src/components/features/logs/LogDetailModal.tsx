@@ -81,7 +81,6 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                             )}
                             <div>
                                 <h2 className="text-lg font-bold text-[#0A0E27]">{isAnomaly ? '不正検知ログ詳細' : 'ログ詳細'}</h2>
-                                <p className="text-xs text-gray-400 font-mono tracking-tighter">{log.id}</p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
@@ -116,10 +115,10 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                                                <User size={14} /> 最終対応者ID
+                                                <User size={14} /> 最終対応者
                                             </div>
-                                            <div className="text-sm font-mono bg-white px-2 py-1.5 rounded border border-gray-200 truncate">
-                                                {log.acknowledged_by}
+                                            <div className="text-sm font-bold bg-white px-2 py-1.5 rounded border border-gray-200 truncate">
+                                                {log.acknowledged_by_name || log.acknowledged_by || '-'}
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -193,7 +192,7 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                             <InfoItem icon={<Activity size={16} />} label="アクション種別" value={log.action} />
 
                             <div className="relative group">
-                                <InfoItem icon={<HardDrive size={16} />} label="対象種別" value={`${log.target} (ID: ${log.targetId || '-'})`} />
+                                <InfoItem icon={<HardDrive size={16} />} label="対象種別" value={log.target} />
                                 {log.targetId && isDashboardContext && (
                                     <button
                                         onClick={() => { onClose(); router.push(`/logs?target=${log.targetRaw}&logId=${log.id}`); }}

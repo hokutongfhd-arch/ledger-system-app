@@ -84,6 +84,7 @@ export const TARGET_NAMES: Record<string, string> = {
     dashboard: 'ダッシュボード',
     system: 'システム',
     report: 'レポート',
+    after_hours_access: '時間外アクセス',
     unknown: 'その他'
 };
 
@@ -117,7 +118,7 @@ export const logService = {
         let details = d.metadata?.message || '';
         if (!details) {
             const resultStr = d.result === 'success' ? '成功' : '失敗';
-            details = `[${action}] ${target} (ID: ${d.target_id || '-'}) - ${resultStr}`;
+            details = `[${action}] ${target} - ${resultStr}`;
         }
 
         return {
@@ -137,6 +138,7 @@ export const logService = {
             user: s(d.actor_name) || s(d.actor_employee_code) || 'System',
             is_acknowledged: d.is_acknowledged,
             acknowledged_by: d.acknowledged_by,
+            acknowledged_by_name: d.acknowledged_by_name,
             acknowledged_at: d.acknowledged_at,
             response_status: d.response_status,
             response_note: d.response_note,
