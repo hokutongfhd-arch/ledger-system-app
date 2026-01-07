@@ -16,7 +16,7 @@ import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { RouterDetailModal } from '../../../../features/devices/components/RouterDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { useToast } from '../../../../features/context/ToastContext';
-import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../../../lib/utils/phoneUtils';
 
 type SortKey = 'terminalCode' | 'carrier' | 'simNumber' | 'actualLenderName' | 'userName' | 'contractYears';
 type SortOrder = 'asc' | 'desc';
@@ -327,6 +327,12 @@ function RouterListContent() {
             let successCount = 0;
             let errorCount = 0;
 
+            const existingTerminalCodes = new Set(routers.map(r => r.terminalCode));
+            const existingSimNumbers = new Set(routers.map(r => normalizePhoneNumber(r.simNumber)));
+            const processedTerminalCodes = new Set<string>();
+            const processedSimNumbers = new Set<string>();
+            const errors: string[] = [];
+
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -340,15 +346,61 @@ function RouterListContent() {
                     rowData[header] = row[index];
                 });
 
+                const toHalfWidth = (str: string) => {
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+                    });
+                };
+
+                // Validate Terminal Code
+                const rawTerminalCode = String(rowData['端末CD'] || '');
+                const terminalCode = toHalfWidth(rawTerminalCode).trim();
+                let rowHasError = false;
+
+                if (!terminalCode) {
+                    errors.push(`${i + 2}行目: 端末CDが空です`);
+                    rowHasError = true;
+                } else {
+                    if (existingTerminalCodes.has(terminalCode)) {
+                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedTerminalCodes.has(terminalCode)) {
+                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                // Validate SIM Number
+                const rawSimNumber = String(rowData['SIM電番'] || '');
+                const simNumberNormalized = normalizePhoneNumber(rawSimNumber);
+
+                if (simNumberNormalized) {
+                    if (existingSimNumbers.has(simNumberNormalized)) {
+                        errors.push(`${i + 2}行目: SIM電番「${rawSimNumber}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedSimNumbers.has(simNumberNormalized)) {
+                        errors.push(`${i + 2}行目: SIM電番「${rawSimNumber}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                if (rowHasError) {
+                    errorCount++;
+                    continue;
+                }
+
+                processedTerminalCodes.add(terminalCode);
+                if (simNumberNormalized) processedSimNumbers.add(simNumberNormalized);
+
                 const newRouter: Omit<Router, 'id'> = {
                     no: String(rowData['No.'] || ''),
                     contractStatus: normalizeContractYear(String(rowData['契約状況'] || '')),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['通信キャリア'] || ''),
                     modelNumber: String(rowData['機種型番'] || ''),
-                    simNumber: formatPhoneNumber(String(rowData['SIM電番'] || '').trim()),
+                    simNumber: formatPhoneNumber(simNumberNormalized), // Use formatted version
                     dataCapacity: String(rowData['通信容量'] || ''),
-                    terminalCode: String(rowData['端末CD'] || ''),
+                    terminalCode: terminalCode,
                     employeeCode: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['住所コード'] || ''),
                     actualLender: String(rowData['実貸与先'] || ''),
@@ -373,6 +425,24 @@ function RouterListContent() {
                 } catch (error) {
                     errorCount++;
                 }
+            }
+
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-[60vh] overflow-y-auto">
+                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <ul className="list-disc pl-5 space-y-1 text-sm text-red-600">
+                                {errors.map((err, index) => (
+                                    <li key={index}>{err}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
             }
 
             if (successCount > 0) {

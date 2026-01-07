@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Router } from '../../lib/types';
 import { useData } from '../context/DataContext';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
@@ -12,7 +12,10 @@ interface RouterFormProps {
 }
 
 export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, onCancel }) => {
-    const { employees, addresses } = useData();
+    const { employees, addresses, routers } = useData();
+    const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+    const terminalCodeRef = useRef<HTMLInputElement>(null);
+    const simNumberRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState<Omit<Router, 'id'>>({
         no: '',
         biller: '',
@@ -127,6 +130,12 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             ...prev,
             [name]: name === 'cost' ? parseInt(value) || 0 : value
         }));
+
+        if (errorFields.has(name)) {
+            const next = new Set(errorFields);
+            next.delete(name);
+            setErrorFields(next);
+        }
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -145,6 +154,12 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             setPhoneParts(newParts);
             const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
             setFormData(prev => ({ ...prev, simNumber: combined }));
+        }
+
+        if (errorFields.has('simNumber')) {
+            const next = new Set(errorFields);
+            next.delete('simNumber');
+            setErrorFields(next);
         }
     };
 
@@ -167,6 +182,55 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrorFields = new Set<string>();
+        let firstErrorField: HTMLElement | null = null;
+
+        // Check Terminal Code Uniqueness
+        const isTerminalCodeDuplicate = routers.some(item =>
+            item.terminalCode === formData.terminalCode &&
+            (!initialData || item.id !== initialData.id)
+        );
+
+        if (isTerminalCodeDuplicate) {
+            newErrorFields.add('terminalCode');
+            if (!firstErrorField) firstErrorField = terminalCodeRef.current;
+        }
+
+        // Check SIM Number Uniqueness (normalize for comparison)
+        const currentSim = is14Digit ? formData.simNumber : `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
+        // For router SIM, normalization usually removes hyphens. Check utility usage.
+        // normalizePhoneNumber removes hyphens.
+        const isSimNumberDuplicate = routers.some(item =>
+            normalizePhoneNumber(item.simNumber) === normalizePhoneNumber(currentSim) &&
+            (!initialData || item.id !== initialData.id)
+        );
+
+        if (isSimNumberDuplicate) {
+            newErrorFields.add('simNumber');
+            // Focus handling might be tricky with multiple inputs, defaulting to container or first input ref if we can attach it.
+            // We will attach ref to the first input part or the main input.
+            if (!firstErrorField) firstErrorField = simNumberRef.current;
+        }
+
+        if (newErrorFields.size > 0) {
+            setErrorFields(newErrorFields);
+
+            if (newErrorFields.has('terminalCode')) {
+                setFormData(prev => ({ ...prev, terminalCode: '' }));
+            }
+            if (newErrorFields.has('simNumber')) {
+                setFormData(prev => ({ ...prev, simNumber: '' }));
+                setPhoneParts({ part1: '', part2: '', part3: '' });
+            }
+
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
+            }
+            return;
+        }
+
         // Normalize SIM number (ensure no delimiters if 14 digit, else format)
         const normalizedSim = formatPhoneNumber(formData.simNumber);
         const normalizedContractStatus = normalizeContractYear(formData.contractStatus || '');
@@ -237,8 +301,9 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                     value={phoneParts.part1}
                                     onChange={handlePhoneChange}
                                     maxLength={14}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono"
+                                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                     placeholder="14桁の番号を入力"
+                                    ref={simNumberRef}
                                 />
                             ) : (
                                 <div className="flex items-center gap-2">
@@ -248,8 +313,9 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                         value={phoneParts.part1}
                                         onChange={handlePhoneChange}
                                         maxLength={3}
-                                        className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                        className={`w-16 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                         placeholder="090"
+                                        ref={simNumberRef}
                                     />
                                     <span className="text-gray-500">-</span>
                                     <input
@@ -258,7 +324,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                         value={phoneParts.part2}
                                         onChange={handlePhoneChange}
                                         maxLength={4}
-                                        className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                        className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                         placeholder="1234"
                                     />
                                     <span className="text-gray-500">-</span>
@@ -268,11 +334,12 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                         value={phoneParts.part3}
                                         onChange={handlePhoneChange}
                                         maxLength={4}
-                                        className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center"
+                                        className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                         placeholder="5678"
                                     />
                                 </div>
                             )}
+                            {errorFields.has('simNumber') && <p className="text-red-500 text-sm mt-1">既に登録されているSIM電番です</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">通信容量</label>
@@ -280,7 +347,8 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">端末CD</label>
-                            <input type="text" name="terminalCode" value={formData.terminalCode} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <input type="text" name="terminalCode" value={formData.terminalCode} onChange={handleChange} className={`w-full px-3 py-2 border rounded-md ${errorFields.has('terminalCode') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`} ref={terminalCodeRef} />
+                            {errorFields.has('terminalCode') && <p className="text-red-500 text-sm mt-1">既に登録されている端末CDです</p>}
                         </div>
                     </div>
                 </div>
