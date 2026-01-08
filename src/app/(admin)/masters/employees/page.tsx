@@ -10,11 +10,11 @@ import type { Employee } from '../../../../features/employees/employee.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
-import { EmployeeForm } from '../../../../features/forms/EmployeeForm';
+import { EmployeeForm } from '../../../../features/employees/components/EmployeeForm';
 import { EmployeeDetailModal } from '../../../../features/employees/components/EmployeeDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import * as XLSX from 'xlsx';
-import { UserDeviceList } from '../../../../features/components/UserDeviceList';
+import { UserDeviceList } from '../../../../features/employees/components/UserDeviceList';
 import { useToast } from '../../../../features/context/ToastContext';
 
 type SortKey = 'code' | 'role';

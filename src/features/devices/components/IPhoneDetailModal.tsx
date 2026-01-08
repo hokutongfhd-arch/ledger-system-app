@@ -1,4 +1,5 @@
-import React from 'react';
+import { DetailRow } from '../../../components/ui/DetailView';
+import { SectionHeader } from '../../../components/ui/Section';
 import { Modal } from '../../../components/ui/Modal';
 import { IPhone } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
@@ -113,29 +114,4 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
     );
 };
 
-// Helper Components for Clean Layout
-const SectionHeader = ({ icon, title }: { icon: React.ReactNode, title: string }) => (
-    <div className="flex items-center gap-2 text-indigo-900 border-b-2 border-indigo-50 pb-2 mb-2">
-        <span className="text-indigo-500">{icon}</span>
-        <h4 className="font-bold text-sm uppercase tracking-wide">{title}</h4>
-    </div>
-);
 
-const DetailRow = ({ label, value, subValue, icon, isSensitive }: { label: string, value: string | undefined, subValue?: string, icon?: React.ReactNode, isSensitive?: boolean }) => (
-    <div className="group">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5 block">{label}</label>
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                {icon}
-                <span className={`font-medium ${!value ? 'text-gray-300' : 'text-gray-800'} ${isSensitive ? 'font-mono' : ''}`}>
-                    {value || '-'}
-                </span>
-                {subValue && (
-                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                        {subValue}
-                    </span>
-                )}
-            </div>
-        </div>
-    </div>
-);

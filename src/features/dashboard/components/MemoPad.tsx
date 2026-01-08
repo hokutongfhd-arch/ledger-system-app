@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trash2, Check, FileText } from 'lucide-react';
 import { useMemos } from '../hooks/useMemos';
-import { NotificationModal } from '../../components/ui/NotificationModal';
+import { NotificationModal } from '../../../components/ui/NotificationModal';
 
 interface MemoPadProps {
     employeeCode: string; // Changed from userId to employeeCode

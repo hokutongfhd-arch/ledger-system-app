@@ -2,7 +2,8 @@ import React from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { Area } from '../../../lib/types';
 import { MapPin } from 'lucide-react';
-import { SectionHeader, DetailRow } from '../../../components/ui/DetailView';
+import { DetailRow } from '../../../components/ui/DetailView';
+import { SectionHeader } from '../../../components/ui/Section';
 
 interface AreaDetailModalProps {
     isOpen: boolean;

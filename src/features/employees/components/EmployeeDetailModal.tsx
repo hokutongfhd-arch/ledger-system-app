@@ -2,8 +2,9 @@ import React from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { Employee, Area, Address } from '../../../lib/types';
 import { User, Briefcase, MapPin, Shield, Smartphone } from 'lucide-react';
-import { SectionHeader, DetailRow } from '../../../components/ui/DetailView';
-import { UserDeviceList } from '../../components/UserDeviceList';
+import { DetailRow } from '../../../components/ui/DetailView';
+import { SectionHeader } from '../../../components/ui/Section';
+import { UserDeviceList } from './UserDeviceList';
 
 interface EmployeeDetailModalProps {
     isOpen: boolean;

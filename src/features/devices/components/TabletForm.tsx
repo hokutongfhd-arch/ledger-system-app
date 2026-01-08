@@ -1,8 +1,14 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Tablet } from '../../lib/types';
-import { useData } from '../context/DataContext';
-import { SearchableSelect } from '../../components/ui/SearchableSelect';
-import { normalizeContractYear } from '../../lib/utils/stringUtils';
+import type { Tablet } from '../device.types';
+import { useData } from '../../context/DataContext';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { normalizeContractYear } from '../../../lib/utils/stringUtils';
+import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
+import { TextArea } from '../../../components/ui/TextArea';
+import { FormLabel, FormError } from '../../../components/ui/Form';
+import { SectionHeader } from '../../../components/ui/Section';
 
 interface TabletFormProps {
     initialData?: Tablet;
@@ -96,49 +102,46 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-8">
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                    <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">端末CD</label>
-                            <input
+                            <FormLabel required>端末CD</FormLabel>
+                            <Input
+                                ref={terminalCodeRef}
                                 type="text"
                                 name="terminalCode"
                                 value={formData.terminalCode}
                                 onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('terminalCode') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                 required
-                                ref={terminalCodeRef}
+                                error={errorFields.has('terminalCode')}
                             />
-                            {errorFields.has('terminalCode') && <p className="text-red-500 text-sm mt-1">既に登録されている端末CDです</p>}
+                            {errorFields.has('terminalCode') && <FormError>既に登録されている端末CDです</FormError>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">メーカー</label>
-                            <input
+                            <FormLabel>メーカー</FormLabel>
+                            <Input
                                 type="text"
                                 name="maker"
                                 value={formData.maker}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">型番</label>
-                            <input
+                            <FormLabel required>型番</FormLabel>
+                            <Input
                                 type="text"
                                 name="modelNumber"
                                 value={formData.modelNumber}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">状況</label>
-                            <select
+                            <FormLabel>状況</FormLabel>
+                            <Select
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             >
                                 <option value="in-use">使用中</option>
                                 <option value="backup">予備機</option>
@@ -146,16 +149,15 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 <option value="broken">故障</option>
                                 <option value="repairing">修理中</option>
                                 <option value="discarded">廃棄</option>
-                            </select>
+                            </Select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">契約年数</label>
-                            <input
+                            <FormLabel>契約年数</FormLabel>
+                            <Input
                                 type="text"
                                 name="contractYears"
                                 value={formData.contractYears || ''}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="例: 2年"
                             />
                         </div>
@@ -163,10 +165,10 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">場所・使用者</h3>
+                    <SectionHeader>場所・使用者</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員名(社員コード)</label>
+                            <FormLabel>社員名(社員コード)</FormLabel>
                             <SearchableSelect
                                 options={employeeOptions}
                                 value={formData.employeeCode}
@@ -175,7 +177,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所(住所コード)</label>
+                            <FormLabel>住所(住所コード)</FormLabel>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}
@@ -184,39 +186,36 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">事業所CD</label>
-                            <input
+                            <FormLabel>事業所CD</FormLabel>
+                            <Input
                                 type="text"
                                 name="officeCode"
                                 value={formData.officeCode}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                    <SectionHeader>その他</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">過去貸与履歴</label>
-                            <textarea
+                            <FormLabel>過去貸与履歴</FormLabel>
+                            <TextArea
                                 name="history"
                                 value={formData.history}
                                 onChange={handleChange}
                                 rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
-                            <textarea
+                            <FormLabel>備考</FormLabel>
+                            <TextArea
                                 name="notes"
                                 value={formData.notes}
                                 onChange={handleChange}
                                 rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                     </div>

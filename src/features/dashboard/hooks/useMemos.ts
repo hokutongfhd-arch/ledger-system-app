@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import type { Memo } from '../../lib/types';
+import { supabase } from '../../../lib/supabaseClient';
+import type { Memo } from '../../../lib/types';
 
 export const useMemos = (employeeCode: string) => {
     const [memos, setMemos] = useState<Memo[]>([]);

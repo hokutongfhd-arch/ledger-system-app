@@ -2,8 +2,9 @@ import React from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { Address, Area } from '../../../lib/types';
 import { Building, Phone, MapPin, Tag, FileText, Router } from 'lucide-react';
-import { SectionHeader, DetailRow } from '../../../components/ui/DetailView';
-import { AddressDeviceList } from '../../components/AddressDeviceList';
+import { DetailRow } from '../../../components/ui/DetailView';
+import { SectionHeader } from '../../../components/ui/Section';
+import { AddressDeviceList } from './AddressDeviceList';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 import { formatZipCode } from '../../../lib/utils/zipCodeUtils';
 

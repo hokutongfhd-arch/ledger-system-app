@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { Camera, MapPin, Building, Shield, User } from 'lucide-react';
 
 export const UserProfileCard = () => {

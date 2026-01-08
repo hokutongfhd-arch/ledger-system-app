@@ -10,7 +10,7 @@ import type { FeaturePhone } from '../../../../features/devices/device.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
-import { FeaturePhoneForm } from '../../../../features/forms/FeaturePhoneForm';
+import { FeaturePhoneForm } from '../../../../features/devices/components/FeaturePhoneForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { FeaturePhoneDetailModal } from '../../../../features/devices/components/FeaturePhoneDetailModal';

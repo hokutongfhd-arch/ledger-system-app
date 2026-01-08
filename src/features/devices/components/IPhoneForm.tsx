@@ -1,37 +1,44 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { FeaturePhone } from '../../lib/types';
-import { useData } from '../context/DataContext';
-import { SearchableSelect } from '../../components/ui/SearchableSelect';
-import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
-import { normalizeContractYear } from '../../lib/utils/stringUtils';
 
-interface FeaturePhoneFormProps {
-    initialData?: FeaturePhone;
-    onSubmit: (data: Omit<FeaturePhone, 'id'> & { id?: string }) => void;
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import type { IPhone } from '../device.types';
+import { useData } from '../../context/DataContext';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
+import { normalizeContractYear } from '../../../lib/utils/stringUtils';
+import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
+import { TextArea } from '../../../components/ui/TextArea';
+import { FormLabel, FormError } from '../../../components/ui/Form';
+import { SectionHeader } from '../../../components/ui/Section';
+
+interface IPhoneFormProps {
+    initialData?: IPhone;
+    onSubmit: (data: Omit<IPhone, 'id'> & { id?: string }) => void;
     onCancel: () => void;
 }
 
-export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData, onSubmit, onCancel }) => {
-    const { employees, addresses, featurePhones } = useData();
+export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, onCancel }) => {
+    const { employees, addresses, iPhones } = useData();
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const managementNumberRef = useRef<HTMLInputElement>(null);
     const phoneNumberRef = useRef<HTMLInputElement>(null);
-    const [formData, setFormData] = useState<Omit<FeaturePhone, 'id'> & { id?: string }>({
+
+    const [formData, setFormData] = useState<Omit<IPhone, 'id'> & { id?: string }>({
         id: '',
         carrier: '',
         phoneNumber: '',
         managementNumber: '',
         employeeId: '',
-
         addressCode: '',
-        costCompany: '',
+        smartAddressId: '',
+        smartAddressPw: '',
         lendDate: '',
         receiptDate: '',
         returnDate: '',
         modelName: '',
         notes: '',
-        contractYears: '',
         status: '貸出準備中',
+        contractYears: '',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
 
@@ -55,10 +62,8 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
     useEffect(() => {
         if (initialData) {
             setFormData(initialData);
-
             const normalized = normalizePhoneNumber(initialData.phoneNumber || '');
 
-            // 補完後の正規化番号を取得（iPhoneフォームと同様のロジック）
             let processed = normalized;
             if (processed.length > 0 && processed[0] !== '0') {
                 if (processed.length === 10 || processed.length === 9) {
@@ -124,7 +129,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
             setErrorFields(next);
         }
 
-        // Update main phoneNumber field
         const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
         setFormData(prev => ({ ...prev, phoneNumber: combined }));
     };
@@ -135,8 +139,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         const newErrorFields = new Set<string>();
         let firstErrorField: HTMLElement | null = null;
 
-        // Check Management Number Uniqueness
-        const isManagementNumberDuplicate = featurePhones.some(item =>
+        const isManagementNumberDuplicate = iPhones.some(item =>
             item.managementNumber === formData.managementNumber &&
             (!initialData || item.id !== initialData.id)
         );
@@ -145,15 +148,14 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
             if (!firstErrorField) firstErrorField = managementNumberRef.current;
         }
 
-        // Check Phone Number Uniqueness (normalize for comparison)
         const currentPhone = `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
-        const isPhoneNumberDuplicate = featurePhones.some(item =>
+        const isPhoneNumberDuplicate = iPhones.some(item =>
             normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(currentPhone) &&
             (!initialData || item.id !== initialData.id)
         );
         if (isPhoneNumberDuplicate) {
             newErrorFields.add('phoneNumber');
-            if (!firstErrorField) firstErrorField = phoneNumberRef.current; // Focus on the first part
+            if (!firstErrorField) firstErrorField = phoneNumberRef.current;
         }
 
         if (newErrorFields.size > 0) {
@@ -174,7 +176,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
             return;
         }
 
-        // Final normalization before submit
         const finalPhone = formatPhoneNumber(formData.phoneNumber);
         const finalContractYears = normalizeContractYear(formData.contractYears || '');
         onSubmit({ ...formData, phoneNumber: finalPhone, contractYears: finalContractYears });
@@ -183,110 +184,125 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-8">
+                {/* Basic Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                    <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">管理番号</label>
-                            <input
+                            <FormLabel>ID</FormLabel>
+                            <Input
+                                type="text"
+                                name="id"
+                                value={formData.id || ''}
+                                onChange={handleChange}
+                                placeholder="新規登録時は自動生成されます（任意入力可）"
+                            />
+                        </div>
+
+                        <div>
+                            <FormLabel required>管理番号</FormLabel>
+                            <Input
+                                ref={managementNumberRef}
                                 type="text"
                                 name="managementNumber"
                                 value={formData.managementNumber}
+                                onChange={handleChange}
+                                required
+                                error={errorFields.has('managementNumber')}
+                            />
+                            {errorFields.has('managementNumber') && <FormError>既に登録されている管理番号です</FormError>}
+                        </div>
 
-                                onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('managementNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
-                                required
-                                ref={managementNumberRef}
-                            />
-                            {errorFields.has('managementNumber') && <p className="text-red-500 text-sm mt-1">既に登録されている管理番号です</p>}
-                        </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">機種名</label>
-                            <input
-                                type="text"
-                                name="modelName"
-                                value={formData.modelName}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+                            <FormLabel required>電話番号</FormLabel>
                             <div className="flex items-center gap-2">
-                                <input
+                                <Input
+                                    ref={phoneNumberRef}
                                     type="text"
                                     name="part1"
                                     value={phoneParts.part1}
-
                                     onChange={handlePhoneChange}
                                     maxLength={3}
-                                    className={`w-16 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('phoneNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                    className="w-16 text-center"
                                     placeholder="090"
                                     required
-                                    ref={phoneNumberRef}
+                                    error={errorFields.has('phoneNumber')}
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
+                                <Input
                                     type="text"
                                     name="part2"
                                     value={phoneParts.part2}
                                     onChange={handlePhoneChange}
                                     maxLength={4}
-                                    className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('phoneNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                    className="w-20 text-center"
                                     placeholder="1234"
                                     required
+                                    error={errorFields.has('phoneNumber')}
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
+                                <Input
                                     type="text"
                                     name="part3"
                                     value={phoneParts.part3}
                                     onChange={handlePhoneChange}
                                     maxLength={4}
-                                    className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('phoneNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                    className="w-20 text-center"
                                     placeholder="5678"
                                     required
+                                    error={errorFields.has('phoneNumber')}
                                 />
                             </div>
-                            {errorFields.has('phoneNumber') && <p className="text-red-500 text-sm mt-1">既に登録されている電話番号です</p>}
+                            {errorFields.has('phoneNumber') && <FormError>既に登録されている電話番号です</FormError>}
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">キャリア</label>
-                            <select
+                            <FormLabel>機種名</FormLabel>
+                            <Input
+                                type="text"
+                                name="modelName"
+                                value={formData.modelName}
+                                onChange={handleChange}
+                                placeholder="例: iPhone 13, iPhone SE (第3世代)"
+                            />
+                        </div>
+
+                        <div>
+                            <FormLabel>キャリア</FormLabel>
+                            <Select
                                 name="carrier"
                                 value={formData.carrier}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="選択してください"
                             >
-                                <option value="">選択してください</option>
                                 <option value="KDDI">KDDI</option>
                                 <option value="Au">Au</option>
                                 <option value="Softbank">Softbank</option>
                                 <option value="Docomo">Docomo</option>
                                 <option value="Rakuten">Rakuten</option>
-                            </select>
+                            </Select>
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">契約年数</label>
-                            <input
+                            <FormLabel>契約年数</FormLabel>
+                            <Input
                                 type="text"
                                 name="contractYears"
                                 value={formData.contractYears || ''}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="例: 2年"
                             />
                         </div>
                     </div>
                 </div>
 
+                {/* User Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
+                    <SectionHeader>使用者情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員名 (社員コード)</label>
+                            <FormLabel>社員名 (社員コード)</FormLabel>
                             <SearchableSelect
                                 options={employeeOptions}
                                 value={formData.employeeId}
@@ -294,8 +310,9 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 placeholder="社員を検索..."
                             />
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所(住所コード)</label>
+                            <FormLabel>住所 (住所コード)</FormLabel>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}
@@ -303,72 +320,75 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 placeholder="住所・拠点を検索..."
                             />
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">貸与日</label>
-                            <input
+                            <FormLabel>貸与日</FormLabel>
+                            <Input
                                 type="date"
                                 name="lendDate"
                                 value={formData.lendDate}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
-                    </div>
-                </div>
 
-                <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">管理情報</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">負担先会社</label>
-                            <input
-                                type="text"
-                                name="costCompany"
-                                value={formData.costCompany}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">受領書提出日</label>
-                            <input
+                            <FormLabel>受領書提出日</FormLabel>
+                            <Input
                                 type="text"
                                 name="receiptDate"
                                 value={formData.receiptDate}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="日付またはテキスト"
                             />
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">返却日</label>
-                            <input
+                            <FormLabel>返却日</FormLabel>
+                            <Input
                                 type="date"
                                 name="returnDate"
                                 value={formData.returnDate}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                     </div>
                 </div>
 
+                {/* Additional Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                    <SectionHeader>その他</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">備考1</label>
-                            <textarea
-                                name="notes"
-                                value={formData.notes}
+                        <div>
+                            <FormLabel>SMARTアドレス帳ID</FormLabel>
+                            <Input
+                                type="text"
+                                name="smartAddressId"
+                                value={formData.smartAddressId}
                                 onChange={handleChange}
-                                rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <FormLabel>SMARTアドレス帳PW</FormLabel>
+                            <Input
+                                type="text"
+                                name="smartAddressPw"
+                                value={formData.smartAddressPw}
+                                onChange={handleChange}
                             />
                         </div>
                     </div>
+
+                    <div>
+                        <FormLabel>備考</FormLabel>
+                        <TextArea
+                            name="notes"
+                            value={formData.notes}
+                            onChange={handleChange}
+                            rows={3}
+                        />
+                    </div>
                 </div>
-            </div>
+            </div >
 
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
                 <button
@@ -385,6 +405,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                     保存
                 </button>
             </div>
-        </form>
+        </form >
     );
 };

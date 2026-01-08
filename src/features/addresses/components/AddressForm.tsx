@@ -1,50 +1,19 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Address } from '../../lib/types';
-import { useData } from '../context/DataContext';
-import { SearchableSelect } from '../../components/ui/SearchableSelect';
-import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
+import type { Address } from '../address.types';
+import { useData } from '../../context/DataContext';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
+import { Input } from '../../../components/ui/Input';
+import { TextArea } from '../../../components/ui/TextArea';
+import { FormLabel, FormError } from '../../../components/ui/Form';
+import { SectionHeader } from '../../../components/ui/Section';
 
 interface AddressFormProps {
     initialData?: Address;
     onSubmit: (data: Omit<Address, 'id'>) => void;
     onCancel: () => void;
 }
-
-interface AddressInputFieldProps {
-    label: string;
-    name: string;
-    value: string | number;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    type?: string;
-    required?: boolean;
-    inputRef?: React.Ref<HTMLInputElement>;
-    error?: string;
-}
-
-const AddressInputField = ({
-    label,
-    name,
-    value,
-    onChange,
-    type = 'text',
-    required = false,
-    inputRef,
-    error
-}: AddressInputFieldProps) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <input
-            ref={inputRef}
-            type={type}
-            name={name}
-            value={value}
-            onChange={onChange}
-            className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
-            required={required}
-        />
-        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-    </div>
-);
 
 export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit, onCancel }) => {
     const { areas, addresses } = useData();
@@ -233,22 +202,34 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
             <div className="space-y-8">
                 {/* Basic Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                    <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <AddressInputField label="No." name="no" value={formData.no} onChange={handleChange} />
-                        <AddressInputField
-                            label="住所コード"
-                            name="addressCode"
-                            value={formData.addressCode}
-                            onChange={handleChange}
-                            required
-                            inputRef={codeRef}
-                            error={errorFields.has('addressCode') ? '既に登録されている住所コードです' : undefined}
-                        />
-                        <AddressInputField label="事業所名" name="officeName" value={formData.officeName} onChange={handleChange} required />
-                        <AddressInputField label="事業部" name="division" value={formData.division} onChange={handleChange} />
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア名 (エリアコード)</label>
+                            <FormLabel>No.</FormLabel>
+                            <Input name="no" value={formData.no} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel required>住所コード</FormLabel>
+                            <Input
+                                ref={codeRef}
+                                name="addressCode"
+                                value={formData.addressCode}
+                                onChange={handleChange}
+                                required
+                                error={errorFields.has('addressCode')}
+                            />
+                            {errorFields.has('addressCode') && <FormError>既に登録されている住所コードです</FormError>}
+                        </div>
+                        <div>
+                            <FormLabel required>事業所名</FormLabel>
+                            <Input name="officeName" value={formData.officeName} onChange={handleChange} required />
+                        </div>
+                        <div>
+                            <FormLabel>事業部</FormLabel>
+                            <Input name="division" value={formData.division} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>エリア名 (エリアコード)</FormLabel>
                             <SearchableSelect
                                 options={areaOptions}
                                 value={formData.area}
@@ -261,173 +242,178 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
                 {/* Contact Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">連絡先情報</h3>
+                    <SectionHeader>連絡先情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">ＴＥＬ</label>
+                            <FormLabel>ＴＥＬ</FormLabel>
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
+                                <Input
                                     name="part1"
                                     value={telParts.part1}
                                     onChange={handleTelChange}
                                     maxLength={3}
-                                    className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-16 text-center"
                                     placeholder="03"
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
-                                    type="text"
+                                <Input
                                     name="part2"
                                     value={telParts.part2}
                                     onChange={handleTelChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-20 text-center"
                                     placeholder="1234"
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
-                                    type="text"
+                                <Input
                                     name="part3"
                                     value={telParts.part3}
                                     onChange={handleTelChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-20 text-center"
                                     placeholder="5678"
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">ＦＡＸ</label>
+                            <FormLabel>ＦＡＸ</FormLabel>
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
+                                <Input
                                     name="part1"
                                     value={faxParts.part1}
                                     onChange={handleFaxChange}
                                     maxLength={3}
-                                    className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-16 text-center"
                                     placeholder="03"
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
-                                    type="text"
+                                <Input
                                     name="part2"
                                     value={faxParts.part2}
                                     onChange={handleFaxChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-20 text-center"
                                     placeholder="1234"
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
-                                    type="text"
+                                <Input
                                     name="part3"
                                     value={faxParts.part3}
                                     onChange={handleFaxChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-20 text-center"
                                     placeholder="5678"
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">〒</label>
+                            <FormLabel>〒</FormLabel>
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
+                                <Input
                                     name="part1"
                                     value={zipParts.part1}
                                     onChange={handleZipChange}
                                     maxLength={3}
-                                    className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-16 text-center"
                                     placeholder="123"
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
-                                    type="text"
+                                <Input
                                     name="part2"
                                     value={zipParts.part2}
                                     onChange={handleZipChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-20 text-center"
                                     placeholder="4567"
                                 />
                             </div>
                         </div>
                         <div className="md:col-span-2">
-                            <AddressInputField label="住所" name="address" value={formData.address} onChange={handleChange} required />
+                            <FormLabel required>住所</FormLabel>
+                            <Input name="address" value={formData.address} onChange={handleChange} required />
                         </div>
                     </div>
                 </div>
 
                 {/* Detailed Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">詳細情報</h3>
+                    <SectionHeader>詳細情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <AddressInputField label="区分" name="type" value={formData.type} onChange={handleChange} />
-                        <AddressInputField label="主担当" name="mainPerson" value={formData.mainPerson} onChange={handleChange} />
-                        <AddressInputField label="枝番" name="branchNumber" value={formData.branchNumber} onChange={handleChange} />
-                        <AddressInputField label="※" name="specialNote" value={formData.specialNote} onChange={handleChange} />
+                        <div>
+                            <FormLabel>区分</FormLabel>
+                            <Input name="type" value={formData.type} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>主担当</FormLabel>
+                            <Input name="mainPerson" value={formData.mainPerson} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>枝番</FormLabel>
+                            <Input name="branchNumber" value={formData.branchNumber} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>※</FormLabel>
+                            <Input name="specialNote" value={formData.specialNote} onChange={handleChange} />
+                        </div>
                     </div>
                 </div>
 
                 {/* Label Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">宛名ラベル情報</h3>
+                    <SectionHeader>宛名ラベル情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <AddressInputField label="宛名ラベル用" name="labelName" value={formData.labelName} onChange={handleChange} />
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">宛名ラベル用〒</label>
+                            <FormLabel>宛名ラベル用</FormLabel>
+                            <Input name="labelName" value={formData.labelName} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>宛名ラベル用〒</FormLabel>
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
+                                <Input
                                     name="part1"
                                     value={labelZipParts.part1}
                                     onChange={handleLabelZipChange}
                                     maxLength={3}
-                                    className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-16 text-center"
                                     placeholder="123"
                                 />
                                 <span className="text-gray-500">-</span>
-                                <input
-                                    type="text"
+                                <Input
                                     name="part2"
                                     value={labelZipParts.part2}
                                     onChange={handleLabelZipChange}
                                     maxLength={4}
-                                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                                    className="w-20 text-center"
                                     placeholder="4567"
                                 />
                             </div>
                         </div>
                         <div className="md:col-span-2">
-                            <AddressInputField label="宛名ラベル用住所" name="labelAddress" value={formData.labelAddress} onChange={handleChange} />
+                            <FormLabel>宛名ラベル用住所</FormLabel>
+                            <Input name="labelAddress" value={formData.labelAddress} onChange={handleChange} />
                         </div>
                     </div>
                 </div>
 
                 {/* Others */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                    <SectionHeader>その他</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
-                            <textarea
+                            <FormLabel>備考</FormLabel>
+                            <TextArea
                                 name="notes"
                                 value={formData.notes}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 rows={2}
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">注意書き</label>
-                            <textarea
+                            <FormLabel>注意書き</FormLabel>
+                            <TextArea
                                 name="attentionNote"
                                 value={formData.attentionNote}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 rows={2}
                             />
                         </div>

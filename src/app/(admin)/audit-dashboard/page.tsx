@@ -10,9 +10,9 @@ import {
 import { Activity, AlertTriangle, ShieldAlert, ArrowRight, ShieldCheck, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import LogDetailModal from '../../../components/features/logs/LogDetailModal';
+import LogDetailModal from '../../../features/logs/components/LogDetailModal';
 import { useAuditLogs } from '../../../features/logs/useAuditLogs';
-import { ReportGenerationModal } from '../../../components/features/audit/ReportGenerationModal';
+import { ReportGenerationModal } from '../../../features/audit/components/ReportGenerationModal';
 import { fetchAuditLogByIdServer } from '../../../features/logs/logs.server';
 import { logService } from '../../../features/logs/log.service';
 

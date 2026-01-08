@@ -1,4 +1,5 @@
-import React from 'react';
+import { DetailRow } from '../../../components/ui/DetailView';
+import { SectionHeader } from '../../../components/ui/Section';
 import { Modal } from '../../../components/ui/Modal';
 import { Router } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
@@ -68,10 +69,10 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                         <SectionHeader icon={<Server size={18} />} title="ネットワーク情報 (Network)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <DetailRow label="IP Address" value={item.ipAddress} isCode />
-                                <DetailRow label="Subnet" value={item.subnetMask} isCode />
-                                <DetailRow label="Start IP" value={item.startIp} isCode />
-                                <DetailRow label="End IP" value={item.endIp} isCode />
+                                <DetailRow label="IP Address" value={item.ipAddress} isSensitive />
+                                <DetailRow label="Subnet" value={item.subnetMask} isSensitive />
+                                <DetailRow label="Start IP" value={item.startIp} isSensitive />
+                                <DetailRow label="End IP" value={item.endIp} isSensitive />
                             </div>
                         </div>
                     </div>
@@ -85,7 +86,7 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                                 <DetailRow label="契約年数" value={normalizeContractYear(item.contractStatus || '')} />
                                 <DetailRow label="請求元" value={item.biller} />
                                 <DetailRow label="負担先" value={item.costBearer} />
-                                <DetailRow label="費用" value={item.cost ? `¥${item.cost.toLocaleString()}` : '-'} isCode />
+                                <DetailRow label="費用" value={item.cost ? `¥${item.cost.toLocaleString()}` : '-'} isSensitive />
                                 <DetailRow label="費用振替" value={item.costTransfer} />
                             </div>
                         </div>
@@ -118,29 +119,4 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
     );
 };
 
-// Helper Components
-const SectionHeader = ({ icon, title }: { icon: React.ReactNode, title: string }) => (
-    <div className="flex items-center gap-2 text-indigo-900 border-b-2 border-indigo-50 pb-2 mb-2">
-        <span className="text-indigo-500">{icon}</span>
-        <h4 className="font-bold text-sm uppercase tracking-wide">{title}</h4>
-    </div>
-);
 
-const DetailRow = ({ label, value, subValue, icon, isCode }: { label: string, value: string | undefined, subValue?: string, icon?: React.ReactNode, isCode?: boolean }) => (
-    <div className="group">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5 block">{label}</label>
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                {icon}
-                <span className={`font-medium ${!value ? 'text-gray-300' : 'text-gray-800'} ${isCode ? 'font-mono' : ''}`}>
-                    {value || '-'}
-                </span>
-                {subValue && (
-                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                        {subValue}
-                    </span>
-                )}
-            </div>
-        </div>
-    </div>
-);

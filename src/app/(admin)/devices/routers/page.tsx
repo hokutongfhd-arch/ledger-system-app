@@ -10,7 +10,7 @@ import type { Router } from '../../../../features/devices/device.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
-import { RouterForm } from '../../../../features/forms/RouterForm';
+import { RouterForm } from '../../../../features/devices/components/RouterForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { RouterDetailModal } from '../../../../features/devices/components/RouterDetailModal';

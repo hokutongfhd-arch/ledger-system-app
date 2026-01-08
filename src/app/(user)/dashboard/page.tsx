@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../features/context/AuthContext';
-import { useSystemAlerts } from '../../../features/hooks/useSystemAlerts';
+import { useSystemAlerts } from '../../../features/notifications/hooks/useSystemAlerts';
 import { AlertCircle, ChevronRight } from 'lucide-react';
-import { UserProfileCard } from '../../../features/components/UserProfileCard';
-import { UserDeviceList } from '../../../features/components/UserDeviceList';
-import { MemoPad } from '../../../features/components/MemoPad';
+import { UserProfileCard } from '../../../features/employees/components/UserProfileCard';
+import { UserDeviceList } from '../../../features/employees/components/UserDeviceList';
+import { MemoPad } from '../../../features/dashboard/components/MemoPad';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 

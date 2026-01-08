@@ -9,7 +9,7 @@ import { Table } from '../../../../components/ui/Table';
 import type { Area } from '../../../../features/areas/area.types';
 import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { AreaForm } from '../../../../features/forms/AreaForm';
+import { AreaForm } from '../../../../features/areas/components/AreaForm';
 import { AreaDetailModal } from '../../../../features/areas/components/AreaDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import * as XLSX from 'xlsx';

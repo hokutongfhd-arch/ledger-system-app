@@ -1,0 +1,30 @@
+﻿
+> ledger-system-app@0.0.0 lint
+> next lint
+
+node.exe : Invalid pr
+oject directory provi
+ded, no such director
+y: C:\Users\hokuto-ma
+rui\ledger-system-app
+\lint
+発生場所 行:1 文字:1
++ & "C:\Program Files
+\nodejs/node.exe" "C:
+\Program Files\nodejs
+/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (Invalid   
+  project...syste    
+m-app\lint:Strin    g
+) [], RemoteExc    ep
+tion
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 

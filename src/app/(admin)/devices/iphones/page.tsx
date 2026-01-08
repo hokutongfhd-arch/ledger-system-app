@@ -9,7 +9,7 @@ import { Table } from '../../../../components/ui/Table';
 import type { IPhone } from '../../../../features/devices/device.types';
 import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { IPhoneForm } from '../../../../features/forms/IPhoneForm';
+import { IPhoneForm } from '../../../../features/devices/components/IPhoneForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { IPhoneDetailModal } from '../../../../features/devices/components/IPhoneDetailModal';

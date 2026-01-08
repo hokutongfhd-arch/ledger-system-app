@@ -1,9 +1,15 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Router } from '../../lib/types';
-import { useData } from '../context/DataContext';
-import { SearchableSelect } from '../../components/ui/SearchableSelect';
-import { formatPhoneNumber, normalizePhoneNumber } from '../../lib/utils/phoneUtils';
-import { normalizeContractYear } from '../../lib/utils/stringUtils';
+import type { Router } from '../device.types';
+import { useData } from '../../context/DataContext';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
+import { normalizeContractYear } from '../../../lib/utils/stringUtils';
+import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
+import { TextArea } from '../../../components/ui/TextArea';
+import { FormLabel, FormError } from '../../../components/ui/Form';
+import { SectionHeader } from '../../../components/ui/Section';
 
 interface RouterFormProps {
     initialData?: Router;
@@ -245,47 +251,51 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+        <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-8">
                 {/* Basic Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                    <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">No.</label>
-                            <input type="text" name="no" value={formData.no} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>No.</FormLabel>
+                            <Input name="no" value={formData.no} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">契約状況</label>
-                            <input type="text" name="contractStatus" value={formData.contractStatus} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>契約状況</FormLabel>
+                            <Input name="contractStatus" value={formData.contractStatus} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">契約年数</label>
-                            <input type="text" name="contractYears" value={formData.contractYears || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="例: 2年" />
+                            <FormLabel>契約年数</FormLabel>
+                            <Input
+                                name="contractYears"
+                                value={formData.contractYears || ''}
+                                onChange={handleChange}
+                                placeholder="例: 2年"
+                            />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">通信キャリア</label>
-                            <select
+                            <FormLabel>通信キャリア</FormLabel>
+                            <Select
                                 name="carrier"
                                 value={formData.carrier}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                placeholder="選択してください"
                             >
-                                <option value="">選択してください</option>
                                 <option value="KDDI">KDDI</option>
                                 <option value="Au">Au</option>
                                 <option value="Softbank">Softbank</option>
                                 <option value="Docomo">Docomo</option>
                                 <option value="Rakuten">Rakuten</option>
-                            </select>
+                            </Select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">機種型番</label>
-                            <input type="text" name="modelNumber" value={formData.modelNumber} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>機種型番</FormLabel>
+                            <Input name="modelNumber" value={formData.modelNumber} onChange={handleChange} />
                         </div>
                         <div>
                             <div className="flex justify-between items-end mb-1">
-                                <label className="block text-sm font-medium text-gray-700">SIM電番</label>
+                                <FormLabel>SIM電番</FormLabel>
                                 <button
                                     type="button"
                                     onClick={togglePhoneMode}
@@ -295,70 +305,80 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 </button>
                             </div>
                             {is14Digit ? (
-                                <input
+                                <Input
+                                    ref={simNumberRef}
                                     type="text"
                                     name="part1"
                                     value={phoneParts.part1}
                                     onChange={handlePhoneChange}
                                     maxLength={14}
-                                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                    className="font-mono"
                                     placeholder="14桁の番号を入力"
-                                    ref={simNumberRef}
+                                    error={errorFields.has('simNumber')}
                                 />
                             ) : (
                                 <div className="flex items-center gap-2">
-                                    <input
+                                    <Input
+                                        ref={simNumberRef}
                                         type="text"
                                         name="part1"
                                         value={phoneParts.part1}
                                         onChange={handlePhoneChange}
                                         maxLength={3}
-                                        className={`w-16 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                        className="w-16 text-center"
                                         placeholder="090"
-                                        ref={simNumberRef}
+                                        error={errorFields.has('simNumber')}
                                     />
                                     <span className="text-gray-500">-</span>
-                                    <input
+                                    <Input
                                         type="text"
                                         name="part2"
                                         value={phoneParts.part2}
                                         onChange={handlePhoneChange}
                                         maxLength={4}
-                                        className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                        className="w-20 text-center"
                                         placeholder="1234"
+                                        error={errorFields.has('simNumber')}
                                     />
                                     <span className="text-gray-500">-</span>
-                                    <input
+                                    <Input
                                         type="text"
                                         name="part3"
                                         value={phoneParts.part3}
                                         onChange={handlePhoneChange}
                                         maxLength={4}
-                                        className={`w-20 px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-center ${errorFields.has('simNumber') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                        className="w-20 text-center"
                                         placeholder="5678"
+                                        error={errorFields.has('simNumber')}
                                     />
                                 </div>
                             )}
-                            {errorFields.has('simNumber') && <p className="text-red-500 text-sm mt-1">既に登録されているSIM電番です</p>}
+                            {errorFields.has('simNumber') && <FormError>既に登録されているSIM電番です</FormError>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">通信容量</label>
-                            <input type="text" name="dataCapacity" value={formData.dataCapacity} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>通信容量</FormLabel>
+                            <Input name="dataCapacity" value={formData.dataCapacity} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">端末CD</label>
-                            <input type="text" name="terminalCode" value={formData.terminalCode} onChange={handleChange} className={`w-full px-3 py-2 border rounded-md ${errorFields.has('terminalCode') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`} ref={terminalCodeRef} />
-                            {errorFields.has('terminalCode') && <p className="text-red-500 text-sm mt-1">既に登録されている端末CDです</p>}
+                            <FormLabel>端末CD</FormLabel>
+                            <Input
+                                ref={terminalCodeRef}
+                                name="terminalCode"
+                                value={formData.terminalCode}
+                                onChange={handleChange}
+                                error={errorFields.has('terminalCode')}
+                            />
+                            {errorFields.has('terminalCode') && <FormError>既に登録されている端末CDです</FormError>}
                         </div>
                     </div>
                 </div>
 
                 {/* User Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">使用者情報</h3>
+                    <SectionHeader>使用者情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員名(社員コード)</label>
+                            <FormLabel>社員名(社員コード)</FormLabel>
                             <SearchableSelect
                                 options={employeeOptions}
                                 value={formData.employeeCode}
@@ -367,7 +387,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所(住所コード)</label>
+                            <FormLabel>住所(住所コード)</FormLabel>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}
@@ -376,88 +396,86 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">実貸与先</label>
-                            <input type="text" name="actualLender" value={formData.actualLender} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>実貸与先</FormLabel>
+                            <Input name="actualLender" value={formData.actualLender} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">実貸与先名</label>
-                            <input type="text" name="actualLenderName" value={formData.actualLenderName} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>実貸与先名</FormLabel>
+                            <Input name="actualLenderName" value={formData.actualLenderName} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">会社</label>
-                            <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>会社</FormLabel>
+                            <Input name="company" value={formData.company} onChange={handleChange} />
                         </div>
                     </div>
                 </div>
 
                 {/* Network Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">ネットワーク情報</h3>
+                    <SectionHeader>ネットワーク情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">IPアドレス</label>
-                            <input type="text" name="ipAddress" value={formData.ipAddress} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>IPアドレス</FormLabel>
+                            <Input name="ipAddress" value={formData.ipAddress} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">サブネットマスク</label>
-                            <input type="text" name="subnetMask" value={formData.subnetMask} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>サブネットマスク</FormLabel>
+                            <Input name="subnetMask" value={formData.subnetMask} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">開始IP</label>
-                            <input type="text" name="startIp" value={formData.startIp} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>開始IP</FormLabel>
+                            <Input name="startIp" value={formData.startIp} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">終了IP</label>
-                            <input type="text" name="endIp" value={formData.endIp} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>終了IP</FormLabel>
+                            <Input name="endIp" value={formData.endIp} onChange={handleChange} />
                         </div>
                     </div>
                 </div>
 
                 {/* Cost Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">費用・管理情報</h3>
+                    <SectionHeader>費用・管理情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">請求元</label>
-                            <input type="text" name="biller" value={formData.biller} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>請求元</FormLabel>
+                            <Input name="biller" value={formData.biller} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">費用</label>
-                            <input type="number" name="cost" value={formData.cost} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>費用</FormLabel>
+                            <Input type="number" name="cost" value={formData.cost} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">費用振替</label>
-                            <input type="text" name="costTransfer" value={formData.costTransfer} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>費用振替</FormLabel>
+                            <Input name="costTransfer" value={formData.costTransfer} onChange={handleChange} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">負担先</label>
-                            <input type="text" name="costBearer" value={formData.costBearer} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            <FormLabel>負担先</FormLabel>
+                            <Input name="costBearer" value={formData.costBearer} onChange={handleChange} />
                         </div>
                     </div>
                 </div>
 
                 {/* Others */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">その他</h3>
+                    <SectionHeader>その他</SectionHeader>
                     <div className="grid grid-cols-1 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">貸与履歴</label>
-                            <textarea
+                            <FormLabel>貸与履歴</FormLabel>
+                            <TextArea
                                 name="lendingHistory"
                                 value={formData.lendingHistory}
                                 onChange={handleChange}
                                 rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">備考(返却日)</label>
-                            <textarea
+                            <FormLabel>備考(返却日)</FormLabel>
+                            <TextArea
                                 name="notes"
                                 value={formData.notes}
                                 onChange={handleChange}
                                 rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                     </div>

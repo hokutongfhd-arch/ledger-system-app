@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import type { Area } from '../../lib/types';
 
-import { useData } from '../context/DataContext';
+import React, { useState, useEffect, useRef } from 'react';
+import type { Area } from '../area.types';
+import { useData } from '../../context/DataContext';
+import { Input } from '../../../components/ui/Input';
+import { FormLabel, FormError } from '../../../components/ui/Form';
+import { SectionHeader } from '../../../components/ui/Section';
 
 interface AreaFormProps {
     initialData?: Area;
@@ -58,11 +61,11 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-8">
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                    <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">エリアコード</label>
-                            <input
+                            <FormLabel required>エリアコード</FormLabel>
+                            <Input
                                 ref={codeRef}
                                 type="text"
                                 name="areaCode"
@@ -75,22 +78,21 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
                                         setErrorFields(next);
                                     }
                                 }}
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('areaCode') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                 required
+                                error={errorFields.has('areaCode')}
                             />
                             {errorFields.has('areaCode') && (
-                                <p className="text-red-500 text-sm mt-1">既に登録されているエリアコードです</p>
+                                <FormError>既に登録されているエリアコードです</FormError>
                             )}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア名</label>
-                            <input
+                            <FormLabel required>エリア名</FormLabel>
+                            <Input
                                 type="text"
                                 name="areaName"
                                 value={formData.areaName}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                         </div>

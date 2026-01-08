@@ -14,6 +14,7 @@ interface SearchableSelectProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
+    error?: boolean;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -23,6 +24,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     placeholder = '選択してください',
     className = '',
     disabled = false,
+    error = false,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -80,8 +82,10 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             <div
                 className={`
                     w-full px-3 py-2 border rounded-md bg-white flex items-center justify-between cursor-pointer transition-colors
-                    ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'hover:border-blue-400'}
-                    ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : 'border-gray-300'}
+                    ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}
+                    ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'}
+                    ${!disabled && !error ? 'hover:border-blue-400' : ''}
+                    ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}
                 `}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
             >

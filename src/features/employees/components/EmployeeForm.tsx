@@ -1,8 +1,13 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Employee } from '../../lib/types';
-import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext';
-import { SearchableSelect } from '../../components/ui/SearchableSelect';
+import type { Employee } from '../employee.types';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
+import { FormLabel, FormError } from '../../../components/ui/Form';
+import { SectionHeader } from '../../../components/ui/Section';
 
 interface EmployeeFormProps {
     initialData?: Employee;
@@ -105,11 +110,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
             <div className="space-y-8">
                 {/* Basic Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">基本情報</h3>
+                    <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員コード</label>
-                            <input
+                            <FormLabel>社員コード</FormLabel>
+                            <Input
                                 ref={codeRef}
                                 type="text"
                                 name="code"
@@ -122,66 +127,61 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                         setErrorFields(next);
                                     }
                                 }}
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${errorFields.has('code') ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                error={errorFields.has('code')}
                                 required
                                 disabled={isSelfEdit}
                             />
                             {errorFields.has('code') && (
-                                <p className="text-red-500 text-sm mt-1">既に登録されている社員コードです</p>
+                                <FormError>既に登録されている社員コードです</FormError>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
-                            <select
+                            <FormLabel>性別</FormLabel>
+                            <Select
                                 name="gender"
                                 value={formData.gender}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="選択してください"
                             >
-                                <option value="">選択してください</option>
                                 <option value="男性">男性</option>
                                 <option value="女性">女性</option>
-                            </select>
+                            </Select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">氏名</label>
-                            <input
+                            <FormLabel>氏名</FormLabel>
+                            <Input
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">氏名カナ</label>
-                            <input
+                            <FormLabel>氏名カナ</FormLabel>
+                            <Input
                                 type="text"
                                 name="nameKana"
                                 value={formData.nameKana}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">生年月日</label>
-                            <input
+                            <FormLabel>生年月日</FormLabel>
+                            <Input
                                 type="date"
                                 name="birthDate"
                                 value={formData.birthDate}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">年齢</label>
-                            <input
+                            <FormLabel>年齢</FormLabel>
+                            <Input
                                 type="number"
                                 name="age"
                                 value={formData.age}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                     </div>
@@ -189,10 +189,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
 
                 {/* Work Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">所属・勤務情報</h3>
+                    <SectionHeader>所属・勤務情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">エリア名 (エリアコード)</label>
+                            <FormLabel>エリア名 (エリアコード)</FormLabel>
                             <SearchableSelect
                                 options={areaOptions}
                                 value={formData.areaCode}
@@ -201,7 +201,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">住所 (住所コード)</label>
+                            <FormLabel>住所 (住所コード)</FormLabel>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}
@@ -210,83 +210,75 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">入社年月日</label>
-                            <input
+                            <FormLabel>入社年月日</FormLabel>
+                            <Input
                                 type="date"
                                 name="joinDate"
                                 value={formData.joinDate}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">勤続年数</label>
-                            <input
+                            <FormLabel>勤続年数</FormLabel>
+                            <Input
                                 type="number"
                                 name="yearsOfService"
                                 value={formData.yearsOfService}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">勤続端数月数</label>
-                            <input
+                            <FormLabel>勤続端数月数</FormLabel>
+                            <Input
                                 type="number"
                                 name="monthsHasuu"
                                 value={formData.monthsHasuu}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">職種</label>
-                            <input
+                            <FormLabel>職種</FormLabel>
+                            <Input
                                 type="text"
                                 name="jobType"
                                 value={formData.jobType}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">役付</label>
-                            <input
+                            <FormLabel>役付</FormLabel>
+                            <Input
                                 type="text"
                                 name="roleTitle"
                                 value={formData.roleTitle}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">社員区分</label>
-                            <input
+                            <FormLabel>社員区分</FormLabel>
+                            <Input
                                 type="text"
                                 name="employeeType"
                                 value={formData.employeeType}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">給与区分</label>
-                            <input
+                            <FormLabel>給与区分</FormLabel>
+                            <Input
                                 type="text"
                                 name="salaryType"
                                 value={formData.salaryType}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">原価区分</label>
-                            <input
+                            <FormLabel>原価区分</FormLabel>
+                            <Input
                                 type="text"
                                 name="costType"
                                 value={formData.costType}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                     </div>
@@ -294,30 +286,29 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
 
                 {/* System Info */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2 mb-4">システム情報</h3>
+                    <SectionHeader>システム情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">権限</label>
-                            <select
+                            <FormLabel>権限</FormLabel>
+                            <Select
                                 name="role"
                                 value={formData.role}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                                 disabled={!isAdmin}
                             >
                                 <option value="user">ユーザー</option>
                                 <option value="admin">管理者</option>
-                            </select>
+                            </Select>
                         </div>
                         {isAdmin && (
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                                <input
+                                <FormLabel>パスワード</FormLabel>
+                                <Input
                                     type="text"
                                     name="password"
                                     value={formData.password || ''}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-yellow-50"
+                                    className="bg-yellow-50"
                                     placeholder="管理者のみ表示"
                                 />
                             </div>

@@ -10,10 +10,10 @@ import { Download, ArrowUp, ArrowDown, ArrowUpDown, FileText, Activity, Database
 import { useAuditLogs } from '../../../features/logs/useAuditLogs';
 import { useOperationLogs } from '../../../features/logs/useOperationLogs';
 import { getWeekRange } from '../../../lib/utils/dateHelpers';
-import { LogFilter } from '../../../components/features/logs/LogFilter';
-import { OperationLogFilter } from '../../../components/features/logs/OperationLogFilter';
-import LogDetailModal from '../../../components/features/logs/LogDetailModal';
-import { OperationLogDetailModal } from '../../../components/features/logs/OperationLogDetailModal';
+import { LogFilter } from '../../../features/logs/components/LogFilter';
+import { OperationLogFilter } from '../../../features/logs/components/OperationLogFilter';
+import LogDetailModal from '../../../features/logs/components/LogDetailModal';
+import { OperationLogDetailModal } from '../../../features/logs/components/OperationLogDetailModal';
 import type { OperationLog } from '../../../lib/types';
 import { clsx } from 'clsx';
 

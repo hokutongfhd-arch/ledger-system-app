@@ -1,8 +1,8 @@
 
-import { useData } from '../context/DataContext';
+import { useData } from '../../context/DataContext';
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { formatPhoneNumber } from '../../lib/utils/phoneUtils';
+import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 
 interface AddressDeviceListProps {
     addressCode: string;

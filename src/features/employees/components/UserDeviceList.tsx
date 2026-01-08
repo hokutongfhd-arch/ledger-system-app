@@ -1,10 +1,10 @@
 
-import { useData } from '../context/DataContext';
-import { useAuth } from '../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 
 import { Smartphone, Wifi, Tablet as TabletIcon, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { formatPhoneNumber } from '../../lib/utils/phoneUtils';
+import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 
 interface UserDeviceListProps {
     targetCode?: string;

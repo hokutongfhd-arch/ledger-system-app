@@ -10,7 +10,7 @@ import type { Tablet } from '../../../../features/devices/device.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { NotificationModal } from '../../../../components/ui/NotificationModal';
-import { TabletForm } from '../../../../features/forms/TabletForm';
+import { TabletForm } from '../../../../features/devices/components/TabletForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { TabletDetailModal } from '../../../../features/devices/components/TabletDetailModal';

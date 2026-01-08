@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../features/context/DataContext';
 import { useAuth } from '../../features/context/AuthContext';
 import { DonutChart } from '../../components/ui/DonutChart';
-import { useSystemAlerts, type AlertSource } from '../../features/hooks/useSystemAlerts';
+import { useSystemAlerts, type AlertSource } from '../../features/notifications/hooks/useSystemAlerts';
 import { SegmentedDonutChart } from '../../components/ui/SegmentedDonutChart';
 import { AlertCircle, ChevronRight } from 'lucide-react';
 
