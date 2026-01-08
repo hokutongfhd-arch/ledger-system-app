@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
@@ -9,22 +9,16 @@ import { Table } from '../../../../components/ui/Table';
 import type { Address } from '../../../../features/addresses/address.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { AddressForm } from '../../../../features/addresses/components/AddressForm';
 import { AddressDetailModal } from '../../../../features/addresses/components/AddressDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
-import { AddressDeviceList } from '../../../../features/addresses/components/AddressDeviceList';
 import * as XLSX from 'xlsx';
 import { useToast } from '../../../../features/context/ToastContext';
 import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
 import { formatZipCode } from '../../../../lib/utils/zipCodeUtils';
-
-type SortKey = 'addressCode' | 'tel' | 'fax' | 'zipCode';
-type SortOrder = 'asc' | 'desc';
-interface SortCriterion {
-    key: SortKey;
-    order: SortOrder;
-}
+import { useDataTable } from '../../../../hooks/useDataTable';
+import { useCSVExport } from '../../../../hooks/useCSVExport';
+import { useFileImport } from '../../../../hooks/useFileImport';
 
 export default function AddressListPage() {
     const { user } = useAuth();
@@ -49,118 +43,43 @@ function AddressListContent() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Address | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Address | undefined>(undefined);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
 
-
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
-
-
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { confirm, ConfirmDialog } = useConfirm();
-
     const { showToast } = useToast();
 
-    const closeNotification = () => { };
-    const showNotification = () => { };
+    // -- Hooks --
+    const {
+        searchTerm, setSearchTerm,
+        currentPage, setCurrentPage,
+        pageSize, setPageSize,
+        sortCriteria, toggleSort,
+        selectedIds, setSelectedIds, handleSelectAll, handleCheckboxChange,
+        paginatedData, filteredData,
+        isAllSelected
+    } = useDataTable<Address>({
+        data: addresses,
+        initialPageSize: 15,
+        searchKeys: ['addressCode', 'officeName', 'division', 'area', 'tel', 'fax', 'zipCode', 'address', 'type', 'mainPerson', 'branchNumber', 'specialNote', 'labelName', 'labelZip', 'labelAddress', 'notes', 'attentionNote'], // Broad search
+        sortConfig: {
+            addressCode: (a, b) => {
+                const partsA = (a.addressCode || '').split('-');
+                const partsB = (b.addressCode || '').split('-');
+                const firstA = parseInt(partsA[0]) || 0;
+                const firstB = parseInt(partsB[0]) || 0;
+                if (firstA !== firstB) return firstA - firstB;
+                const secondA = parseInt(partsA[1]) || 0;
+                const secondB = parseInt(partsB[1]) || 0;
+                return secondA - secondB;
+            }
+        }
+    });
 
-    const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
-    const handleEdit = (item: Address) => { setEditingItem(item); setIsModalOpen(true); };
+    const { handleExport } = useCSVExport<Address>();
 
     const headers = ['No.', '住所コード', '事業所名', '事業部', 'エリアコード', 'TEL', 'FAX', '〒', '住所', '区分', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '備考', '注意書き'];
 
-    const handleExportCSV = () => {
-        const csvContent = [
-            headers.join(','),
-            ...filteredData.map(item => {
-                const areaCode = areas.find(a => a.areaName === item.area)?.areaCode || '';
-                return [
-                    item.no || '',
-                    item.addressCode || '',
-                    item.officeName || '',
-                    item.division || '',
-                    areaCode,
-                    item.tel || '',
-                    item.fax || '',
-                    item.zipCode || '',
-                    item.address || '',
-                    item.type || '',
-                    item.mainPerson || '',
-                    item.branchNumber || '',
-                    item.specialNote || '',
-                    item.labelName || '',
-                    item.labelZip || '',
-                    item.labelAddress || '',
-                    item.notes || '',
-                    item.attentionNote || ''
-                ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
-            })
-        ].join('\n');
-
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `address_list_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-    };
-
-    const handleDownloadTemplate = () => {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-
-        // 1000行分をシートの範囲として明示的に設定する
-        const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({
-            s: { r: 0, c: 0 },
-            e: { r: totalRows, c: headers.length - 1 }
-        });
-
-        // テキスト形式として扱うべき列を設定 (住所コード: B, エリアコード: E, TEL: F, FAX: G, 〒: H)
-        const textCols = [1, 4, 5, 6, 7];
-        for (let R = 1; R <= totalRows; ++R) {
-            textCols.forEach(C => {
-                const ref = XLSX.utils.encode_cell({ r: R, c: C });
-                ws[ref] = { t: 's', v: '', z: '@' };
-            });
-        }
-
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, '住所マスタエクセルフォーマット.xlsx');
-    };
-
-    const handleImportClick = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-            fileInputRef.current.click();
-        }
-    };
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
-
-            if (jsonData.length === 0) {
-                await confirm({
-                    title: 'エラー',
-                    description: 'ファイルが空です。',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-                return;
-            }
-
-            const fileHeaders = jsonData[0] as string[];
+    const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        onValidate: async (rows, fileHeaders) => {
             const missingHeaders = headers.filter(h => !fileHeaders.includes(h));
             if (missingHeaders.length > 0) {
                 await confirm({
@@ -169,10 +88,8 @@ function AddressListContent() {
                     confirmText: 'OK',
                     cancelText: ''
                 });
-                return;
+                return false;
             }
-
-            const rows = jsonData.slice(1);
 
             // Data bounds validation
             const validColumnCount = headers.length;
@@ -189,11 +106,13 @@ function AddressListContent() {
                             confirmText: 'OK',
                             cancelText: ''
                         });
-                        return;
+                        return false;
                     }
                 }
             }
-
+            return true;
+        },
+        onImport: async (rows, fileHeaders) => {
             let successCount = 0;
             let errorCount = 0;
 
@@ -204,8 +123,6 @@ function AddressListContent() {
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
-
-                // 行が実質的に空（すべてのセルが空）であるかチェック
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
@@ -291,18 +208,14 @@ function AddressListContent() {
                 });
             }
 
-            if (successCount > 0) {
-                // Manual log removed - already covered by DB triggers for each record
-            }
-
             if (successCount > 0 || errorCount > 0) {
                 showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
             }
+        }
+    });
 
-            if (event.target) event.target.value = '';
-        };
-        reader.readAsArrayBuffer(file);
-    };
+    const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
+    const handleEdit = (item: Address) => { setEditingItem(item); setIsModalOpen(true); };
 
     const handleDelete = async (item: Address) => {
         const confirmed = await confirm({
@@ -341,80 +254,55 @@ function AddressListContent() {
         }
     };
 
-    const filteredData = addresses.filter(item =>
-        Object.values(item).some(val => String(val || '').toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    const sortedData = [...filteredData].sort((a, b) => {
-        for (const criterion of sortCriteria) {
-            const { key, order } = criterion;
-            let valA: any = a[key as keyof Address];
-            let valB: any = b[key as keyof Address];
-
-            if (key === 'addressCode') {
-                const partsA = (valA || '').split('-');
-                const partsB = (valB || '').split('-');
-                const firstA = parseInt(partsA[0]) || 0;
-                const firstB = parseInt(partsB[0]) || 0;
-                if (firstA !== firstB) return order === 'asc' ? firstA - firstB : firstB - firstA;
-                const secondA = parseInt(partsA[1]) || 0;
-                const secondB = parseInt(partsB[1]) || 0;
-                if (secondA !== secondB) return order === 'asc' ? secondA - secondB : secondB - secondA;
-            } else {
-                return order === 'asc' ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
-            }
-        }
-        return 0;
-    });
-
-    // データの削除などにより現在のページが無効になった場合に調整する
-    useEffect(() => {
-        const totalPages = Math.ceil(sortedData.length / pageSize);
-        if (currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(totalPages);
-        } else if (totalPages === 0 && currentPage !== 1) {
-            setCurrentPage(1);
-        }
-    }, [sortedData.length, pageSize, currentPage]);
-
-    const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-    const handleCheckboxChange = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
-    };
-
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.add(item.id));
-            setSelectedIds(newSelected);
-        } else {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.delete(item.id));
-            setSelectedIds(newSelected);
-        }
-    };
-
-    const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
-
-    const toggleSort = (key: SortKey) => {
-        setSortCriteria(prev => {
-            const idx = prev.findIndex(c => c.key === key);
-            if (idx === -1) return [...prev, { key, order: 'asc' }];
-            if (prev[idx].order === 'asc') {
-                const next = [...prev]; next[idx] = { ...next[idx], order: 'desc' }; return next;
-            }
-            return prev.filter(c => c.key !== key);
+    const handleExportCSVClick = () => {
+        handleExport(filteredData, headers, `address_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => {
+            const areaCode = areas.find(a => a.areaName === item.area)?.areaCode || '';
+            return [
+                item.no || '',
+                item.addressCode || '',
+                item.officeName || '',
+                item.division || '',
+                areaCode,
+                item.tel || '',
+                item.fax || '',
+                item.zipCode || '',
+                item.address || '',
+                item.type || '',
+                item.mainPerson || '',
+                item.branchNumber || '',
+                item.specialNote || '',
+                item.labelName || '',
+                item.labelZip || '',
+                item.labelAddress || '',
+                item.notes || '',
+                item.attentionNote || ''
+            ];
         });
     };
 
-    const getSortIcon = (key: SortKey) => {
+    const handleDownloadTemplate = () => {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: totalRows, c: headers.length - 1 }
+        });
+
+        const textCols = [1, 4, 5, 6, 7];
+        for (let R = 1; R <= totalRows; ++R) {
+            textCols.forEach(C => {
+                const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                ws[ref] = { t: 's', v: '', z: '@' };
+            });
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, '住所マスタエクセルフォーマット.xlsx');
+    };
+
+    const getSortIcon = (key: keyof Address) => {
         const idx = sortCriteria.findIndex(c => c.key === key);
         if (idx === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
         const c = sortCriteria[idx];
@@ -428,12 +316,15 @@ function AddressListContent() {
 
     const isAdmin = user?.role === 'admin';
 
+    // Highlight effect
+    const rowClassName = (item: Address) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : '';
+
     return (
         <div className="space-y-4 h-full flex flex-col">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-text-main">住所マスタ</h1>
                 <div className="flex gap-2">
-                    <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
+                    <button onClick={handleExportCSVClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
                     <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
                     <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
@@ -450,10 +341,10 @@ function AddressListContent() {
 
             <Table<Address>
                 data={paginatedData}
-                rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
+                rowClassName={rowClassName}
                 columns={[
                     {
-                        header: <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="w-4 h-4" />,
+                        header: <input type="checkbox" checked={isAllSelected} onChange={(e) => handleSelectAll(e.target.checked)} className="w-4 h-4" />,
                         accessor: (item) => <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => handleCheckboxChange(item.id)} className="w-4 h-4" />,
                         className: "w-10 px-4"
                     },
@@ -472,10 +363,10 @@ function AddressListContent() {
 
             <Pagination
                 currentPage={currentPage}
-                totalPages={Math.ceil(sortedData.length / pageSize)}
-                totalItems={sortedData.length}
+                totalPages={Math.ceil(filteredData.length / pageSize)}
+                totalItems={filteredData.length}
                 startIndex={(currentPage - 1) * pageSize}
-                endIndex={Math.min(currentPage * pageSize, sortedData.length)}
+                endIndex={Math.min(currentPage * pageSize, filteredData.length)}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}

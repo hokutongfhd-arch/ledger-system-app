@@ -9,20 +9,14 @@ import { Table } from '../../../../components/ui/Table';
 import type { Employee } from '../../../../features/employees/employee.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { EmployeeForm } from '../../../../features/employees/components/EmployeeForm';
 import { EmployeeDetailModal } from '../../../../features/employees/components/EmployeeDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
-import * as XLSX from 'xlsx';
-import { UserDeviceList } from '../../../../features/employees/components/UserDeviceList';
+import * as XLSX from 'xlsx'; // Still used for template download
 import { useToast } from '../../../../features/context/ToastContext';
-
-type SortKey = 'code' | 'role';
-type SortOrder = 'asc' | 'desc';
-interface SortCriterion {
-    key: SortKey;
-    order: SortOrder;
-}
+import { useDataTable } from '../../../../hooks/useDataTable';
+import { useCSVExport } from '../../../../hooks/useCSVExport';
+import { useFileImport } from '../../../../hooks/useFileImport';
 
 export default function EmployeeListPage() {
     const { user } = useAuth();
@@ -47,156 +41,40 @@ function EmployeeListContent() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Employee | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Employee | undefined>(undefined);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
-    const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
 
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { confirm, ConfirmDialog } = useConfirm();
-
     const { showToast } = useToast();
 
-    const closeNotification = () => { }; // No longer used but kept for minimal disruption if needed
-    const showNotification = () => { };
-
-    const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
-    const handleEdit = (item: Employee) => { setEditingItem(item); setIsModalOpen(true); };
-
-    const handleDelete = async (item: Employee) => {
-        const confirmed = await confirm({
-            title: '確認',
-            description: '本当に削除しますか？',
-            confirmText: '削除',
-            variant: 'destructive'
-        });
-
-        if (confirmed) {
-            try {
-                await deleteEmployee(item.id);
-            } catch (error) {
-                console.error(error);
+    // -- Hooks --
+    const {
+        searchTerm, setSearchTerm,
+        currentPage, setCurrentPage,
+        pageSize, setPageSize,
+        sortCriteria, toggleSort,
+        selectedIds, setSelectedIds, handleSelectAll, handleCheckboxChange,
+        paginatedData, filteredData,
+        isAllSelected
+    } = useDataTable<Employee>({
+        data: employees,
+        searchKeys: ['code', 'name', 'nameKana'],
+        sortConfig: {
+            code: (a, b) => {
+                const numA = parseInt(String(a.code || '').replace(/[^0-9]/g, '')) || 0;
+                const numB = parseInt(String(b.code || '').replace(/[^0-9]/g, '')) || 0;
+                return numA - numB;
+            },
+            role: (a, b) => {
+                const valA = a.role === 'admin' ? 0 : 1;
+                const valB = b.role === 'admin' ? 0 : 1;
+                return valA - valB;
             }
         }
-    };
+    });
 
-    const handleBulkDelete = async () => {
-        if (selectedIds.size === 0) return;
+    const { handleExport } = useCSVExport<Employee>();
 
-        const confirmed = await confirm({
-            title: '確認',
-            description: `選択した ${selectedIds.size} 件を削除しますか？`,
-            confirmText: '一括削除',
-            variant: 'destructive'
-        });
-
-        if (confirmed) {
-            try {
-                await deleteManyEmployees(Array.from(selectedIds));
-                setSelectedIds(new Set());
-            } catch (error) {
-                console.error("Bulk delete failed", error);
-            }
-        }
-    };
-
-    const handleExportCSV = () => {
-        const headers = [
-            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
-            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
-            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
-        ];
-        const csvContent = [
-            headers.join(','),
-            ...filteredData.map(item => [
-                item.code,
-                item.gender || '',
-                item.name,
-                item.nameKana || '',
-                item.birthDate || '',
-                item.age || '',
-                item.areaCode || '',
-                item.addressCode || '',
-                item.joinDate || '',
-                item.yearsOfService || '',
-                item.monthsHasuu || '',
-                item.jobType || '',
-                item.roleTitle || '',
-                item.employeeType || '',
-                item.salaryType || '',
-                item.costType || '',
-                item.role === 'admin' ? '管理者' : 'ユーザー',
-                item.password || ''
-            ].join(','))
-        ].join('\n');
-
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `employee_list_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-    };
-
-    const handleDownloadTemplate = () => {
-        const headers = [
-            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
-            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
-            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
-        ];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-
-        // 1000行分をシートの範囲として明示的に設定する
-        const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({
-            s: { r: 0, c: 0 },
-            e: { r: totalRows, c: headers.length - 1 }
-        });
-
-        // テキスト形式として扱うべき列を設定 (社員コード: A, エリアコード: G, 住所コード: H)
-        const textCols = [0, 6, 7];
-        for (let R = 1; R <= totalRows; ++R) {
-            textCols.forEach(C => {
-                const ref = XLSX.utils.encode_cell({ r: R, c: C });
-                ws[ref] = { t: 's', v: '', z: '@' };
-            });
-        }
-
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, '社員マスタエクセルフォーマット.xlsx');
-    };
-
-    const handleImportClick = () => {
-        const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-        if (fileInput) {
-            fileInput.value = '';
-            fileInput.click();
-        }
-    };
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
-
-            if (jsonData.length === 0) {
-                await confirm({
-                    title: 'エラー',
-                    description: 'ファイルが空です。',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-                return;
-            }
-
-            const headers = jsonData[0] as string[];
+    const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        onValidate: async (rows, headers) => {
             const requiredHeaders = [
                 '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
                 'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
@@ -211,17 +89,14 @@ function EmployeeListContent() {
                     confirmText: 'OK',
                     cancelText: ''
                 });
-                return;
+                return false;
             }
-
-            const rows = jsonData.slice(1);
 
             // Data bounds validation
             const validColumnCount = requiredHeaders.length;
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row) continue;
-                // Check for data outside defined columns
                 if (row.length > validColumnCount) {
                     const extraData = row.slice(validColumnCount);
                     const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
@@ -232,24 +107,23 @@ function EmployeeListContent() {
                             confirmText: 'OK',
                             cancelText: ''
                         });
-                        return;
+                        return false;
                     }
                 }
             }
 
-            // Uniqueness Check Preparation
+            return true;
+        },
+        onImport: async (rows, headers) => {
             const existingCodes = new Set(employees.map(e => e.code));
             const processedCodes = new Set<string>();
             const errors: string[] = [];
-
             let successCount = 0;
             let errorCount = 0;
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
-
-                // 行が実質的に空（すべてのセルが空）であるかチェック
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
@@ -259,22 +133,12 @@ function EmployeeListContent() {
                 });
 
                 const toHalfWidth = (str: string) => {
-                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-                    });
+                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
                 };
 
                 const rawCode = String(rowData['社員コード'] || '');
                 const code = toHalfWidth(rawCode).trim();
-                if (!code) {
-                    // checks are implicitly handled by empty string check later or server side, 
-                    // but here we focus on uniqueness.
-                    // If no code, maybe skip or let addEmployee handle validation.
-                    // For now, let's treat it as usual flow, but uniqueness check on empty string might be tricky.
-                    // We'll assume valid codes are non-empty.
-                }
 
-                // Check for duplicates
                 if (existingCodes.has(code)) {
                     errors.push(`${i + 2}行目: 社員コード「${code}」は既に存在します`);
                     errorCount++;
@@ -350,86 +214,109 @@ function EmployeeListContent() {
             } else if (successCount > 0) {
                 showToast(`インポート完了 - ${successCount}件登録しました`, 'success');
             } else if (errorCount > 0 && errors.length === 0) {
-                // In case errors happened outside of uniqueness check (backend errors)
                 showToast(`インポート失敗 - ${errorCount}件のエラーが発生しました`, 'error');
             }
-
-            if (event.target) event.target.value = '';
-        };
-        reader.readAsArrayBuffer(file);
-    };
-
-    const filteredData = employees.filter(item =>
-        [item.code, item.name, item.nameKana].some(val => String(val || '').toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    const sortedData = [...filteredData].sort((a, b) => {
-        for (const criterion of sortCriteria) {
-            const { key, order } = criterion;
-            let valA: any = a[key as keyof Employee];
-            let valB: any = b[key as keyof Employee];
-
-            if (key === 'code') {
-                const numA = parseInt(String(valA || '').replace(/[^0-9]/g, '')) || 0;
-                const numB = parseInt(String(valB || '').replace(/[^0-9]/g, '')) || 0;
-                if (numA !== numB) return order === 'asc' ? numA - numB : numB - numA;
-            } else if (key === 'role') {
-                valA = a.role === 'admin' ? 0 : 1;
-                valB = b.role === 'admin' ? 0 : 1;
-                if (valA !== valB) return order === 'asc' ? valA - valB : valB - valA;
-            }
         }
-        return 0;
     });
 
-    // データの削除などにより現在のページが無効になった場合に調整する
-    useEffect(() => {
-        const totalPages = Math.ceil(sortedData.length / pageSize);
-        if (currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(totalPages);
-        } else if (totalPages === 0 && currentPage !== 1) {
-            setCurrentPage(1);
-        }
-    }, [sortedData.length, pageSize, currentPage]);
+    // -- Handlers --
 
-    const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
+    const handleEdit = (item: Employee) => { setEditingItem(item); setIsModalOpen(true); };
 
-    const handleCheckboxChange = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
-    };
-
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.add(item.id));
-            setSelectedIds(newSelected);
-        } else {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.delete(item.id));
-            setSelectedIds(newSelected);
-        }
-    };
-
-    const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
-
-    const toggleSort = (key: SortKey) => {
-        setSortCriteria(prev => {
-            const idx = prev.findIndex(c => c.key === key);
-            if (idx === -1) return [...prev, { key, order: 'asc' }];
-            if (prev[idx].order === 'asc') {
-                const next = [...prev]; next[idx] = { ...next[idx], order: 'desc' }; return next;
-            }
-            return prev.filter(c => c.key !== key);
+    const handleDelete = async (item: Employee) => {
+        const confirmed = await confirm({
+            title: '確認',
+            description: '本当に削除しますか？',
+            confirmText: '削除',
+            variant: 'destructive'
         });
+
+        if (confirmed) {
+            try {
+                await deleteEmployee(item.id);
+            } catch (error) {
+                console.error(error);
+            }
+        }
     };
 
-    const getSortIcon = (key: SortKey) => {
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+
+        const confirmed = await confirm({
+            title: '確認',
+            description: `選択した ${selectedIds.size} 件を削除しますか？`,
+            confirmText: '一括削除',
+            variant: 'destructive'
+        });
+
+        if (confirmed) {
+            try {
+                await deleteManyEmployees(Array.from(selectedIds));
+                setSelectedIds(new Set());
+            } catch (error) {
+                console.error("Bulk delete failed", error);
+            }
+        }
+    };
+
+    const handleExportCSVClick = () => {
+        const headers = [
+            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+        ];
+        handleExport(filteredData, headers, `employee_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
+            item.code,
+            item.gender || '',
+            item.name,
+            item.nameKana || '',
+            item.birthDate || '',
+            item.age || '',
+            item.areaCode || '',
+            item.addressCode || '',
+            item.joinDate || '',
+            item.yearsOfService || '',
+            item.monthsHasuu || '',
+            item.jobType || '',
+            item.roleTitle || '',
+            item.employeeType || '',
+            item.salaryType || '',
+            item.costType || '',
+            item.role === 'admin' ? '管理者' : 'ユーザー',
+            item.password || ''
+        ]);
+    };
+
+    const handleDownloadTemplate = () => {
+        const headers = [
+            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: totalRows, c: headers.length - 1 }
+        });
+
+        const textCols = [0, 6, 7];
+        for (let R = 1; R <= totalRows; ++R) {
+            textCols.forEach(C => {
+                const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                ws[ref] = { t: 's', v: '', z: '@' };
+            });
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, '社員マスタエクセルフォーマット.xlsx');
+    };
+
+    const getSortIcon = (key: keyof Employee) => {
         const idx = sortCriteria.findIndex(c => c.key === key);
         if (idx === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
         const c = sortCriteria[idx];
@@ -443,17 +330,20 @@ function EmployeeListContent() {
 
     const isAdmin = user?.role === 'admin';
 
+    // Highlight effect
+    const rowClassName = (item: Employee) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : '';
+
     return (
         <div className="space-y-4 h-full flex flex-col">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-text-main">社員マスタ</h1>
                 <div className="flex gap-2">
                     {user?.id !== 'INITIAL_SETUP_ACCOUNT' && (
-                        <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
+                        <button onClick={handleExportCSVClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
                     )}
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
                     <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
-                    <input type="file" id="fileInput" accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
+                    <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     {isAdmin && <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>}
                 </div>
             </div>
@@ -467,10 +357,10 @@ function EmployeeListContent() {
 
             <Table<Employee>
                 data={paginatedData}
-                rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
+                rowClassName={rowClassName}
                 columns={[
                     {
-                        header: <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="w-4 h-4" />,
+                        header: <input type="checkbox" checked={isAllSelected} onChange={(e) => handleSelectAll(e.target.checked)} className="w-4 h-4" />,
                         accessor: (item) => <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => handleCheckboxChange(item.id)} className="w-4 h-4" />,
                         className: "w-10 px-4"
                     },
@@ -493,10 +383,10 @@ function EmployeeListContent() {
 
             <Pagination
                 currentPage={currentPage}
-                totalPages={Math.ceil(sortedData.length / pageSize)}
-                totalItems={sortedData.length}
+                totalPages={Math.ceil(filteredData.length / pageSize)}
+                totalItems={filteredData.length}
                 startIndex={(currentPage - 1) * pageSize}
-                endIndex={Math.min(currentPage * pageSize, sortedData.length)}
+                endIndex={Math.min(currentPage * pageSize, filteredData.length)}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}

@@ -9,35 +9,15 @@ import { Table } from '../../../../components/ui/Table';
 import type { Tablet } from '../../../../features/devices/device.types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { NotificationModal } from '../../../../components/ui/NotificationModal';
 import { TabletForm } from '../../../../features/devices/components/TabletForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import { TabletDetailModal } from '../../../../features/devices/components/TabletDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { useToast } from '../../../../features/context/ToastContext';
-
-type SortKey = 'terminalCode' | 'contractYears' | 'status' | 'officeCode' | 'userName';
-type SortOrder = 'asc' | 'desc';
-interface SortCriterion {
-    key: SortKey;
-    order: SortOrder;
-}
-
-export default function TabletListPage() {
-    const { user } = useAuth();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!user) {
-            router.push('/login');
-        }
-    }, [user, router]);
-
-    if (!user) return null;
-
-    return <TabletListContent />;
-}
+import { useDataTable } from '../../../../hooks/useDataTable';
+import { useCSVExport } from '../../../../hooks/useCSVExport';
+import { useFileImport } from '../../../../hooks/useFileImport';
 
 const statusMap: Record<string, string> = {
     'in-use': '使用中',
@@ -57,6 +37,25 @@ const statusColorMap: Record<string, string> = {
     'discarded': 'bg-gray-100 text-gray-800',
 };
 
+const statusSortOrder: Record<string, number> = {
+    'in-use': 0, 'backup': 1, 'available': 2, 'broken': 3, 'repairing': 4, 'discarded': 5
+};
+
+export default function TabletListPage() {
+    const { user } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+        }
+    }, [user, router]);
+
+    if (!user) return null;
+
+    return <TabletListContent />;
+}
+
 function TabletListContent() {
     const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses } = useData();
     const { user } = useAuth();
@@ -64,23 +63,173 @@ function TabletListContent() {
     const pathname = usePathname();
     const router = useRouter();
     const highlightId = searchParams.get('highlight');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<Tablet | undefined>(undefined);
-    const [detailItem, setDetailItem] = useState<Tablet | undefined>(undefined);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
-    const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
-
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { confirm, ConfirmDialog } = useConfirm();
     const { showToast } = useToast();
 
-    const isAdmin = user?.role === 'admin';
-    const hasPermission = (item: Tablet) => {
-        if (isAdmin) return true;
-        return user?.code === item.employeeCode;
-    };
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<Tablet | undefined>(undefined);
+    const [detailItem, setDetailItem] = useState<Tablet | undefined>(undefined);
+
+    const {
+        searchTerm, setSearchTerm,
+        currentPage, setCurrentPage,
+        pageSize, setPageSize,
+        sortCriteria, toggleSort,
+        selectedIds, setSelectedIds, handleSelectAll, handleCheckboxChange,
+        paginatedData, filteredData,
+        isAllSelected
+    } = useDataTable<Tablet>({
+        data: tablets,
+        searchKeys: ['terminalCode', 'maker', 'modelNumber', 'status', 'officeCode', 'notes'],
+        sortConfig: {
+            employeeCode: (a, b) => { // User Name Sort
+                const nameA = employees.find(e => e.code === a.employeeCode)?.name || '';
+                const nameB = employees.find(e => e.code === b.employeeCode)?.name || '';
+                return nameA.localeCompare(nameB);
+            },
+            status: (a, b) => {
+                const indexA = statusSortOrder[a.status] ?? 999;
+                const indexB = statusSortOrder[b.status] ?? 999;
+                return indexA - indexB;
+            },
+            contractYears: (a, b) => {
+                const numA = parseInt(String(a.contractYears || '').replace(/[^0-9]/g, '')) || 0;
+                const numB = parseInt(String(b.contractYears || '').replace(/[^0-9]/g, '')) || 0;
+                return numA - numB;
+            }
+        }
+    });
+
+    const { handleExport } = useCSVExport<Tablet>();
+    const headers = [
+        '端末CD', 'メーカー', '型番', '状況', '契約年数',
+        '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
+    ];
+
+    const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        onValidate: async (rows, fileHeaders) => {
+            const requiredHeaders = headers;
+            const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
+            if (missingHeaders.length > 0) {
+                await confirm({
+                    title: 'インポートエラー',
+                    description: `不足している項目があります: ${missingHeaders.join(', ')}`,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+                return false;
+            }
+
+            const validColumnCount = requiredHeaders.length;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                if (row.length > validColumnCount) {
+                    const extraData = row.slice(validColumnCount);
+                    const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
+                    if (hasExtraData) {
+                        await confirm({
+                            title: 'インポートエラー',
+                            description: '定義された列の外側にデータが存在します。ファイルを確認してください。',
+                            confirmText: 'OK',
+                            cancelText: ''
+                        });
+                        return false;
+                    }
+                }
+            }
+            return true;
+        },
+        onImport: async (rows, fileHeaders) => {
+            let successCount = 0;
+            let errorCount = 0;
+            const existingTerminalCodes = new Set(tablets.map(t => t.terminalCode));
+            const processedTerminalCodes = new Set<string>();
+            const errors: string[] = [];
+            const reverseStatusMap: Record<string, string> = Object.entries(statusMap).reduce((acc, [key, value]) => {
+                acc[value] = key;
+                return acc;
+            }, {} as Record<string, string>);
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
+                if (isRowEmpty) continue;
+
+                const rowData: any = {};
+                fileHeaders.forEach((header, index) => {
+                    rowData[header] = row[index];
+                });
+
+                const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+
+                let rowHasError = false;
+                const rawTerminalCode = String(rowData['端末CD'] || '');
+                const terminalCode = toHalfWidth(rawTerminalCode).trim();
+
+                if (!terminalCode) {
+                    errors.push(`${i + 2}行目: 端末CDが空です`);
+                    rowHasError = true;
+                } else {
+                    if (existingTerminalCodes.has(terminalCode)) {
+                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedTerminalCodes.has(terminalCode)) {
+                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
+                }
+
+                if (rowHasError) {
+                    errorCount++;
+                    continue;
+                }
+
+                processedTerminalCodes.add(terminalCode);
+                const statusValue = String(rowData['状況'] || '');
+                const status = reverseStatusMap[statusValue] || 'available';
+
+                const newTablet: Omit<Tablet, 'id'> = {
+                    terminalCode: terminalCode,
+                    maker: String(rowData['メーカー'] || ''),
+                    modelNumber: String(rowData['型番'] || ''),
+                    status: status as any,
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
+                    employeeCode: String(rowData['社員コード'] || ''),
+                    addressCode: String(rowData['住所コード'] || ''),
+                    officeCode: String(rowData['事業所CD'] || ''),
+                    history: String(rowData['過去貸与履歴'] || ''),
+                    notes: String(rowData['備考'] || ''),
+                    address: '',
+                };
+
+                try {
+                    await addTablet(newTablet, true, true);
+                    successCount++;
+                } catch (error) {
+                    errorCount++;
+                }
+            }
+
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポート結果 (一部スキップ)',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <ul>{errors.map((err, idx) => <li key={idx} className="text-red-600">{err}</li>)}</ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            }
+
+            if (successCount > 0 || errorCount > 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            }
+        }
+    });
 
     const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
     const handleEdit = (item: Tablet) => { setEditingItem(item); setIsModalOpen(true); };
@@ -104,108 +253,51 @@ function TabletListContent() {
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
-
         const confirmed = await confirm({
             title: '確認',
             description: `選択した ${selectedIds.size} 件を削除しますか？`,
             confirmText: '一括削除',
             variant: 'destructive'
         });
-
         if (confirmed) {
             try {
                 await deleteManyTablets(Array.from(selectedIds));
                 setSelectedIds(new Set());
             } catch (error) {
-                console.error("Bulk delete failed", error);
+                console.error(error);
             }
         }
     };
 
-    const filteredData = tablets.filter(item =>
-        Object.values(item).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    const statusSortOrder: Record<string, number> = {
-        'in-use': 0, 'backup': 1, 'available': 2, 'broken': 3, 'repairing': 4, 'discarded': 5
+    const handleExportCSVClick = () => {
+        handleExport(filteredData, headers, `tablet_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
+            item.terminalCode,
+            item.maker || '',
+            item.modelNumber,
+            statusMap[item.status] || item.status,
+            normalizeContractYear(item.contractYears || ''),
+            item.employeeCode || '',
+            item.addressCode || '',
+            item.officeCode || '',
+            `"${item.history || ''}"`,
+            `"${item.notes || ''}"`
+        ]);
     };
 
-    const sortedData = [...filteredData].sort((a, b) => {
-        for (const criterion of sortCriteria) {
-            const { key, order } = criterion;
-            if (key === 'status') {
-                const indexA = statusSortOrder[a.status] ?? 999;
-                const indexB = statusSortOrder[b.status] ?? 999;
-                if (indexA !== indexB) return order === 'asc' ? indexA - indexB : indexB - indexA;
-            } else if (key === 'userName') {
-                const valA = employees.find(e => e.code === a.employeeCode)?.name || '';
-                const valB = employees.find(e => e.code === b.employeeCode)?.name || '';
-                if (valA !== valB) return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            } else if (key === 'contractYears') {
-                const numA = parseInt(String(a.contractYears || '').replace(/[^0-9]/g, '')) || 0;
-                const numB = parseInt(String(b.contractYears || '').replace(/[^0-9]/g, '')) || 0;
-                if (numA !== numB) return order === 'asc' ? numA - numB : numB - numA;
-            } else {
-                const valA = String(a[key as keyof Tablet] || '').toLowerCase();
-                const valB = String(b[key as keyof Tablet] || '').toLowerCase();
-                if (valA !== valB) return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            }
-        }
-        return 0;
-    });
-
-    // データの削除などにより現在のページが無効になった場合に調整する
-    useEffect(() => {
-        const totalPages = Math.ceil(sortedData.length / pageSize);
-        if (currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(totalPages);
-        } else if (totalPages === 0 && currentPage !== 1) {
-            setCurrentPage(1);
-        }
-    }, [sortedData.length, pageSize, currentPage]);
-
-    const totalItems = sortedData.length;
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const startIndex = (currentPage - 1) * pageSize;
-    const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
-
-    const handleCheckboxChange = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
+    const handleDownloadTemplate = () => {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: totalRows, c: headers.length - 1 } });
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, 'タブレットエクセルフォーマット.xlsx');
     };
 
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.add(item.id));
-            setSelectedIds(newSelected);
-        } else {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.delete(item.id));
-            setSelectedIds(newSelected);
-        }
-    };
+    const isAdmin = user?.role === 'admin';
+    const hasPermission = (item: Tablet) => isAdmin || user?.code === item.employeeCode;
 
-    const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
-
-    const toggleSort = (key: SortKey) => {
-        setSortCriteria(prev => {
-            const idx = prev.findIndex(c => c.key === key);
-            if (idx === -1) return [...prev, { key, order: 'asc' }];
-            if (prev[idx].order === 'asc') {
-                const next = [...prev]; next[idx] = { ...next[idx], order: 'desc' }; return next;
-            }
-            return prev.filter(c => c.key !== key);
-        });
-    };
-
-    const getSortIcon = (key: SortKey) => {
-        const idx = sortCriteria.findIndex(c => c.key === key);
+    const getSortIcon = (key: keyof Tablet | 'userName') => { // Cast for safety
+        const idx = sortCriteria.findIndex(c => c.key === (key === 'userName' ? 'employeeCode' : key));
         if (idx === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
         const c = sortCriteria[idx];
         return (
@@ -216,235 +308,18 @@ function TabletListContent() {
         );
     };
 
-    const handleExportCSV = () => {
-        const headers = [
-            '端末CD', 'メーカー', '型番', '状況', '契約年数',
-            '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
-        ];
-        const csvContent = [
-            headers.join(','),
-            ...filteredData.map(item => [
-                item.terminalCode,
-                item.maker || '',
-                item.modelNumber,
-                statusMap[item.status] || item.status,
-                normalizeContractYear(item.contractYears || ''),
-                item.employeeCode || '',
-                item.addressCode || '',
-                item.officeCode || '',
-                `"${item.history || ''}"`,
-                `"${item.notes || ''}"`
-            ].join(','))
-        ].join('\n');
-
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `tablet_list_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-    };
-
-    const handleDownloadTemplate = () => {
-        const headers = [
-            '端末CD', 'メーカー', '型番', '状況', '契約年数',
-            '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
-        ];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'タブレットエクセルフォーマット.xlsx');
-    };
-
-    const handleImportClick = () => {
-        const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-        if (fileInput) {
-            fileInput.value = '';
-            fileInput.click();
-        }
-    };
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
-
-            if (jsonData.length === 0) {
-                await confirm({
-                    title: 'エラー',
-                    description: 'ファイルが空です。',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-                return;
-            }
-
-            const headers = jsonData[0] as string[];
-            const requiredHeaders = [
-                '端末CD', 'メーカー', '型番', '状況', '契約年数',
-                '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
-            ];
-
-            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-            if (missingHeaders.length > 0) {
-                await confirm({
-                    title: 'インポートエラー',
-                    description: `不足している項目があります: ${missingHeaders.join(', ')}`,
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-                return;
-            }
-
-            const reverseStatusMap: Record<string, string> = Object.entries(statusMap).reduce((acc, [key, value]) => {
-                acc[value] = key;
-                return acc;
-            }, {} as Record<string, string>);
-
-            const rows = jsonData.slice(1);
-
-            // Data bounds validation
-            const validColumnCount = requiredHeaders.length;
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row) continue;
-                // Check for data outside defined columns
-                if (row.length > validColumnCount) {
-                    const extraData = row.slice(validColumnCount);
-                    const hasExtraData = extraData.some((cell: any) => cell !== undefined && cell !== null && String(cell).trim() !== '');
-                    if (hasExtraData) {
-                        await confirm({
-                            title: 'インポートエラー',
-                            description: '定義された列の外側にデータが存在します。ファイルを確認してください。',
-                            confirmText: 'OK',
-                            cancelText: ''
-                        });
-                        return;
-                    }
-                }
-            }
-
-            let successCount = 0;
-            let errorCount = 0;
-
-            const existingTerminalCodes = new Set(tablets.map(t => t.terminalCode));
-            const processedTerminalCodes = new Set<string>();
-            const errors: string[] = [];
-
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.length === 0) continue;
-
-                // 行が実質的に空（すべてのセルが空）であるかチェック
-                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
-                if (isRowEmpty) continue;
-
-                const rowData: any = {};
-                headers.forEach((header, index) => {
-                    rowData[header] = row[index];
-                });
-
-                const toHalfWidth = (str: string) => {
-                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-                    });
-                };
-
-                const rawTerminalCode = String(rowData['端末CD'] || '');
-                const terminalCode = toHalfWidth(rawTerminalCode).trim();
-                let rowHasError = false;
-
-                if (!terminalCode) {
-                    errors.push(`${i + 2}行目: 端末CDが空です`);
-                    rowHasError = true;
-                } else {
-                    if (existingTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」は既に存在します`);
-                        rowHasError = true;
-                    } else if (processedTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
-                        rowHasError = true;
-                    }
-                }
-
-                if (rowHasError) {
-                    errorCount++;
-                    continue;
-                }
-
-                processedTerminalCodes.add(terminalCode);
-
-                const statusValue = String(rowData['状況'] || '');
-                const status = reverseStatusMap[statusValue] || 'available';
-
-                const newTablet: Omit<Tablet, 'id'> = {
-                    terminalCode: terminalCode,
-                    maker: String(rowData['メーカー'] || ''),
-                    modelNumber: String(rowData['型番'] || ''),
-                    status: status as any, // Cast to TabletStatus
-                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
-                    employeeCode: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['住所コード'] || ''),
-                    officeCode: String(rowData['事業所CD'] || ''),
-                    history: String(rowData['過去貸与履歴'] || ''),
-                    notes: String(rowData['備考'] || ''),
-                    address: '',
-                };
-
-                try {
-                    // Skip Toast for individual items in bulk import, but keep Log
-                    await addTablet(newTablet, true, true);
-                    successCount++;
-                } catch (error) {
-                    errorCount++;
-                }
-            }
-
-            if (errors.length > 0) {
-                await confirm({
-                    title: 'インポート結果 (一部スキップ)',
-                    description: (
-                        <div className="max-h-[60vh] overflow-y-auto">
-                            <p className="mb-2">以下のデータは登録されませんでした：</p>
-                            <ul className="list-disc pl-5 space-y-1 text-sm text-red-600">
-                                {errors.map((err, index) => (
-                                    <li key={index}>{err}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    ),
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-            }
-
-            if (successCount > 0) {
-                // Manual log removed - covered by DB triggers
-            }
-
-            if (successCount > 0 || errorCount > 0) {
-                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
-            }
-            if (event.target) event.target.value = '';
-        };
-        reader.readAsArrayBuffer(file);
-    };
+    // Highlight effect
+    const getRowClassName = (item: Tablet) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : '';
 
     return (
         <div className="space-y-4 h-full flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-2xl font-bold text-text-main">タブレット管理台帳</h1>
                 <div className="flex gap-2">
-                    <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
+                    <button onClick={handleExportCSVClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
                     <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
-                    <input type="file" id="fileInput" accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
+                    <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>
                 </div>
             </div>
@@ -457,17 +332,18 @@ function TabletListContent() {
             </div>
 
             <Table<Tablet>
+                containerClassName="max-h-[600px] overflow-auto border-b border-border"
                 data={paginatedData}
-                rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
+                rowClassName={getRowClassName}
                 columns={[
                     {
-                        header: <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="w-4 h-4" />,
+                        header: <input type="checkbox" checked={isAllSelected} onChange={(e) => handleSelectAll(e.target.checked)} className="w-4 h-4" />,
                         accessor: (item) => <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => handleCheckboxChange(item.id)} className="w-4 h-4" />,
                         className: "w-10 px-4"
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('officeCode')}>事業所CD{getSortIcon('officeCode')}</div>, accessor: 'officeCode' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('userName')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: (item) => normalizeContractYear(item.contractYears || '') },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('status')}>状況{getSortIcon('status')}</div>, accessor: (item) => (
@@ -485,10 +361,10 @@ function TabletListContent() {
 
             <Pagination
                 currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalItems}
-                startIndex={startIndex}
-                endIndex={startIndex + paginatedData.length}
+                totalPages={Math.ceil(filteredData.length / pageSize)}
+                totalItems={filteredData.length}
+                startIndex={(currentPage - 1) * pageSize}
+                endIndex={Math.min(currentPage * pageSize, filteredData.length)}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}

@@ -64,9 +64,17 @@ export const Sidebar = () => {
 
             <div className="flex-1 py-4">
                 {user?.id === 'INITIAL_SETUP_ACCOUNT' ? (
-                    <SidebarSection label="MASTERS">
-                        <SidebarItem to="/masters/employees" icon={User} label="Employees" />
-                    </SidebarSection>
+                    <>
+                        <SidebarSection label="MASTERS">
+                            <SidebarItem to="/masters/employees" icon={User} label="Employees" />
+                        </SidebarSection>
+                        <SidebarSection label="DEVICES">
+                            <SidebarItem to="/devices/iphones" icon={Smartphone} label="iPhone" />
+                            <SidebarItem to="/devices/feature-phones" icon={Phone} label="Feature Phone" />
+                            <SidebarItem to="/devices/tablets" icon={Tablet} label="Tablet" />
+                            <SidebarItem to="/devices/routers" icon={RouterIcon} label="WiFi Router" />
+                        </SidebarSection>
+                    </>
                 ) : (
                     <>
                         {user?.role === 'admin' && (

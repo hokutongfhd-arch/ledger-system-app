@@ -22,8 +22,8 @@ export async function middleware(req: NextRequest) {
             return res;
         }
 
-        // Allow ONLY /masters/employees
-        if (path === '/masters/employees') {
+        // Allow all masters and devices for setup testing
+        if (path.startsWith('/masters/') || path.startsWith('/devices/')) {
             return res;
         }
 

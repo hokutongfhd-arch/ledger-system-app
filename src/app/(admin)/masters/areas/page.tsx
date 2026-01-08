@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
@@ -14,13 +14,9 @@ import { AreaDetailModal } from '../../../../features/areas/components/AreaDetai
 import { useConfirm } from '../../../../hooks/useConfirm';
 import * as XLSX from 'xlsx';
 import { useToast } from '../../../../features/context/ToastContext';
-
-type SortKey = 'areaCode';
-type SortOrder = 'asc' | 'desc';
-interface SortCriterion {
-    key: SortKey;
-    order: SortOrder;
-}
+import { useDataTable } from '../../../../hooks/useDataTable';
+import { useCSVExport } from '../../../../hooks/useCSVExport';
+import { useFileImport } from '../../../../hooks/useFileImport';
 
 export default function AreaListPage() {
     const { user } = useAuth();
@@ -42,96 +38,39 @@ function AreaListContent() {
     const pathname = usePathname();
     const router = useRouter();
     const highlightId = searchParams.get('highlight');
+    const { confirm, ConfirmDialog } = useConfirm();
+    const { showToast } = useToast();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Area | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Area | undefined>(undefined);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
 
-    const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>([]);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const { confirm, ConfirmDialog } = useConfirm();
-
-    const { showToast } = useToast();
-
-    const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
-    const handleEdit = (item: Area) => { setEditingItem(item); setIsModalOpen(true); };
-
-    const handleExportCSV = () => {
-        const headers = ['エリアコード', 'エリア名'];
-        const csvContent = [
-            headers.join(','),
-            ...filteredData.map(item => [
-                item.areaCode,
-                item.areaName
-            ].join(','))
-        ].join('\n');
-
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `area_list_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-    };
-
-    const handleDownloadTemplate = () => {
-        const headers = ['エリアコード', 'エリア名'];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-
-        // 1000行分をシートの範囲として明示的に設定する
-        const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({
-            s: { r: 0, c: 0 },
-            e: { r: totalRows, c: headers.length - 1 }
-        });
-
-        // テキスト形式として扱うべき列を設定 (エリアコード: A)
-        for (let R = 1; R <= totalRows; ++R) {
-            const ref = XLSX.utils.encode_cell({ r: R, c: 0 });
-            ws[ref] = { t: 's', v: '', z: '@' };
-        }
-
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'エリアマスタエクセルフォーマット.xlsx');
-    };
-
-    const handleImportClick = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-            fileInputRef.current.click();
-        }
-    };
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
-
-            if (jsonData.length === 0) {
-                await confirm({
-                    title: 'エラー',
-                    description: 'ファイルが空です。',
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-                return;
+    const {
+        searchTerm, setSearchTerm,
+        currentPage, setCurrentPage,
+        pageSize, setPageSize,
+        sortCriteria, toggleSort,
+        selectedIds, setSelectedIds, handleSelectAll, handleCheckboxChange,
+        paginatedData, filteredData,
+        isAllSelected
+    } = useDataTable<Area>({
+        data: areas,
+        searchKeys: ['areaCode', 'areaName'],
+        sortConfig: {
+            areaCode: (a, b) => {
+                const numA = parseInt(String(a.areaCode || '').replace(/[^0-9]/g, '')) || 0;
+                const numB = parseInt(String(b.areaCode || '').replace(/[^0-9]/g, '')) || 0;
+                return numA - numB;
             }
+        }
+    });
 
-            const headers = jsonData[0] as string[];
-            const requiredHeaders = ['エリアコード', 'エリア名'];
+    const { handleExport } = useCSVExport<Area>();
+    const headers = ['エリアコード', 'エリア名'];
 
-            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+    const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        onValidate: async (rows, fileHeaders) => {
+            const missingHeaders = headers.filter(h => !fileHeaders.includes(h));
             if (missingHeaders.length > 0) {
                 await confirm({
                     title: 'インポートエラー',
@@ -139,13 +78,10 @@ function AreaListContent() {
                     confirmText: 'OK',
                     cancelText: ''
                 });
-                return;
+                return false;
             }
 
-            const rows = jsonData.slice(1);
-
-            // Data bounds validation
-            const validColumnCount = requiredHeaders.length;
+            const validColumnCount = headers.length;
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row) continue;
@@ -159,42 +95,33 @@ function AreaListContent() {
                             confirmText: 'OK',
                             cancelText: ''
                         });
-                        return;
+                        return false;
                     }
                 }
             }
-
-            // Uniqueness Check Preparation
+            return true;
+        },
+        onImport: async (rows, fileHeaders) => {
             const existingCodes = new Set(areas.map(a => a.areaCode));
             const processedCodes = new Set<string>();
             const errors: string[] = [];
-
             let successCount = 0;
             let errorCount = 0;
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
-
-                // 行が実質的に空（すべてのセルが空）であるかチェック
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
                 const rowData: any = {};
-                headers.forEach((header, index) => {
+                fileHeaders.forEach((header, index) => {
                     rowData[header] = row[index];
                 });
 
-                const toHalfWidth = (str: string) => {
-                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-                    });
-                };
+                const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+                const code = toHalfWidth(String(rowData['エリアコード'] || '')).trim();
 
-                const rawCode = String(rowData['エリアコード'] || '');
-                const code = toHalfWidth(rawCode).trim();
-
-                // Check for duplicates
                 if (existingCodes.has(code)) {
                     errors.push(`${i + 2}行目: エリアコード「${code}」は既に存在します`);
                     errorCount++;
@@ -236,17 +163,14 @@ function AreaListContent() {
                 });
             }
 
-            if (successCount > 0) {
-                // Manual log removed - covered by DB triggers
-            }
-
             if (successCount > 0 || errorCount > 0) {
                 showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
             }
-            if (event.target) event.target.value = '';
-        };
-        reader.readAsArrayBuffer(file);
-    };
+        }
+    });
+
+    const handleAdd = () => { setEditingItem(undefined); setIsModalOpen(true); };
+    const handleEdit = (item: Area) => { setEditingItem(item); setIsModalOpen(true); };
 
     const handleDelete = async (item: Area) => {
         const confirmed = await confirm({
@@ -267,14 +191,12 @@ function AreaListContent() {
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
-
         const confirmed = await confirm({
             title: '確認',
             description: `選択した ${selectedIds.size} 件を削除しますか？`,
             confirmText: '一括削除',
             variant: 'destructive'
         });
-
         if (confirmed) {
             try {
                 await deleteManyAreas(Array.from(selectedIds));
@@ -285,73 +207,29 @@ function AreaListContent() {
         }
     };
 
-    const filteredData = areas.filter(item =>
-        Object.values(item).some(val => String(val || '').toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    const sortedData = [...filteredData].sort((a, b) => {
-        for (const criterion of sortCriteria) {
-            const { key, order } = criterion;
-            let valA: any = a[key as keyof Area];
-            let valB: any = b[key as keyof Area];
-
-            if (key === 'areaCode') {
-                const numA = parseInt(String(valA || '').replace(/[^0-9]/g, '')) || 0;
-                const numB = parseInt(String(valB || '').replace(/[^0-9]/g, '')) || 0;
-                if (numA !== numB) return order === 'asc' ? numA - numB : numB - numA;
-            }
-        }
-        return 0;
-    });
-
-    // データの削除などにより現在のページが無効になった場合に調整する
-    useEffect(() => {
-        const totalPages = Math.ceil(sortedData.length / pageSize);
-        if (currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(totalPages);
-        } else if (totalPages === 0 && currentPage !== 1) {
-            setCurrentPage(1);
-        }
-    }, [sortedData.length, pageSize, currentPage]);
-
-    const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-    const handleCheckboxChange = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
+    const handleExportCSVClick = () => {
+        handleExport(filteredData, headers, `area_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
+            item.areaCode,
+            item.areaName
+        ]);
     };
 
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.add(item.id));
-            setSelectedIds(newSelected);
-        } else {
-            const newSelected = new Set(selectedIds);
-            paginatedData.forEach(item => newSelected.delete(item.id));
-            setSelectedIds(newSelected);
+    const handleDownloadTemplate = () => {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers]);
+        const totalRows = 1000;
+        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: totalRows, c: headers.length - 1 } });
+        for (let R = 1; R <= totalRows; ++R) {
+            const ref = XLSX.utils.encode_cell({ r: R, c: 0 });
+            ws[ref] = { t: 's', v: '', z: '@' };
         }
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, 'エリアマスタエクセルフォーマット.xlsx');
     };
 
-    const isAllSelected = paginatedData.length > 0 && paginatedData.every(item => selectedIds.has(item.id));
+    const isAdmin = user?.role === 'admin';
 
-    const toggleSort = (key: SortKey) => {
-        setSortCriteria(prev => {
-            const idx = prev.findIndex(c => c.key === key);
-            if (idx === -1) return [...prev, { key, order: 'asc' }];
-            if (prev[idx].order === 'asc') {
-                const next = [...prev]; next[idx] = { ...next[idx], order: 'desc' }; return next;
-            }
-            return prev.filter(c => c.key !== key);
-        });
-    };
-
-    const getSortIcon = (key: SortKey) => {
+    const getSortIcon = (key: keyof Area) => {
         const idx = sortCriteria.findIndex(c => c.key === key);
         if (idx === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
         const c = sortCriteria[idx];
@@ -363,14 +241,12 @@ function AreaListContent() {
         );
     };
 
-    const isAdmin = user?.role === 'admin';
-
     return (
         <div className="space-y-4 h-full flex flex-col">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-text-main">エリアマスタ</h1>
                 <div className="flex gap-2">
-                    <button onClick={handleExportCSV} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
+                    <button onClick={handleExportCSVClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
                     <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
                     <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
@@ -390,7 +266,7 @@ function AreaListContent() {
                 rowClassName={(item) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : ''}
                 columns={[
                     {
-                        header: <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="w-4 h-4" />,
+                        header: <input type="checkbox" checked={isAllSelected} onChange={(e) => handleSelectAll(e.target.checked)} className="w-4 h-4" />,
                         accessor: (item) => <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => handleCheckboxChange(item.id)} className="w-4 h-4" />,
                         className: "w-10 px-4"
                     },
@@ -405,10 +281,10 @@ function AreaListContent() {
 
             <Pagination
                 currentPage={currentPage}
-                totalPages={Math.ceil(sortedData.length / pageSize)}
-                totalItems={sortedData.length}
+                totalPages={Math.ceil(filteredData.length / pageSize)}
+                totalItems={filteredData.length}
                 startIndex={(currentPage - 1) * pageSize}
-                endIndex={Math.min(currentPage * pageSize, sortedData.length)}
+                endIndex={Math.min(currentPage * pageSize, filteredData.length)}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}

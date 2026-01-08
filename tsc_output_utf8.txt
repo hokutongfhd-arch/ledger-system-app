@@ -1,0 +1,3 @@
+﻿src/app/(admin)/devices/iphones/page.tsx(307,21): error TS2304: Cannot find name 'user'.
+src/app/(admin)/devices/iphones/page.tsx(308,56): error TS2304: Cannot find name 'user'.
+src/app/(admin)/devices/iphones/page.tsx(330,22): error TS2304: Cannot find name 'user'.
