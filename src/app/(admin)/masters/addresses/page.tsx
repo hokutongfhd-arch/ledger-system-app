@@ -19,6 +19,7 @@ import { formatZipCode } from '../../../../lib/utils/zipCodeUtils';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
+import { logger } from '../../../../lib/logger';
 
 export default function AddressListPage() {
     const { user } = useAuth();
@@ -254,7 +255,16 @@ function AddressListContent() {
         }
     };
 
-    const handleExportCSVClick = () => {
+    const handleExportCSVClick = async () => {
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'address',
+            targetId: 'address_list',
+            result: 'success',
+            message: `住所マスタのエクスポート: ${filteredData.length}件`
+        });
+
         handleExport(filteredData, headers, `address_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => {
             const areaCode = areas.find(a => a.areaName === item.area)?.areaCode || '';
             return [

@@ -157,7 +157,7 @@ export const useAuditLogs = () => {
                 sort: sort,
                 includeArchived: showArchived
             });
-            return allLogs;
+            return (allLogs || []).map(logService.mapLogFromDb);
         } catch (error) {
             console.error('Export fetch failed', error);
             return [];

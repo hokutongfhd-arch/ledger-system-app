@@ -19,6 +19,7 @@ import { formatPhoneNumber, normalizePhoneNumber } from '../../../../lib/utils/p
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
+import { logger } from '../../../../lib/logger';
 
 export default function RouterListPage() {
     const { user } = useAuth();
@@ -266,7 +267,16 @@ function RouterListContent() {
         }
     };
 
-    const handleExportCSVClick = () => {
+    const handleExportCSVClick = async () => {
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'router',
+            targetId: 'router_list',
+            result: 'success',
+            message: `ルーター一覧のエクスポート: ${filteredData.length}件`
+        });
+
         handleExport(filteredData, headers, `router_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.no || '',
             item.contractStatus || '',

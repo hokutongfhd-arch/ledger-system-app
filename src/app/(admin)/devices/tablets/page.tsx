@@ -18,6 +18,7 @@ import { useToast } from '../../../../features/context/ToastContext';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
+import { logger } from '../../../../lib/logger';
 
 const statusMap: Record<string, string> = {
     'in-use': '使用中',
@@ -269,7 +270,16 @@ function TabletListContent() {
         }
     };
 
-    const handleExportCSVClick = () => {
+    const handleExportCSVClick = async () => {
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'tablet',
+            targetId: 'tablet_list',
+            result: 'success',
+            message: `タブレット一覧のエクスポート: ${filteredData.length}件`
+        });
+
         handleExport(filteredData, headers, `tablet_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.terminalCode,
             item.maker || '',

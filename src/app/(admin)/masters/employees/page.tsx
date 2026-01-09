@@ -17,6 +17,7 @@ import { useToast } from '../../../../features/context/ToastContext';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
+import { logger } from '../../../../lib/logger';
 
 export default function EmployeeListPage() {
     const { user } = useAuth();
@@ -261,7 +262,16 @@ function EmployeeListContent() {
         }
     };
 
-    const handleExportCSVClick = () => {
+    const handleExportCSVClick = async () => {
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'employee',
+            targetId: 'employee_list',
+            result: 'success',
+            message: `社員マスタのエクスポート: ${filteredData.length}件`
+        });
+
         const headers = [
             '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
             'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',

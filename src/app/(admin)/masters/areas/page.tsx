@@ -17,6 +17,7 @@ import { useToast } from '../../../../features/context/ToastContext';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
+import { logger } from '../../../../lib/logger';
 
 export default function AreaListPage() {
     const { user } = useAuth();
@@ -207,7 +208,16 @@ function AreaListContent() {
         }
     };
 
-    const handleExportCSVClick = () => {
+    const handleExportCSVClick = async () => {
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'area',
+            targetId: 'area_list',
+            result: 'success',
+            message: `エリアマスタのエクスポート: ${filteredData.length}件`
+        });
+
         handleExport(filteredData, headers, `area_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.areaCode,
             item.areaName

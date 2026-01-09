@@ -19,6 +19,7 @@ import { useToast } from '../../../../features/context/ToastContext';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
+import { logger } from '../../../../lib/logger';
 
 export default function IPhoneListPage() {
     const { user } = useAuth();
@@ -273,7 +274,16 @@ function IPhoneListContent() {
         }
     };
 
-    const handleExportCSVClick = () => {
+    const handleExportCSVClick = async () => {
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'iphone',
+            targetId: 'iphone_list',
+            result: 'success',
+            message: `iPhone一覧のエクスポート: ${filteredData.length}件`
+        });
+
         handleExport(filteredData, headers, `iphone_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.id,
             item.managementNumber,

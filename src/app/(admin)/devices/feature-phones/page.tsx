@@ -19,6 +19,7 @@ import { useToast } from '../../../../features/context/ToastContext';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
+import { logger } from '../../../../lib/logger';
 
 export default function FeaturePhoneListPage() {
     const { user } = useAuth();
@@ -269,7 +270,16 @@ function FeaturePhoneListContent() {
         }
     };
 
-    const handleExportCSVClick = () => {
+    const handleExportCSVClick = async () => {
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'feature_phone',
+            targetId: 'feature_phone_list',
+            result: 'success',
+            message: `ガラホ一覧のエクスポート: ${filteredData.length}件`
+        });
+
         handleExport(filteredData, headers, `feature_phone_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.managementNumber,
             item.modelName,

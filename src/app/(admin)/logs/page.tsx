@@ -15,7 +15,9 @@ import { OperationLogFilter } from '../../../features/logs/components/OperationL
 import LogDetailModal from '../../../features/logs/components/LogDetailModal';
 import { OperationLogDetailModal } from '../../../features/logs/components/OperationLogDetailModal';
 import type { OperationLog } from '../../../lib/types';
+import { logger } from '../../../lib/logger';
 import { clsx } from 'clsx';
+
 
 export default function LogListPage() {
     const { user } = useAuth();
@@ -129,19 +131,34 @@ function AuditLogContent() {
             return;
         }
 
-        const headers = ['ID', '日時', '実行者名', '社員コード', '対象', 'アクション', '結果', '詳細', 'IPアドレス', 'Metadata'];
-        const rows = data.map(log => [
-            log.id,
-            log.timestamp,
-            log.actorName,
-            log.actorEmployeeCode,
-            log.target,
-            log.action,
-            log.result,
-            log.details?.replace(/"/g, '""') || '',
-            log.ipAddress,
-            JSON.stringify(log.metadata).replace(/"/g, '""')
-        ]);
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'report',
+            targetId: 'audit_logs',
+            result: 'success',
+            message: `監査ログのエクスポート: ${data.length}件`
+        });
+
+        const headers = ['日時', '実行者', '対応', '結果', '詳細'];
+        const rows = data.map(log => {
+            // Logic to determine Response status (matching UI)
+            const needsResponse = log.actionRaw === 'ANOMALY_DETECTED' ||
+                log.result === 'failure' ||
+                (log.severity && log.severity !== 'low');
+            let responseStatus = '-';
+            if (needsResponse || log.is_acknowledged) {
+                responseStatus = log.is_acknowledged ? '対応済' : '未対応';
+            }
+
+            return [
+                new Date(log.timestamp).toLocaleString('ja-JP'),
+                `${log.actorName} (${log.actorEmployeeCode})`,
+                responseStatus,
+                log.result === 'success' ? '成功' : '失敗',
+                log.details?.replace(/"/g, '""') || ''
+            ];
+        });
 
         const csvContent = [
             headers.join(','),
@@ -341,6 +358,15 @@ function OperationLogContent() {
             alert('出力するデータがありません');
             return;
         }
+
+        // Log the export action
+        await logger.log({
+            action: 'EXPORT',
+            targetType: 'report',
+            targetId: 'operation_logs',
+            result: 'success',
+            message: `操作ログのエクスポート: ${data.length}件`
+        });
 
         const headers = ['ID', '日時', '実行者名', '社員CD', 'テーブル', '操作', '変更前データ', '変更後データ'];
         const rows = data.map(log => [
