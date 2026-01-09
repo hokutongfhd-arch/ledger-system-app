@@ -189,11 +189,6 @@ export default function AnomalyRulesPage() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="p-4 bg-ink text-white text-[10px] font-mono leading-relaxed border-l-4 border-accent-electric">
-                                                <p className="mb-1 text-accent-electric font-bold">// Detect Logic:</p>
-                                                <p>IF current_time BETWEEN {rule.params.start} AND {rule.params.end}</p>
-                                                <p>THEN FLAG_ANOMALY(severity: {rule.severity})</p>
-                                            </div>
                                         </div>
                                     )}
 
@@ -226,6 +221,6 @@ export default function AnomalyRulesPage() {
             </div>
 
             <ConfirmDialog />
-        </div>
+        </div >
     );
 }
