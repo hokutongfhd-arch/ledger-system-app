@@ -368,9 +368,9 @@ function OperationLogContent() {
             message: `操作ログのエクスポート: ${data.length}件`
         });
 
-        const headers = ['ID', '日時', '実行者名', '社員CD', 'テーブル', '操作', '変更前データ', '変更後データ'];
+        const headers = ['日時', '実行者名', '社員CD', 'テーブル', '操作', '変更前データ', '変更後データ'];
         const rows = data.map(log => [
-            log.id,
+            // log.id, // Removed ID
             log.timestamp,
             log.actorName,
             log.actorCode,

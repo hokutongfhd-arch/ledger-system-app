@@ -10,13 +10,13 @@ interface OperationLogFilterProps {
 }
 
 const TABLE_OPTIONS = [
-    { value: 'employees', label: '社員マスタ' },
-    { value: 'areas', label: 'エリアマスタ' },
-    { value: 'addresses', label: '住所マスタ' },
-    { value: 'tablets', label: '勤怠タブレット' },
     { value: 'iphones', label: 'iPhone' },
     { value: 'featurephones', label: 'ガラホ' },
-    { value: 'routers', label: 'モバイルルーター' }
+    { value: 'tablets', label: '勤怠タブレット' },
+    { value: 'routers', label: 'モバイルルーター' },
+    { value: 'employees', label: '社員マスタ' },
+    { value: 'areas', label: 'エリアマスタ' },
+    { value: 'addresses', label: '住所マスタ' }
 ];
 
 export const OperationLogFilter: React.FC<OperationLogFilterProps> = ({ filters, onUpdate, readOnlyDates, maxDate }) => {
