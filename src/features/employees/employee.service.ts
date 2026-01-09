@@ -65,7 +65,46 @@ export const employeeService = {
             }
         }
 
-        const dbData = employeeService.mapEmployeeToDb(item);
+        // 1. Sync with Supabase Auth (Create or Update Auth User)
+        // We do this BEFORE DB save so we can get the auth_id
+        let authId = item.authId;
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    code: item.code,
+                    password: item.password, // This will update password if provided
+                    name: item.name,
+                    role: item.role
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Auth Sync Failed:', errorData);
+                // We might want to throw here, or continue with a warning?
+                // For now, let's throw so the user knows something is wrong.
+                throw new Error(errorData.error || 'Failed to sync authentication account');
+            }
+
+            const result = await response.json();
+            if (result.userId) {
+                authId = result.userId;
+            }
+        } catch (error) {
+            console.error('Auth Registration Error:', error);
+            throw error; // Stop saving if auth fails
+        }
+
+        // 2. Prepare DB Data with auth_id
+        const dbData = {
+            ...employeeService.mapEmployeeToDb(item),
+            auth_id: authId
+        };
+
         if (isUpdate) {
             return await employeeApi.updateEmployee(item.id, dbData);
         } else {

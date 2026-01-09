@@ -47,12 +47,33 @@ export async function POST(req: Request) {
         if (error) {
             if (error.message.includes('already registered') || error.status === 422) {
                 const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-                const existingUser = listData.users.find(u => u.email === email);
+                const existingUser = listData.users.find((u: any) => u.email === email);
+
                 if (existingUser) {
+                    console.log(`User ${email} exists. Updating...`);
+                    // Update existing user
+                    const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+                        existingUser.id,
+                        {
+                            password: userPassword,
+                            user_metadata: { name },
+                            app_metadata: {
+                                role: userRole,
+                                employee_code: code
+                            },
+                            email_confirm: true
+                        }
+                    );
+
+                    if (updateError) {
+                        console.error('Failed to update existing user:', updateError);
+                        return NextResponse.json({ error: updateError.message }, { status: 500 });
+                    }
+
                     return NextResponse.json({
                         success: true,
                         userId: existingUser.id,
-                        message: 'User already exists, returning ID'
+                        message: 'User updated successfully'
                     });
                 }
             }
@@ -64,6 +85,6 @@ export async function POST(req: Request) {
 
     } catch (err: any) {
         console.error('API Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return NextResponse.json({ error: (err as any).message }, { status: 500 });
     }
 }
