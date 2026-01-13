@@ -32,12 +32,12 @@ interface TitleFragment {
     id: string; // Unique for Table row
     itemId: string;
     title: string;
-    files: Array<ManualFile & { originalIndex: number }>;
+    files: Array<ManualFile & { originalIndex: number, parentId: string }>;
     updatedAt: string;
 }
 
 // Sortable Item Component
-const SortableFileItem = ({ file, fileIndex, itemId, onDelete, onLinkClick }: { file: ManualFile, fileIndex: number, itemId: string, onDelete: (itemId: string, index: number) => void, onLinkClick: (e: React.MouseEvent) => void }) => {
+const SortableFileItem = ({ file, fileIndex, itemId, onDelete, onLinkClick }: { file: ManualFile, fileIndex: number, itemId: string, onDelete: (itemId: string, index: number) => void, onLinkClick: (e: React.MouseEvent, url: string, name: string) => void }) => {
     const {
         attributes,
         listeners,
@@ -70,7 +70,7 @@ const SortableFileItem = ({ file, fileIndex, itemId, onDelete, onLinkClick }: { 
                         e.preventDefault();
                         return;
                     }
-                    onLinkClick(e);
+                    onLinkClick(e, file.url, file.name);
                 }}
             >
                 <span className="truncate">{file.name}</span>
@@ -106,7 +106,7 @@ const DraggableRow = ({
     handleDragStart: () => void,
     handleDragEnd: (event: DragEndEvent, itemId: string) => void,
     handleDeleteFile: (itemId: string, index: number) => void,
-    handleLinkClick: (e: React.MouseEvent) => void
+    handleLinkClick: (e: React.MouseEvent, url: string, name: string) => void
 }) => {
     const {
         attributes,
@@ -147,16 +147,16 @@ const DraggableRow = ({
                     onDragEnd={(e) => handleDragEnd(e, fragment.itemId)}
                 >
                     <SortableContext
-                        items={fragment.files.map((f) => `${fragment.itemId}-${f.name}-${f.originalIndex}`)}
+                        items={fragment.files.map((f) => `${(f as any).parentId}-${f.name}-${f.originalIndex}`)}
                         strategy={verticalListSortingStrategy}
                     >
                         <div className="flex flex-col gap-1">
                             {fragment.files.map((file) => (
                                 <SortableFileItem
-                                    key={`${fragment.itemId}-${file.name}-${file.originalIndex}`}
+                                    key={`${(file as any).parentId}-${file.name}-${file.originalIndex}`}
                                     file={{ name: file.name, url: file.url }}
                                     fileIndex={file.originalIndex}
-                                    itemId={fragment.itemId}
+                                    itemId={(file as any).parentId}
                                     onDelete={handleDeleteFile}
                                     onLinkClick={handleLinkClick}
                                 />
@@ -192,6 +192,8 @@ const DeviceManualListContent = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const isDraggingRef = useRef(false);
+
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const fetchManuals = async () => {
         try {
@@ -255,9 +257,34 @@ const DeviceManualListContent = () => {
         isDraggingRef.current = true;
     };
 
-    const handleLinkClick = (e: React.MouseEvent) => {
+    const handleLinkClick = async (e: React.MouseEvent, url: string, fileName: string) => {
         if (isDraggingRef.current) {
             e.preventDefault();
+            return;
+        }
+
+        e.preventDefault();
+        if (isDownloading) return;
+
+        try {
+            setIsDownloading(true);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Download failed');
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (error) {
+            console.error('Download error:', error);
+            showAlert('ダウンロードに失敗しました');
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -405,13 +432,19 @@ const DeviceManualListContent = () => {
         let hasError = false;
 
         try {
-            let targetItem = manuals.find(item => item.title === title);
+            const targetItem = manuals.find(item => item.title.trim() === title.trim());
             let currentFiles: ManualFile[] = targetItem ? [...targetItem.files] : [];
 
             for (const file of selectedFiles) {
-                const isDuplicate = manuals.some(item => item.files.some(f => f.name === file.name));
+                // Check for duplicate filenames across ALL manuals
+                const isDuplicate = manuals.some(item =>
+                    item.files.some(f => f.name.toLowerCase() === file.name.toLowerCase())
+                );
 
-                if (isDuplicate) {
+                // Also check against files being added in this batch
+                const isDuplicateInBatch = registeredFiles.some(name => name.toLowerCase() === file.name.toLowerCase());
+
+                if (isDuplicate || isDuplicateInBatch) {
                     skippedFiles.push(file.name);
                     continue;
                 }
@@ -536,38 +569,86 @@ const DeviceManualListContent = () => {
         }
     };
 
-    const allFilesFlattened = manuals.flatMap(item =>
-        item.files.map((file, index) => ({
-            ...file,
-            itemId: item.id,
-            title: item.title,
-            updatedAt: item.updatedAt,
-            originalIndex: index
+    // --- Grouping and Pagination Logic ---
+
+    // Group manuals by title
+    const groupedManuals = manuals.reduce((acc, item) => {
+        const titleKey = item.title.trim();
+        if (!acc[titleKey]) {
+            acc[titleKey] = {
+                id: item.id,
+                itemId: item.id,
+                title: item.title,
+                files: [],
+                updatedAt: item.updatedAt,
+                allIds: [item.id]
+            };
+        } else {
+            acc[titleKey].allIds.push(item.id);
+            // Keep the latest timestamp
+            if (new Date(item.updatedAt) > new Date(acc[titleKey].updatedAt)) {
+                acc[titleKey].updatedAt = item.updatedAt;
+            }
+        }
+
+        // Add files from this item, avoiding exact duplicates in the merged list
+        item.files.forEach((f, i) => {
+            const isAlreadyAdded = acc[titleKey].files.some(existing =>
+                existing.name === f.name && existing.url === f.url
+            );
+            if (!isAlreadyAdded) {
+                acc[titleKey].files.push({
+                    ...f,
+                    originalIndex: i,
+                    parentId: item.id
+                });
+            }
+        });
+
+        return acc;
+    }, {} as Record<string, TitleFragment & { allIds: string[] }>);
+
+    const sortedGroups = Object.values(groupedManuals).sort((a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+
+    // Flatten to identify individual files across all groups for precise pagination
+    const allFilesFlattened = sortedGroups.flatMap(g =>
+        g.files.map(f => ({
+            ...f,
+            title: g.title,
+            updatedAt: g.updatedAt,
+            itemId: (f as any).parentId || g.itemId
         }))
     );
 
-    const totalItems = allFilesFlattened.length;
-    const totalPages = Math.ceil(totalItems / pageSize);
+    const totalItemsCount = allFilesFlattened.length;
+    const totalPages = Math.ceil(totalItemsCount / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + pageSize, totalItems);
+    const endIndex = Math.min(startIndex + pageSize, totalItemsCount);
 
     const paginatedFiles = allFilesFlattened.slice(startIndex, endIndex);
 
+    // Re-group only the paginated files for display
     const fragments: TitleFragment[] = [];
-    paginatedFiles.forEach((file) => {
-        const lastFragment = fragments[fragments.length - 1];
-        if (lastFragment && lastFragment.itemId === file.itemId) {
-            lastFragment.files.push({ name: file.name, url: file.url, originalIndex: file.originalIndex });
+    paginatedFiles.forEach((file, idx) => {
+        const last = fragments[fragments.length - 1];
+        if (last && last.itemId === file.itemId) {
+            last.files.push(file as any);
         } else {
             fragments.push({
-                id: `${file.itemId}-${file.originalIndex}`,
+                id: `${file.itemId}-${startIndex + idx}`,
                 itemId: file.itemId,
                 title: file.title,
-                files: [{ name: file.name, url: file.url, originalIndex: file.originalIndex }],
+                files: [file as any],
                 updatedAt: file.updatedAt
             });
         }
     });
+
+    const fileStartIndex = startIndex;
+    const fileEndIndex = endIndex;
+    const totalFiles = totalItemsCount;
 
     const handlePageChange = (page: number) => {
         const p = Math.max(1, Math.min(page, totalPages));
@@ -575,7 +656,7 @@ const DeviceManualListContent = () => {
     };
 
     return (
-        <div className="space-y-4 h-full flex flex-col">
+        <div className="space-y-4 h-full flex flex-col relative">
             <PageHeader
                 title="マニュアル管理"
                 actions={
@@ -640,9 +721,9 @@ const DeviceManualListContent = () => {
             <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                totalItems={totalItems}
-                startIndex={startIndex}
-                endIndex={endIndex}
+                totalItems={totalFiles}
+                startIndex={fileStartIndex}
+                endIndex={fileEndIndex}
                 pageSize={pageSize}
                 onPageChange={handlePageChange}
                 onPageSizeChange={(size) => {
@@ -760,6 +841,15 @@ const DeviceManualListContent = () => {
                     </ActionButton>
                 </div>
             </Modal>
+
+            {isDownloading && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/50 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="h-10 w-10 bg-[#0EA5E9] rounded-lg shadow-lg border-2 border-[#0A0E27] animate-pulse"></div>
+                        <span className="text-[#0A0E27] font-bold">データを読み込み中...</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
