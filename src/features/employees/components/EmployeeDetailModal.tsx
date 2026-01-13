@@ -44,10 +44,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                             {item.nameKana} / {item.code}
                         </p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Employee ID</p>
-                        <p className="font-mono text-gray-600">{item.id.slice(0, 8)}...</p>
-                    </div>
+
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

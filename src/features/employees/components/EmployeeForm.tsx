@@ -46,6 +46,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         jobType: '',
     });
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+    const [numericError, setNumericError] = useState(false);
     const codeRef = useRef<HTMLInputElement>(null);
 
     // Prepare Options
@@ -72,9 +73,50 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         }
     }, [initialData]);
 
+    const isComposing = useRef(false);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+
+        if (name === 'code') {
+            // IME入力中は変換をスキップしてそのまま保持
+            if (isComposing.current) {
+                setFormData(prev => ({ ...prev, [name]: value }));
+                return;
+            }
+
+            // 数字以外の文字が含まれているかチェック
+            const hasNonNumeric = /[^0-9０-９]/.test(value);
+            setNumericError(hasNonNumeric);
+
+            // 全角数字を半角に変換し、数字以外を除去
+            const sanitizedValue = value
+                .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+                .replace(/[^0-9]/g, '');
+            setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCompositionStart = () => {
+        isComposing.current = true;
+    };
+
+    const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+        isComposing.current = false;
+        const value = e.currentTarget.value;
+
+        // 確定時に数字以外の文字が含まれているかチェック
+        const hasNonNumeric = /[^0-9０-９]/.test(value);
+        setNumericError(hasNonNumeric);
+
+        // 確定時に強制的に半角数字のみに変換
+        const sanitizedValue = value
+            .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+            .replace(/[^0-9]/g, '');
+        setFormData(prev => ({ ...prev, code: sanitizedValue }));
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -119,6 +161,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 type="text"
                                 name="code"
                                 value={formData.code}
+                                onCompositionStart={handleCompositionStart}
+                                onCompositionEnd={handleCompositionEnd}
                                 onChange={(e) => {
                                     handleChange(e);
                                     if (errorFields.has('code')) {
@@ -130,9 +174,13 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 error={errorFields.has('code')}
                                 required
                                 disabled={isSelfEdit}
+                                inputMode="numeric"
                             />
                             {errorFields.has('code') && (
                                 <FormError>既に登録されている社員コードです</FormError>
+                            )}
+                            {numericError && (
+                                <FormError>半角数字以外は入力できません</FormError>
                             )}
                         </div>
                         <div>
