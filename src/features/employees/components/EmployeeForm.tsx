@@ -47,6 +47,15 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         roleTitle: '',
         jobType: '',
     });
+
+    // Splitting name and nameKana for the form UI
+    const [nameParts, setNameParts] = useState({
+        lastName: '',
+        firstName: '',
+        lastNameKana: '',
+        firstNameKana: ''
+    });
+
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const [numericError, setNumericError] = useState(false);
     const codeRef = useRef<HTMLInputElement>(null);
@@ -72,10 +81,28 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         if (initialData) {
             const { id, ...rest } = initialData;
             setFormData(rest);
+
+            // Split name and nameKana by first space (assuming half-width or full-width space)
+            const splitName = rest.name.split(/[\s　]+/);
+            const splitNameKana = rest.nameKana.split(/[\s　]+/);
+
+            setNameParts({
+                lastName: splitName[0] || '',
+                firstName: splitName.slice(1).join(' ') || '',
+                lastNameKana: splitNameKana[0] || '',
+                firstNameKana: splitNameKana.slice(1).join(' ') || ''
+            });
         }
     }, [initialData]);
 
     const isComposing = useRef(false);
+
+    const handleNamePartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        // Remove ANY spaces (half-width, full-width, ideographic)
+        const sanitized = value.replace(/[\s　]+/g, '');
+        setNameParts(prev => ({ ...prev, [name]: sanitized }));
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -158,7 +185,15 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
             return;
         }
 
-        onSubmit(formData);
+        // Combine name parts with half-width space for storage
+        const combinedName = `${nameParts.lastName} ${nameParts.firstName}`.trim();
+        const combinedNameKana = `${nameParts.lastNameKana} ${nameParts.firstNameKana}`.trim();
+
+        onSubmit({
+            ...formData,
+            name: combinedName,
+            nameKana: combinedNameKana
+        });
     };
 
     const today = new Date().toISOString().split('T')[0];
@@ -211,24 +246,55 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 <option value="女性">女性</option>
                             </Select>
                         </div>
-                        <div>
-                            <FormLabel>氏名</FormLabel>
-                            <Input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>氏名カナ</FormLabel>
-                            <Input
-                                type="text"
-                                name="nameKana"
-                                value={formData.nameKana}
-                                onChange={handleChange}
-                            />
+                        <div className="col-span-1 md:col-span-2 space-y-4">
+                            <div>
+                                <FormLabel>氏名</FormLabel>
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <Input
+                                            type="text"
+                                            name="lastName"
+                                            value={nameParts.lastName}
+                                            onChange={handleNamePartChange}
+                                            placeholder="苗字"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <Input
+                                            type="text"
+                                            name="firstName"
+                                            value={nameParts.firstName}
+                                            onChange={handleNamePartChange}
+                                            placeholder="名前"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <FormLabel>氏名カナ</FormLabel>
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <Input
+                                            type="text"
+                                            name="lastNameKana"
+                                            value={nameParts.lastNameKana}
+                                            onChange={handleNamePartChange}
+                                            placeholder="ミョウジ"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <Input
+                                            type="text"
+                                            name="firstNameKana"
+                                            value={nameParts.firstNameKana}
+                                            onChange={handleNamePartChange}
+                                            placeholder="ナマエ"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <FormLabel>生年月日</FormLabel>

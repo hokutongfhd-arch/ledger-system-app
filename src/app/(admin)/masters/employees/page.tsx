@@ -77,7 +77,7 @@ function EmployeeListContent() {
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, headers) => {
             const requiredHeaders = [
-                '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+                '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
                 'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
                 '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
             ];
@@ -174,11 +174,20 @@ function EmployeeListContent() {
                     continue;
                 }
 
+                const lastName = String(rowData['苗字'] || rowData['氏名'] || '').trim();
+                const firstName = String(rowData['名前'] || '').trim();
+                const lastNameKana = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
+                const firstNameKana = String(rowData['名前カナ'] || '').trim();
+
+                // スペースを除去し、半角スペースで結合
+                const cleanName = `${lastName.replace(/[\s　]+/g, '')} ${firstName.replace(/[\s　]+/g, '')}`.trim();
+                const cleanNameKana = `${lastNameKana.replace(/[\s　]+/g, '')} ${firstNameKana.replace(/[\s　]+/g, '')}`.trim();
+
                 const newEmployee: Omit<Employee, 'id'> & { id?: string } = {
                     code: code,
                     gender: String(rowData['性別'] || ''),
-                    name: String(rowData['氏名'] || ''),
-                    nameKana: String(rowData['氏名カナ'] || ''),
+                    name: cleanName,
+                    nameKana: cleanNameKana,
                     birthDate: birthDateValue,
                     age: parseNumber(rowData['年齢']),
                     areaCode: toHalfWidth(String(rowData['エリアコード'] || '')).trim(),
@@ -283,35 +292,43 @@ function EmployeeListContent() {
         });
 
         const headers = [
-            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
             'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
         ];
-        handleExport(filteredData, headers, `employee_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
-            item.code,
-            item.gender || '',
-            item.name,
-            item.nameKana || '',
-            item.birthDate || '',
-            item.age || '',
-            item.areaCode || '',
-            item.addressCode || '',
-            item.joinDate || '',
-            item.yearsOfService || '',
-            item.monthsHasuu || '',
-            item.jobType || '',
-            item.roleTitle || '',
-            item.employeeType || '',
-            item.salaryType || '',
-            item.costType || '',
-            item.role === 'admin' ? '管理者' : 'ユーザー',
-            item.password || ''
-        ]);
+
+        handleExport(filteredData, headers, `employee_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => {
+            const [lastName, ...firstNameParts] = (item.name || '').split(/[\s　]+/);
+            const [lastNameKana, ...firstNameKanaParts] = (item.nameKana || '').split(/[\s　]+/);
+
+            return [
+                item.code,
+                item.gender || '',
+                lastName || '',
+                firstNameParts.join(' ') || '',
+                lastNameKana || '',
+                firstNameKanaParts.join(' ') || '',
+                item.birthDate || '',
+                item.age || '',
+                item.areaCode || '',
+                item.addressCode || '',
+                item.joinDate || '',
+                item.yearsOfService || '',
+                item.monthsHasuu || '',
+                item.jobType || '',
+                item.roleTitle || '',
+                item.employeeType || '',
+                item.salaryType || '',
+                item.costType || '',
+                item.role === 'admin' ? '管理者' : 'ユーザー',
+                item.password || ''
+            ];
+        });
     };
 
     const handleDownloadTemplate = async () => {
         const headers = [
-            '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
+            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
             'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
         ];
