@@ -178,7 +178,7 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
 
                             <div className="relative group">
                                 <InfoItem icon={<User size={16} />} label="実行者" value={`${log.actorName} (${log.actorEmployeeCode})`} />
-                                {isDashboardContext && (
+                                {isDashboardContext && !isAnomaly && (
                                     <button
                                         onClick={() => { onClose(); router.push(`/logs?actor=${log.actorEmployeeCode}&logId=${log.id}`); }}
                                         className="absolute top-2 right-2 p-1.5 bg-blue-50 text-blue-600 rounded-md opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-100"
@@ -193,7 +193,7 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
 
                             <div className="relative group">
                                 <InfoItem icon={<HardDrive size={16} />} label="対象種別" value={log.target} />
-                                {log.targetId && isDashboardContext && (
+                                {log.targetId && isDashboardContext && !isAnomaly && (
                                     <button
                                         onClick={() => { onClose(); router.push(`/logs?target=${log.targetRaw}&logId=${log.id}`); }}
                                         className="absolute top-2 right-2 p-1.5 bg-blue-50 text-blue-600 rounded-md opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-100"
@@ -224,19 +224,7 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                                 )}
                             </div>
 
-                            {isAnomaly && isDashboardContext && (
-                                <button
-                                    onClick={() => {
-                                        onClose();
-                                        // Transition to main logs with actor name filtered to see context
-                                        router.push(`/logs?actor=${log.actorEmployeeCode}&logId=${log.id}&actionType=ANOMALY_DETECTED`);
-                                    }}
-                                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm shadow-sm transition-all active:scale-[0.98]"
-                                >
-                                    <ListFilter size={16} />
-                                    監査ログ一覧で関連履歴を調査する
-                                </button>
-                            )}
+
                         </div>
 
                         {/* IP Address */}
