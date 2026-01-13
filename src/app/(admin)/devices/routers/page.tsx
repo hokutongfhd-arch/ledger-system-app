@@ -76,7 +76,7 @@ function RouterListContent() {
     const { handleExport } = useCSVExport<Router>();
     const headers = [
         'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番',
-        '通信容量', '端末CD', '社員コード', '住所コード', '実貸与先',
+        '通信容量', '端末CD', '社員コード', '事業所コード', '実貸与先',
         '実貸与先名', '会社', 'IPアドレス', 'サブネットマスク', '開始IP',
         '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)'
     ];
@@ -185,7 +185,7 @@ function RouterListContent() {
                     dataCapacity: String(rowData['通信容量'] || ''),
                     terminalCode: terminalCode,
                     employeeCode: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['住所コード'] || ''),
+                    addressCode: String(rowData['事業所コード'] || ''),
                     actualLender: String(rowData['実貸与先'] || ''),
                     actualLenderName: String(rowData['実貸与先名'] || ''),
                     company: String(rowData['会社'] || ''),

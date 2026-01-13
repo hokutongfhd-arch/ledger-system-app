@@ -63,7 +63,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                         <SectionHeader icon={<MapPin size={18} />} title="所属情報 (Location)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="エリア" value={areaName} subValue={item.areaCode} />
-                            <DetailRow label="住所" value={addressName} subValue={item.addressCode} />
+                            <DetailRow label="事業所" value={addressName} subValue={item.addressCode} />
                         </div>
                     </div>
 

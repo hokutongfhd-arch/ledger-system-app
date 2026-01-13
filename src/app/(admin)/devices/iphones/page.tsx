@@ -77,8 +77,8 @@ function IPhoneListContent() {
 
     const { handleExport } = useCSVExport<IPhone>();
     const headers = [
-        'ID', '管理番号', '電話番号', '機種名', 'キャリア', '契約年数',
-        '社員コード', '住所コード', '貸与日', '受領書提出日', '返却日',
+        'キャリア', '電話番号', '管理番号', '機種名', '契約年数',
+        '社員コード', '事業所コード', '貸与日', '受領書提出日', '返却日',
         'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考'
     ];
 
@@ -192,7 +192,7 @@ function IPhoneListContent() {
                     phoneNumber: phoneNumber,
                     managementNumber: managementNumber,
                     employeeId: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['住所コード'] || ''),
+                    addressCode: String(rowData['事業所コード'] || ''),
                     smartAddressId: String(rowData['SMARTアドレス帳ID'] || ''),
                     smartAddressPw: String(rowData['SMARTアドレス帳PW'] || ''),
                     lendDate: formatDate(rowData['貸与日']),

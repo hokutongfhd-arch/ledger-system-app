@@ -103,8 +103,8 @@ function TabletListContent() {
 
     const { handleExport } = useCSVExport<Tablet>();
     const headers = [
-        '端末CD', 'メーカー', '型番', '状況', '契約年数',
-        '社員コード', '住所コード', '事業所CD', '過去貸与履歴', '備考'
+        'メーカー', '機種番号', 'シリアルコード', '端末管理番号', '契約年数',
+        '社員コード', '事業所コード', '事業所CD', '過去貸与履歴', '備考'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
@@ -198,7 +198,7 @@ function TabletListContent() {
                     status: status as any,
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     employeeCode: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['住所コード'] || ''),
+                    addressCode: String(rowData['事業所コード'] || ''),
                     officeCode: String(rowData['事業所CD'] || ''),
                     history: String(rowData['過去貸与履歴'] || ''),
                     notes: String(rowData['備考'] || ''),

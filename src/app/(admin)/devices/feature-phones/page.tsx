@@ -75,8 +75,8 @@ function FeaturePhoneListContent() {
 
     const { handleExport } = useCSVExport<FeaturePhone>();
     const headers = [
-        '管理番号', '機種名', '電話番号', 'キャリア', '契約年数',
-        '社員コード', '住所コード', '貸与日', '負担先会社', '受領書提出日', '返却日', '備考'
+        'キャリア', '電話番号', '管理番号', '機種名', '契約年数',
+        '社員コード', '事業所コード', '貸与日', '負担先会社', '受領書提出日', '返却日', '備考'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
@@ -192,7 +192,7 @@ function FeaturePhoneListContent() {
                     phoneNumber: phoneNumber,
                     managementNumber: managementNumber,
                     employeeId: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['住所コード'] || ''),
+                    addressCode: String(rowData['事業所コード'] || ''),
                     lendDate: formatDate(rowData['貸与日']),
                     receiptDate: formatDate(rowData['受領書提出日']),
                     notes: String(rowData['備考'] || ''),

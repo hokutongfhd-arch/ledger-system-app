@@ -78,7 +78,7 @@ function EmployeeListContent() {
         onValidate: async (rows, headers) => {
             const requiredHeaders = [
                 '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
-                'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+                'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
                 '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
             ];
 
@@ -173,7 +173,7 @@ function EmployeeListContent() {
                     birthDate: formatDate(rowData['生年月日']),
                     age: parseNumber(rowData['年齢']),
                     areaCode: toHalfWidth(String(rowData['エリアコード'] || '')).trim(),
-                    addressCode: toHalfWidth(String(rowData['住所コード'] || '')).trim(),
+                    addressCode: toHalfWidth(String(rowData['事業所コード'] || '')).trim(),
                     joinDate: formatDate(rowData['入社年月日']),
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
@@ -274,7 +274,7 @@ function EmployeeListContent() {
 
         const headers = [
             '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
-            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
         ];
         handleExport(filteredData, headers, `employee_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
@@ -302,7 +302,7 @@ function EmployeeListContent() {
     const handleDownloadTemplate = () => {
         const headers = [
             '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
-            'エリアコード', '住所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
         ];
         const wb = XLSX.utils.book_new();

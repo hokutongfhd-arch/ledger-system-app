@@ -293,12 +293,12 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             />
                         </div>
                         <div>
-                            <FormLabel>住所(住所コード)</FormLabel>
+                            <FormLabel>事業所 (事業所コード)</FormLabel>
                             <SearchableSelect
                                 options={addressOptions}
                                 value={formData.addressCode}
                                 onChange={(val) => handleSelectChange('addressCode', val)}
-                                placeholder="住所・拠点を検索..."
+                                placeholder="事業所を検索..."
                             />
                         </div>
                         <div>
