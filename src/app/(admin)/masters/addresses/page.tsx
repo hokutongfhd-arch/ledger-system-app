@@ -192,7 +192,8 @@ function AddressListContent() {
                     await addAddress(newAddress, true, true);
                     processedCodes.add(code);
                     successCount++;
-                } catch (error) {
+                } catch (error: any) {
+                    errors.push(`${i + 2}行目: 登録エラー - ${error.message || '不明なエラー'}`);
                     errorCount++;
                 }
             }

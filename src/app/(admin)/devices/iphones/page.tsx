@@ -221,7 +221,8 @@ function IPhoneListContent() {
                     processedManagementNumbers.add(managementNumber);
                     processedPhoneNumbers.add(normalizedPhone);
                     successCount++;
-                } catch (error) {
+                } catch (error: any) {
+                    errors.push(`${i + 2}行目: 登録エラー - ${error.message || '不明なエラー'}`);
                     errorCount++;
                 }
             }

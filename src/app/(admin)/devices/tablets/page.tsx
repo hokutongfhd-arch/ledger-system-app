@@ -209,7 +209,8 @@ function TabletListContent() {
                 try {
                     await addTablet(newTablet, true, true);
                     successCount++;
-                } catch (error) {
+                } catch (error: any) {
+                    errors.push(`${i + 2}行目: 登録エラー - ${error.message || '不明なエラー'}`);
                     errorCount++;
                 }
             }
