@@ -77,11 +77,14 @@ function AddressListContent() {
 
     const { handleExport } = useCSVExport<Address>();
 
-    const headers = ['No.', '住所コード', '事業所名', '事業部', 'エリアコード', 'TEL', 'FAX', '〒', '住所', '区分', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '備考', '注意書き'];
+    const headers = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '補足', '〒', '住所', '備考', '事業部', 'エリア', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, fileHeaders) => {
-            const missingHeaders = headers.filter(h => !fileHeaders.includes(h));
+            // Check for required headers (unique ones)
+            const requiredHeaders = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '補足', '〒', '住所', '備考', '事業部', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+            const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
+
             if (missingHeaders.length > 0) {
                 await confirm({
                     title: 'インポートエラー',
@@ -127,9 +130,15 @@ function AddressListContent() {
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
+                // Handle duplicate header names (エリア is mapped twice)
                 const rowData: any = {};
                 fileHeaders.forEach((header, index) => {
-                    rowData[header] = row[index];
+                    const val = row[index];
+                    // If area is already set and current val is empty, don't overwrite
+                    if (header === 'エリア' && rowData[header] && (!val || String(val).trim() === '')) {
+                        return;
+                    }
+                    rowData[header] = val;
                 });
 
                 const toHalfWidth = (str: string) => {
@@ -139,7 +148,7 @@ function AddressListContent() {
                 };
 
                 // Address Code Check
-                const rawCode = String(rowData['住所コード'] || '');
+                const rawCode = String(rowData['事業所コード'] || '');
                 const code = toHalfWidth(rawCode).trim();
 
                 if (!code) {
@@ -148,39 +157,34 @@ function AddressListContent() {
                 }
 
                 if (existingCodes.has(code)) {
-                    errors.push(`${i + 2}行目: 住所コード「${code}」は既に存在します`);
+                    errors.push(`${i + 2}行目: 事業所コード「${code}」は既に存在します`);
                     errorCount++;
                     continue;
                 }
                 if (processedCodes.has(code)) {
-                    errors.push(`${i + 2}行目: 住所コード「${code}」がファイル内で重複しています`);
+                    errors.push(`${i + 2}行目: 事業所コード「${code}」がファイル内で重複しています`);
                     errorCount++;
                     continue;
                 }
 
-                const areaCodeRaw = String(rowData['エリアコード'] || '');
-                const areaCode = toHalfWidth(areaCodeRaw).trim();
-                const matchedArea = areas.find(a => a.areaCode === areaCode);
-                const areaName = matchedArea ? matchedArea.areaName : '';
-
                 const newAddress: Omit<Address, 'id'> = {
-                    no: String(rowData['No.'] || ''),
+                    area: String(rowData['エリア'] || '').trim(),
+                    no: String(rowData['№'] || ''),
                     addressCode: code,
                     officeName: String(rowData['事業所名'] || ''),
-                    division: String(rowData['事業部'] || ''),
-                    area: areaName,
-                    tel: formatPhoneNumber(String(rowData['TEL'] || '')),
-                    fax: formatPhoneNumber(String(rowData['FAX'] || '')),
+                    tel: formatPhoneNumber(String(rowData['ＴＥＬ'] || '')),
+                    fax: formatPhoneNumber(String(rowData['ＦＡＸ'] || '')),
+                    type: String(rowData['補足'] || ''),
                     zipCode: formatZipCode(String(rowData['〒'] || '')),
                     address: String(rowData['住所'] || ''),
-                    type: String(rowData['区分'] || ''),
+                    notes: String(rowData['備考'] || ''),
+                    division: String(rowData['事業部'] || ''),
                     mainPerson: String(rowData['主担当'] || ''),
                     branchNumber: String(rowData['枝番'] || ''),
                     specialNote: String(rowData['※'] || ''),
                     labelName: String(rowData['宛名ラベル用'] || ''),
                     labelZip: formatZipCode(String(rowData['宛名ラベル用〒'] || '')),
                     labelAddress: String(rowData['宛名ラベル用住所'] || ''),
-                    notes: String(rowData['備考'] || ''),
                     attentionNote: String(rowData['注意書き'] || '')
                 };
 
@@ -262,29 +266,29 @@ function AddressListContent() {
             targetType: 'address',
             targetId: 'address_list',
             result: 'success',
-            message: `住所マスタのエクスポート: ${filteredData.length}件`
+            message: `事業所マスタのエクスポート: ${filteredData.length}件`
         });
 
         handleExport(filteredData, headers, `address_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => {
-            const areaCode = areas.find(a => a.areaName === item.area)?.areaCode || '';
             return [
+                item.area || '',
                 item.no || '',
                 item.addressCode || '',
                 item.officeName || '',
-                item.division || '',
-                areaCode,
                 item.tel || '',
                 item.fax || '',
+                item.type || '',
                 item.zipCode || '',
                 item.address || '',
-                item.type || '',
+                item.notes || '',
+                item.division || '',
+                item.area || '',
                 item.mainPerson || '',
                 item.branchNumber || '',
                 item.specialNote || '',
                 item.labelName || '',
                 item.labelZip || '',
                 item.labelAddress || '',
-                item.notes || '',
                 item.attentionNote || ''
             ];
         });
@@ -300,7 +304,7 @@ function AddressListContent() {
             e: { r: totalRows, c: headers.length - 1 }
         });
 
-        const textCols = [1, 4, 5, 6, 7];
+        const textCols = [1, 2, 4, 5, 7, 16]; // №, 事業所コード, TEL, FAX, 〒, 宛名ラベル用〒
         for (let R = 1; R <= totalRows; ++R) {
             textCols.forEach(C => {
                 const ref = XLSX.utils.encode_cell({ r: R, c: C });
@@ -309,7 +313,7 @@ function AddressListContent() {
         }
 
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, '住所マスタエクセルフォーマット.xlsx');
+        XLSX.writeFile(wb, '事業所マスタエクセルフォーマット.xlsx');
     };
 
     const getSortIcon = (key: keyof Address) => {
@@ -332,7 +336,7 @@ function AddressListContent() {
     return (
         <div className="space-y-4 h-full flex flex-col">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-text-main">住所マスタ</h1>
+                <h1 className="text-2xl font-bold text-text-main">事業所マスタ</h1>
                 <div className="flex gap-2">
                     <button onClick={handleExportCSVClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Download size={18} />CSV出力</button>
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
@@ -358,7 +362,7 @@ function AddressListContent() {
                         accessor: (item) => <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => handleCheckboxChange(item.id)} className="w-4 h-4" />,
                         className: "w-10 px-4"
                     },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>住所コード{getSortIcon('addressCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.addressCode}</button> },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>事業所コード{getSortIcon('addressCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.addressCode}</button> },
                     { header: '事業所名', accessor: 'officeName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('tel')}>ＴＥＬ{getSortIcon('tel')}</div>, accessor: (item) => formatPhoneNumber(item.tel) },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('fax')}>ＦＡＸ{getSortIcon('fax')}</div>, accessor: (item) => formatPhoneNumber(item.fax) },
@@ -384,7 +388,7 @@ function AddressListContent() {
                 onBulkDelete={handleBulkDelete}
             />
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '住所 編集' : '住所 新規登録'}>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '事業所 編集' : '事業所 新規登録'}>
                 <AddressForm initialData={editingItem} onSubmit={async (data) => {
                     if (editingItem) {
                         await updateAddress({ ...data, id: editingItem.id } as Address);

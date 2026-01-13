@@ -27,7 +27,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
     const areaDisplay = item.area ? `${item.area}${matchedArea ? ` (${matchedArea.areaCode})` : ''}` : '-';
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="住所 詳細">
+        <Modal isOpen={isOpen} onClose={onClose} title="事業所 詳細">
             <div className="space-y-8 font-sans">
                 {/* Header Section */}
                 <div className="flex justify-between items-start border-b border-gray-100 pb-6">
@@ -54,18 +54,27 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                     <div className="space-y-6">
                         <SectionHeader icon={<Building size={18} />} title="基本情報 (General Info)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="No." value={item.no} />
-                            <DetailRow label="住所コード" value={item.addressCode} />
-                            <DetailRow label="事業所名" value={item.officeName} />
-                            <DetailRow label="事業部" value={item.division} />
                             <DetailRow label="エリア" value={areaDisplay} />
+                            <DetailRow label="No." value={item.no} />
+                            <DetailRow label="事業所コード" value={item.addressCode} />
+                            <DetailRow label="事業所名" value={item.officeName} />
                         </div>
 
                         <SectionHeader icon={<Phone size={18} />} title="連絡先 (Contact)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="TEL" value={formatPhoneNumber(item.tel)} />
                             <DetailRow label="FAX" value={formatPhoneNumber(item.fax)} />
-                            <DetailRow label="住所" value={item.address} className="col-span-2" />
+                            <DetailRow label="補足" value={item.type} />
+                            <div className="pt-2 border-t border-gray-100">
+                                <p className="text-xs text-gray-400 mb-1">所在地</p>
+                                <p className="text-sm text-gray-700">〒{formatZipCode(item.zipCode)}</p>
+                                <p className="text-sm text-gray-700 mt-0.5">{item.address}</p>
+                            </div>
+                        </div>
+
+                        <SectionHeader icon={<FileText size={18} />} title="備考 (Notes)" />
+                        <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100">
+                            <DetailRow label="備考" value={item.notes} />
                         </div>
                     </div>
 
@@ -73,12 +82,11 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                     <div className="space-y-6">
                         <SectionHeader icon={<FileText size={18} />} title="詳細情報 (Details)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <DetailRow label="区分" value={item.type} />
-                                <DetailRow label="主担当" value={item.mainPerson} />
-                                <DetailRow label="枝番" value={item.branchNumber} />
-                                <DetailRow label="※" value={item.specialNote} />
-                            </div>
+                            <DetailRow label="事業部" value={item.division} />
+                            <DetailRow label="エリア" value={areaDisplay} />
+                            <DetailRow label="主担当" value={item.mainPerson} />
+                            <DetailRow label="枝番" value={item.branchNumber} />
+                            <DetailRow label="※" value={item.specialNote} />
                         </div>
 
                         <SectionHeader icon={<Tag size={18} />} title="宛名ラベル (Mailing Label)" />
@@ -88,10 +96,8 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                             <DetailRow label="住所" value={item.labelAddress} />
                         </div>
 
-                        <SectionHeader icon={<FileText size={18} />} title="備考 (Notes)" />
+                        <SectionHeader icon={<FileText size={18} />} title="注意書き (Cautions)" />
                         <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100">
-                            <DetailRow label="備考" value={item.notes} />
-                            <div className="h-4"></div>
                             <DetailRow label="注意書き" value={item.attentionNote} />
                         </div>
                     </div>

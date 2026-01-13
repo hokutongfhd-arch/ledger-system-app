@@ -47,12 +47,23 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
     // Prepare Options for Area
     const areaOptions = useMemo(() => {
-        return areas.map(a => ({
+        const options = areas.map(a => ({
             label: a.areaName,
             value: a.areaName,
             subLabel: a.areaCode
         }));
-    }, [areas]);
+
+        // If the current area value is not in the master list, add it as a temporary option
+        if (formData.area && !options.some(o => o.value === formData.area)) {
+            options.push({
+                label: formData.area,
+                value: formData.area,
+                subLabel: 'マスタ未登録'
+            });
+        }
+
+        return options;
+    }, [areas, formData.area]);
 
     useEffect(() => {
         if (initialData) {
@@ -200,16 +211,25 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     return (
         <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-2">
             <div className="space-y-8">
-                {/* Basic Info */}
+                {/* Main Information */}
                 <div className="space-y-4">
                     <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <FormLabel>エリア</FormLabel>
+                            <SearchableSelect
+                                options={areaOptions}
+                                value={formData.area}
+                                onChange={(val) => handleSelectChange('area', val)}
+                                placeholder="エリアを検索..."
+                            />
+                        </div>
                         <div>
                             <FormLabel>No.</FormLabel>
                             <Input name="no" value={formData.no} onChange={handleChange} />
                         </div>
                         <div>
-                            <FormLabel required>住所コード</FormLabel>
+                            <FormLabel required>事業所コード</FormLabel>
                             <Input
                                 ref={codeRef}
                                 name="addressCode"
@@ -218,24 +238,11 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 required
                                 error={errorFields.has('addressCode')}
                             />
-                            {errorFields.has('addressCode') && <FormError>既に登録されている住所コードです</FormError>}
+                            {errorFields.has('addressCode') && <FormError>既に登録されている事業所コードです</FormError>}
                         </div>
                         <div>
                             <FormLabel required>事業所名</FormLabel>
                             <Input name="officeName" value={formData.officeName} onChange={handleChange} required />
-                        </div>
-                        <div>
-                            <FormLabel>事業部</FormLabel>
-                            <Input name="division" value={formData.division} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <FormLabel>エリア名 (エリアコード)</FormLabel>
-                            <SearchableSelect
-                                options={areaOptions}
-                                value={formData.area}
-                                onChange={(val) => handleSelectChange('area', val)}
-                                placeholder="エリアを検索..."
-                            />
                         </div>
                     </div>
                 </div>
@@ -307,6 +314,10 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             </div>
                         </div>
                         <div>
+                            <FormLabel>補足</FormLabel>
+                            <Input name="type" value={formData.type} onChange={handleChange} />
+                        </div>
+                        <div>
                             <FormLabel>〒</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
@@ -335,13 +346,31 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                     </div>
                 </div>
 
-                {/* Detailed Info */}
+                {/* Additional Info */}
                 <div className="space-y-4">
                     <SectionHeader>詳細情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <FormLabel>備考</FormLabel>
+                            <TextArea
+                                name="notes"
+                                value={formData.notes}
+                                onChange={handleChange}
+                                rows={2}
+                            />
+                        </div>
                         <div>
-                            <FormLabel>区分</FormLabel>
-                            <Input name="type" value={formData.type} onChange={handleChange} />
+                            <FormLabel>事業部</FormLabel>
+                            <Input name="division" value={formData.division} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>エリア (確認用)</FormLabel>
+                            <SearchableSelect
+                                options={areaOptions}
+                                value={formData.area}
+                                onChange={(val) => handleSelectChange('area', val)}
+                                placeholder="エリアを検索..."
+                            />
                         </div>
                         <div>
                             <FormLabel>主担当</FormLabel>
@@ -391,22 +420,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                         <div className="md:col-span-2">
                             <FormLabel>宛名ラベル用住所</FormLabel>
                             <Input name="labelAddress" value={formData.labelAddress} onChange={handleChange} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Others */}
-                <div className="space-y-4">
-                    <SectionHeader>その他</SectionHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="md:col-span-2">
-                            <FormLabel>備考</FormLabel>
-                            <TextArea
-                                name="notes"
-                                value={formData.notes}
-                                onChange={handleChange}
-                                rows={2}
-                            />
                         </div>
                         <div className="md:col-span-2">
                             <FormLabel>注意書き</FormLabel>

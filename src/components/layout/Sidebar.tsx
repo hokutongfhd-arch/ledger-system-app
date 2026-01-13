@@ -88,7 +88,7 @@ export const Sidebar = () => {
                             <SidebarSection label="MASTERS">
                                 <SidebarItem to="/masters/employees" icon={User} label="Employees" />
                                 <SidebarItem to="/masters/areas" icon={Database} label="Areas" />
-                                <SidebarItem to="/masters/addresses" icon={FileText} label="Addresses" />
+                                <SidebarItem to="/masters/addresses" icon={FileText} label="Offices" />
                             </SidebarSection>
                         )}
 
