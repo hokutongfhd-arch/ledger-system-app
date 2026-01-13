@@ -13,13 +13,8 @@ export interface Employee {
     age: number;
     yearsOfService: number;
     monthsHasuu: number;
-    employeeType: string;
-    salaryType: string;
-    costType: string;
     areaCode: string;
     addressCode: string;
-    roleTitle: string;
-    jobType: string;
     role: 'admin' | 'user';
     profileImage?: string;
     authId?: string;

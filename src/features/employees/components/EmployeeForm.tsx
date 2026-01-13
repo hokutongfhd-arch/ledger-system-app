@@ -39,13 +39,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         age: 0,
         yearsOfService: 0,
         monthsHasuu: 0,
-        employeeType: '',
-        salaryType: '',
-        costType: '',
         areaCode: '',
         addressCode: '',
-        roleTitle: '',
-        jobType: '',
     });
 
     // Splitting name and nameKana for the form UI
@@ -370,51 +365,6 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 value={formData.monthsHasuu}
                                 onChange={handleChange}
                                 min="0"
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>職種</FormLabel>
-                            <Input
-                                type="text"
-                                name="jobType"
-                                value={formData.jobType}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>役付</FormLabel>
-                            <Input
-                                type="text"
-                                name="roleTitle"
-                                value={formData.roleTitle}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>社員区分</FormLabel>
-                            <Input
-                                type="text"
-                                name="employeeType"
-                                value={formData.employeeType}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>給与区分</FormLabel>
-                            <Input
-                                type="text"
-                                name="salaryType"
-                                value={formData.salaryType}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>原価区分</FormLabel>
-                            <Input
-                                type="text"
-                                name="costType"
-                                value={formData.costType}
-                                onChange={handleChange}
                             />
                         </div>
                     </div>

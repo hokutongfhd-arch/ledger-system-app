@@ -229,13 +229,8 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     age: Number(d.age_at_month_end) || 0,
     yearsOfService: Number(d.years_in_service) || 0,
     monthsHasuu: Number(d.months_in_service) || 0,
-    employeeType: s(d.employee_class),
-    salaryType: s(d.salary_class),
-    costType: s(d.cost_class),
     areaCode: s(d.area_code),
     addressCode: s(d.address_code),
-    roleTitle: s(d.position),
-    jobType: s(d.job_type),
     role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
     profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
 });
@@ -252,13 +247,8 @@ const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     age_at_month_end: t.age ? Number(t.age) : 0,
     years_in_service: t.yearsOfService ? Number(t.yearsOfService) : 0,
     months_in_service: t.monthsHasuu ? Number(t.monthsHasuu) : 0,
-    employee_class: t.employeeType,
-    salary_class: t.salaryType,
-    cost_class: t.costType,
     area_code: t.areaCode,
     address_code: t.addressCode,
-    position: t.roleTitle,
-    job_type: t.jobType,
     authority: t.role,
 });
 

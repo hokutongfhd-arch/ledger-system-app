@@ -98,13 +98,8 @@ export interface Employee {
     age: number;
     yearsOfService: number;
     monthsHasuu: number;
-    employeeType: string;
-    salaryType: string;
-    costType: string;
     areaCode: string;
     addressCode: string;
-    roleTitle: string;
-    jobType: string;
     // TODO: Future Extension - Consider adding 'operator' | 'viewer' roles for more granular permissions
     role: 'admin' | 'user';
     profileImage?: string;

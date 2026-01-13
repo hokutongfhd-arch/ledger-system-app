@@ -79,7 +79,7 @@ function EmployeeListContent() {
             const requiredHeaders = [
                 '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
                 'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
-                '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+                '権限', 'パスワード'
             ];
 
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
@@ -195,11 +195,6 @@ function EmployeeListContent() {
                     joinDate: joinDateValue,
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
-                    jobType: String(rowData['職種'] || ''),
-                    roleTitle: String(rowData['役付'] || ''),
-                    employeeType: String(rowData['社員区分'] || ''),
-                    salaryType: String(rowData['給与区分'] || ''),
-                    costType: String(rowData['原価区分'] || ''),
                     role: String(rowData['権限'] || '') === '管理者' ? 'admin' : 'user',
                     password: String(rowData['パスワード'] || ''),
                     companyNo: '',
@@ -294,7 +289,7 @@ function EmployeeListContent() {
         const headers = [
             '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
             'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
-            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+            '権限', 'パスワード'
         ];
 
         handleExport(filteredData, headers, `employee_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => {
@@ -315,11 +310,6 @@ function EmployeeListContent() {
                 item.joinDate || '',
                 item.yearsOfService || '',
                 item.monthsHasuu || '',
-                item.jobType || '',
-                item.roleTitle || '',
-                item.employeeType || '',
-                item.salaryType || '',
-                item.costType || '',
                 item.role === 'admin' ? '管理者' : 'ユーザー',
                 item.password || ''
             ];
@@ -330,7 +320,7 @@ function EmployeeListContent() {
         const headers = [
             '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
             'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
-            '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
+            '権限', 'パスワード'
         ];
 
         const workbook = new ExcelJS.Workbook();
@@ -348,15 +338,28 @@ function EmployeeListContent() {
             fgColor: { argb: 'FFE0E0E0' }
         };
 
-        // Format code columns as text (Column A, G, H)
-        worksheet.getColumn(1).numFmt = '@'; // 社員コード
-        worksheet.getColumn(7).numFmt = '@'; // エリアコード
-        worksheet.getColumn(8).numFmt = '@'; // 事業所コード
-
         // Set column widths
         worksheet.columns.forEach(col => {
             col.width = 20;
         });
+
+        // Data Validation for 性別 (Column B)
+        for (let i = 2; i <= 100; i++) {
+            worksheet.getCell(`B${i}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"男性,女性"']
+            };
+        }
+
+        // Data Validation for 権限 (Column N)
+        for (let i = 2; i <= 100; i++) {
+            worksheet.getCell(`N${i}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"管理者,ユーザー"']
+            };
+        }
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

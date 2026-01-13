@@ -71,11 +71,6 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                             <div className="grid grid-cols-2 gap-4">
                                 <DetailRow label="入社日" value={item.joinDate} />
                                 <DetailRow label="勤続" value={`${item.yearsOfService}年`} subValue={`${item.monthsHasuu}ヶ月`} />
-                                <DetailRow label="職種" value={item.jobType} />
-                                <DetailRow label="役付" value={item.roleTitle} />
-                                <DetailRow label="社員区分" value={item.employeeType} />
-                                <DetailRow label="給与区分" value={item.salaryType} />
-                                <DetailRow label="原価区分" value={item.costType} />
                             </div>
                         </div>
 

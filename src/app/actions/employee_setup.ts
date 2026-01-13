@@ -33,13 +33,8 @@ export async function createEmployeeBySetupAdmin(data: any) {
         age_at_month_end: data.age ? Number(data.age) : 0,
         years_in_service: data.yearsOfService ? Number(data.yearsOfService) : 0,
         months_in_service: data.monthsHasuu ? Number(data.monthsHasuu) : 0,
-        employee_class: data.employeeType,
-        salary_class: data.salaryType,
-        cost_class: data.costType,
         area_code: data.areaCode,
         address_code: data.addressCode,
-        position: data.roleTitle,
-        job_type: data.jobType,
         authority: data.role,
     };
 
@@ -73,13 +68,8 @@ export async function updateEmployeeBySetupAdmin(item: any) {
         age_at_month_end: Number(item.age) || 0,
         years_in_service: Number(item.yearsOfService) || 0,
         months_in_service: Number(item.monthsHasuu) || 0,
-        employee_class: item.employeeType,
-        salary_class: item.salaryType,
-        cost_class: item.costType,
         area_code: item.areaCode,
         address_code: item.addressCode,
-        position: item.roleTitle,
-        job_type: item.jobType,
         authority: item.role,
         password: item.password
     };
