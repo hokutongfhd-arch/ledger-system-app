@@ -14,7 +14,7 @@ export default {
           light: '#4A4E69',   // Softer Ink
         },
         accent: {
-          electric: '#00F0FF', // Cyan
+          electric: '#0EA5E9', // Sky 500
           coral: '#FF6B6B',    // Pink/Red
           violet: '#7C3AED',   // Purple
         },

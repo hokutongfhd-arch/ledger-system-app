@@ -46,7 +46,7 @@ export default function AuditDashboardPage() {
         return (
             <div className="flex items-center justify-center h-full bg-[#FEFEF8]">
                 <div className="animate-pulse flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 bg-[#00F0FF] rounded-lg shadow-sm border-2 border-[#0A0E27]"></div>
+                    <div className="h-10 w-10 bg-[#0EA5E9] rounded-lg shadow-sm border-2 border-[#0A0E27]"></div>
                     <span className="text-[#0A0E27]/50 font-display">データを読み込み中...</span>
                 </div>
             </div>
@@ -74,7 +74,7 @@ export default function AuditDashboardPage() {
                                 key={r}
                                 onClick={() => setRange(r)}
                                 className={`px-6 py-2 text-sm font-bold font-display transition-all ${range === r
-                                    ? 'bg-[#00F0FF] text-[#0A0E27]'
+                                    ? 'bg-[#0EA5E9] text-[#0A0E27]'
                                     : 'text-[#0A0E27]/40 hover:text-[#0A0E27]'
                                     }`}
                             >
@@ -84,9 +84,9 @@ export default function AuditDashboardPage() {
                     </div>
                     <button
                         onClick={() => setIsReportModalOpen(true)}
-                        className="flex items-center gap-3 px-8 py-3 bg-[#0A0E27] text-white font-bold font-display uppercase tracking-widest border-2 border-[#0A0E27] shadow-[6px_6px_0px_0px_#00F0FF] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all active:scale-95"
+                        className="flex items-center gap-3 px-8 py-3 bg-[#0A0E27] text-white font-bold font-display uppercase tracking-widest border-2 border-[#0A0E27] shadow-[6px_6px_0px_0px_#0EA5E9] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all active:scale-95"
                     >
-                        <FileText size={20} className="text-[#00F0FF]" />
+                        <FileText size={20} className="text-[#0EA5E9]" />
                         レポート生成
                     </button>
                 </div>
@@ -96,7 +96,7 @@ export default function AuditDashboardPage() {
                 {/* [01] SYSTEM HEALTH OVERVIEW */}
                 <section>
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-10 h-10 bg-[#00F0FF] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">01</div>
+                        <div className="w-10 h-10 bg-[#0EA5E9] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">01</div>
                         <h2 className="text-3xl font-bold uppercase font-display border-b-2 border-[#0A0E27] pr-8">システムヘルス</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -139,7 +139,7 @@ export default function AuditDashboardPage() {
                     <section className="xl:col-span-12">
                         <div className="flex items-center justify-between gap-4 mb-6 border-b-2 border-[#0A0E27] pb-2">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 bg-[#00F0FF] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">02</div>
+                                <div className="w-10 h-10 bg-[#0EA5E9] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">02</div>
                                 <h2 className="text-3xl font-bold uppercase font-display">セキュリティアラート</h2>
                             </div>
                             {recentAnomalies.length > 0 && <span className="bg-[#FF6B6B] text-white px-3 py-1 text-xs font-bold font-display uppercase tracking-widest animate-pulse">緊急確認事項あり</span>}
@@ -170,7 +170,7 @@ export default function AuditDashboardPage() {
                                                         key={log.id}
                                                         className={clsx(
                                                             "group transition-colors cursor-pointer",
-                                                            isUnacked ? "hover:bg-[#00F0FF]/5" : "opacity-40 grayscale-[0.5] hover:opacity-70"
+                                                            isUnacked ? "hover:bg-[#0EA5E9]/5" : "opacity-40 grayscale-[0.5] hover:opacity-70"
                                                         )}
                                                         onClick={() => setSelectedLog(log)}
                                                     >
@@ -207,7 +207,7 @@ export default function AuditDashboardPage() {
                                                                 )}>
                                                                     {isUnacked ? '未対応（判断未実施）' : '対応済（判断記録あり）'}
                                                                 </span>
-                                                                <div className="flex items-center text-[#00F0FF] opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                                                <div className="flex items-center text-[#0EA5E9] opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                                                                     <ArrowRight size={14} />
                                                                 </div>
                                                             </div>
@@ -231,7 +231,7 @@ export default function AuditDashboardPage() {
                     {/* [03] ACTIVITY TRENDS */}
                     <section className="xl:col-span-8">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="w-10 h-10 bg-[#00F0FF] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">03</div>
+                            <div className="w-10 h-10 bg-[#0EA5E9] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">03</div>
                             <h2 className="text-3xl font-bold uppercase font-display border-b-2 border-[#0A0E27] pr-8">アクティビティトレンド</h2>
                         </div>
                         <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-8 h-[540px] flex flex-col">
@@ -273,7 +273,7 @@ export default function AuditDashboardPage() {
                     {/* [04] BREAKDOWN */}
                     <section className="xl:col-span-4">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="w-10 h-10 bg-[#00F0FF] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">04</div>
+                            <div className="w-10 h-10 bg-[#0EA5E9] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">04</div>
                             <h2 className="text-3xl font-bold uppercase font-display border-b-2 border-[#0A0E27] pr-8">内訳分析</h2>
                         </div>
                         <div className="bg-white border-2 border-[#0A0E27] shadow-[8px_8px_0px_0px_#0A0E27] p-6 h-[540px] flex flex-col">
@@ -318,7 +318,7 @@ export default function AuditDashboardPage() {
                 {/* [05] TOP ACTORS */}
                 <section>
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-10 h-10 bg-[#00F0FF] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">05</div>
+                        <div className="w-10 h-10 bg-[#0EA5E9] border-2 border-[#0A0E27] flex items-center justify-center font-display font-bold text-xl">05</div>
                         <h2 className="text-3xl font-bold uppercase font-display border-b-2 border-[#0A0E27] pr-8">重要アクティビティ</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -328,9 +328,9 @@ export default function AuditDashboardPage() {
                                 {topActors.map((actor, idx) => (
                                     <div key={actor.code} className="flex items-center justify-between border-b border-[#0A0E27]/5 pb-2">
                                         <div className="flex items-center gap-4">
-                                            <span className="font-display font-bold text-[#00F0FF] text-xl">0{idx + 1}</span>
+                                            <span className="font-display font-bold text-[#0EA5E9] text-xl">0{idx + 1}</span>
                                             <div>
-                                                <p className="font-bold underline decoration-[#00F0FF] decoration-2 underline-offset-2">{actor.name}</p>
+                                                <p className="font-bold underline decoration-[#0EA5E9] decoration-2 underline-offset-2">{actor.name}</p>
                                                 <p className="text-[10px] font-display font-medium opacity-50">{actor.code}</p>
                                             </div>
                                         </div>
@@ -409,7 +409,7 @@ function KPICard({ title, value, icon, alert = false, subtext }: { title: string
             <div className="flex flex-col h-full justify-between">
                 <div className="flex justify-between items-start mb-6">
                     <span className="text-[10px] font-bold font-display uppercase tracking-widest opacity-60 leading-none">{title}</span>
-                    <div className={`${alert ? 'text-[#FF6B6B]' : 'text-[#00F0FF]'}`}>{icon}</div>
+                    <div className={`${alert ? 'text-[#FF6B6B]' : 'text-[#0EA5E9]'}`}>{icon}</div>
                 </div>
                 <div>
                     <div className="flex items-baseline gap-2">

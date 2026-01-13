@@ -54,9 +54,9 @@ function DashboardContent() {
 
     // Theme Colors
     const COLORS: Record<AlertSource, string> = {
-        'iPhone': '#00F0FF',
-        'FeaturePhone': '#7C3AED',
-        'Tablet': '#3B82F6',
+        'iPhone': '#0EA5E9',
+        'FeaturePhone': '#0D9488',
+        'Tablet': '#4338CA',
         'Router': '#FF6B6B',
         'Employee': '#10B981',
         'Area': '#F59E0B',
@@ -124,13 +124,13 @@ function DashboardContent() {
                         title="iPhone"
                         total={iPhoneTotal}
                         used={iPhoneUsed}
-                        color="#00F0FF"
+                        color="#0EA5E9"
                     />
                     <DonutChart
                         title="ガラホ"
                         total={featurePhoneTotal}
                         used={featurePhoneUsed}
-                        color="#7C3AED"
+                        color="#0D9488"
                     />
                     <DonutChart
                         title="モバイルルーター"
@@ -142,7 +142,7 @@ function DashboardContent() {
                         title="勤怠タブレット"
                         total={tabletTotal}
                         used={tabletUsed}
-                        color="#3B82F6"
+                        color="#4338CA"
                     />
                 </div>
             </div>

@@ -162,7 +162,7 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
                                         <button
                                             onClick={() => setIsResponseModalOpen(true)}
                                             className={`${isAnomaly ? 'bg-[#0A0E27] hover:bg-[#1A1E37]' :
-                                                isFailure ? 'bg-[#FF6B6B] hover:bg-[#FF8585]' : 'bg-[#00F0FF] hover:bg-[#33F3FF] text-[#0A0E27]'
+                                                isFailure ? 'bg-[#FF6B6B] hover:bg-[#FF8585]' : 'bg-[#0EA5E9] hover:bg-[#33F3FF] text-[#0A0E27]'
                                                 } text-white px-8 py-2.5 rounded shadow-sm font-bold transition-all flex items-center gap-2 shrink-0 active:scale-95 border-2 border-[#0A0E27]`}
                                         >
                                             対応を登録する

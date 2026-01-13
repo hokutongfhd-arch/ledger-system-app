@@ -585,6 +585,10 @@ const DeviceManualListContent = () => {
                 }
             />
 
+            <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">
+                <p><strong>Note:</strong> マニュアルをダウンロードするには、ファイル名をクリックしてください。</p>
+            </div>
+
             <div className="flex-1 bg-paper rounded-lg shadow-sm border border-border overflow-hidden flex flex-col">
                 <DndContext
                     sensors={rowSensors}
@@ -647,9 +651,6 @@ const DeviceManualListContent = () => {
                 }}
             />
 
-            <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">
-                <p><strong>Note:</strong> マニュアルをダウンロードするには、ファイル名をクリックしてください。</p>
-            </div>
 
             <Modal
                 isOpen={isAddModalOpen}

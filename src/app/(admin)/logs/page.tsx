@@ -242,7 +242,7 @@ function AuditLogContent() {
                                         "px-3 py-1 rounded text-[10px] font-bold tracking-wider whitespace-nowrap",
                                         item.is_acknowledged ? 'bg-gray-100 text-gray-400' :
                                             item.actionRaw === 'ANOMALY_DETECTED' ? 'bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20 animate-pulse-subtle' :
-                                                item.result === 'failure' ? 'bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20' : 'bg-[#00F0FF]/10 text-[#008A94] border border-[#00F0FF]/20'
+                                                item.result === 'failure' ? 'bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20' : 'bg-[#0EA5E9]/10 text-[#008A94] border border-[#0EA5E9]/20'
                                     )}>
                                         {item.is_acknowledged ? '対応済' : '未対応'}
                                     </span>

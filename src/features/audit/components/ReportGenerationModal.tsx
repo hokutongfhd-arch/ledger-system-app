@@ -68,7 +68,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
                 {/* Header */}
                 <div className="bg-[#0A0E27] p-6 flex justify-between items-center text-white">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[#00F0FF] text-[#0A0E27]">
+                        <div className="p-2 bg-[#0EA5E9] text-[#0A0E27]">
                             <FileText size={24} />
                         </div>
                         <h2 className="text-2xl font-bold font-display uppercase tracking-wider">Audit Report Generate</h2>
@@ -89,7 +89,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
                                             type="date"
                                             value={startDate}
                                             onChange={(e) => setStartDate(e.target.value)}
-                                            className="w-full bg-white border-2 border-[#0A0E27] p-3 font-bold focus:bg-[#00F0FF]/10 outline-none transition-colors"
+                                            className="w-full bg-white border-2 border-[#0A0E27] p-3 font-bold focus:bg-[#0EA5E9]/10 outline-none transition-colors"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -98,14 +98,14 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
                                             type="date"
                                             value={endDate}
                                             onChange={(e) => setEndDate(e.target.value)}
-                                            className="w-full bg-white border-2 border-[#0A0E27] p-3 font-bold focus:bg-[#00F0FF]/10 outline-none transition-colors"
+                                            className="w-full bg-white border-2 border-[#0A0E27] p-3 font-bold focus:bg-[#0EA5E9]/10 outline-none transition-colors"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest opacity-60">レポート種別</label>
-                                    <div className="p-4 border-2 border-[#0A0E27] bg-[#0A0E27] text-white font-bold shadow-[4px_4px_0px_0px_#00F0FF] flex items-center gap-3">
+                                    <div className="p-4 border-2 border-[#0A0E27] bg-[#0A0E27] text-white font-bold shadow-[4px_4px_0px_0px_#0EA5E9] flex items-center gap-3">
                                         <FileText size={20} />
                                         概要レポート (Executive Summary)
                                     </div>
@@ -120,7 +120,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
                             <button
                                 onClick={handleGenerate}
                                 disabled={isGenerating}
-                                className="w-full py-4 bg-[#00F0FF] border-2 border-[#0A0E27] text-[#0A0E27] font-bold text-xl uppercase tracking-widest shadow-[6px_6px_0px_0px_#0A0E27] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                                className="w-full py-4 bg-[#0EA5E9] border-2 border-[#0A0E27] text-[#0A0E27] font-bold text-xl uppercase tracking-widest shadow-[6px_6px_0px_0px_#0A0E27] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                             >
                                 {isGenerating ? (
                                     <>
@@ -137,7 +137,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
                         </>
                     ) : (
                         <div className="text-center py-12 space-y-6">
-                            <div className="w-20 h-20 bg-[#00F0FF] border-2 border-[#0A0E27] mx-auto flex items-center justify-center">
+                            <div className="w-20 h-20 bg-[#0EA5E9] border-2 border-[#0A0E27] mx-auto flex items-center justify-center">
                                 <ShieldCheck size={40} className="text-[#0A0E27]" />
                             </div>
                             <div>
@@ -154,7 +154,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ is
                                 </Link>
                                 <button
                                     onClick={onClose}
-                                    className="py-3 bg-[#0A0E27] text-white border-2 border-[#0A0E27] font-bold shadow-[4px_4px_0px_0px_#00F0FF] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all text-sm"
+                                    className="py-3 bg-[#0A0E27] text-white border-2 border-[#0A0E27] font-bold shadow-[4px_4px_0px_0px_#0EA5E9] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all text-sm"
                                 >
                                     閉じる
                                 </button>

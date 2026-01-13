@@ -117,7 +117,7 @@ export default function AuditReportPrintPage() {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => handleAutoDownload(data)}
-                            className="flex items-center gap-2 px-4 py-2 bg-[#00F0FF] text-[#0A0E27] font-bold text-sm hover:translate-x-0.5 hover:translate-y-0.5 transition-all shadow-[2px_2px_0px_0px_#0A0E27]"
+                            className="flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-[#0A0E27] font-bold text-sm hover:translate-x-0.5 hover:translate-y-0.5 transition-all shadow-[2px_2px_0px_0px_#0A0E27]"
                         >
                             <Download size={18} />
                             PDFをダウンロード
@@ -145,11 +145,11 @@ export default function AuditReportPrintPage() {
                 >
                     {/* [PAGE 1] COVER PAGE */}
                     <div className="h-[290mm] flex flex-col justify-between border-[12px] border-[#0A0E27] p-16 relative overflow-hidden bg-white">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#00F0FF] -rotate-45 translate-x-32 -translate-y-32 border-b-4 border-[#0A0E27]"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#0EA5E9] -rotate-45 translate-x-32 -translate-y-32 border-b-4 border-[#0A0E27]"></div>
 
                         <div className="space-y-8">
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-[#00F0FF] border-4 border-[#0A0E27] flex items-center justify-center font-display font-black text-3xl italic">A</div>
+                                <div className="w-16 h-16 bg-[#0EA5E9] border-4 border-[#0A0E27] flex items-center justify-center font-display font-black text-3xl italic">A</div>
                                 <div className="text-sm font-black uppercase tracking-widest leading-none">
                                     System Management<br />Audit Division
                                 </div>
@@ -164,7 +164,7 @@ export default function AuditReportPrintPage() {
                                 <div className="flex gap-12">
                                     <div>
                                         <label className="text-xs font-bold uppercase opacity-40 block mb-1">レポート種別</label>
-                                        <span className="text-2xl font-black uppercase bg-[#00F0FF] px-2">{reportType === 'summary' ? '概要レポート' : '詳細レポート'}</span>
+                                        <span className="text-2xl font-black uppercase bg-[#0EA5E9] px-2">{reportType === 'summary' ? '概要レポート' : '詳細レポート'}</span>
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold uppercase opacity-40 block mb-1">秘匿レベル</label>
@@ -207,7 +207,7 @@ export default function AuditReportPrintPage() {
                     <div className="html2pdf__page-break" />
                     <div className="min-h-[290mm] h-[290mm] p-20 space-y-12 bg-white relative overflow-hidden">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#00F0FF' }}>01</div>
+                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#0EA5E9' }}>01</div>
                             <h2 className="text-4xl font-black uppercase border-b-4 border-[#0A0E27] pr-12">エグゼクティブ・サマリー</h2>
                         </div>
 
@@ -267,7 +267,7 @@ export default function AuditReportPrintPage() {
                     <div className="html2pdf__page-break" />
                     <div className="min-h-[290mm] h-[290mm] p-20 space-y-12 bg-white relative overflow-hidden">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#00F0FF' }}>02</div>
+                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#0EA5E9' }}>02</div>
                             <h2 className="text-4xl font-black uppercase border-b-4 border-[#0A0E27] pr-12">アクティビティトレンド</h2>
                         </div>
 
@@ -325,18 +325,18 @@ export default function AuditReportPrintPage() {
                     <div className="html2pdf__page-break" />
                     <div className="min-h-[290mm] h-[290mm] p-20 space-y-12 bg-white relative overflow-hidden">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#00F0FF' }}>03</div>
+                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#0EA5E9' }}>03</div>
                             <h2 className="text-4xl font-black uppercase border-b-4 border-[#0A0E27] pr-12">重要アクティビティ分析</h2>
                         </div>
 
                         <div className="grid grid-cols-2 gap-12">
                             <div className="space-y-8">
-                                <h3 className="text-lg font-black uppercase border-l-8 border-[#00F0FF] pl-4 italic">操作数上位ユーザー</h3>
+                                <h3 className="text-lg font-black uppercase border-l-8 border-[#0EA5E9] pl-4 italic">操作数上位ユーザー</h3>
                                 <div className="space-y-2">
                                     {data.topActors.map((actor: any, idx: number) => (
                                         <div key={actor.code} className="flex items-center justify-between border-b-2 border-[#0A0E27]/10 py-3">
                                             <div className="flex items-center gap-4">
-                                                <span className="font-black text-2xl text-[#00F0FF] italic">0{idx + 1}</span>
+                                                <span className="font-black text-2xl text-[#0EA5E9] italic">0{idx + 1}</span>
                                                 <div>
                                                     <p className="font-black">{actor.name}</p>
                                                     <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{actor.code}</p>
@@ -372,7 +372,7 @@ export default function AuditReportPrintPage() {
                             </div>
                         </div>
 
-                        <div className="mt-12 p-12 border-4 border-[#0A0E27] shadow-[12px_12px_0px_0px_#00F0FF]">
+                        <div className="mt-12 p-12 border-4 border-[#0A0E27] shadow-[12px_12px_0px_0px_#0EA5E9]">
                             <h4 className="text-sm font-black uppercase mb-4 tracking-widest">監査上の留意点</h4>
                             <p className="text-sm font-bold leading-relaxed opacity-80">
                                 {data.topAnomalyActors.length > 0
@@ -386,7 +386,7 @@ export default function AuditReportPrintPage() {
                     <div className="html2pdf__page-break" />
                     <div className="min-h-[290mm] p-20 space-y-12 bg-white relative">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#00F0FF' }}>04</div>
+                            <div className="w-12 h-12 border-4 border-[#0A0E27] text-[#0A0E27] flex items-center justify-center font-black text-2xl" style={{ backgroundColor: '#0EA5E9' }}>04</div>
                             <h2 className="text-4xl font-black uppercase border-b-4 border-[#0A0E27] pr-12">異常検知およびトレーサビリティ</h2>
                         </div>
 
@@ -407,7 +407,7 @@ export default function AuditReportPrintPage() {
                                             </div>
                                             <div className={clsx(
                                                 "text-xs font-black px-3 py-1 uppercase tracking-widest border-2",
-                                                ano.status === 'completed' ? "border-[#00F0FF] text-[#0A0E27]" : "border-[#FF6B6B] text-[#FF6B6B]"
+                                                ano.status === 'completed' ? "border-[#0EA5E9] text-[#0A0E27]" : "border-[#FF6B6B] text-[#FF6B6B]"
                                             )}>
                                                 状態: {ano.status === 'completed' ? '対応済' : '未対応'}
                                             </div>
@@ -417,7 +417,7 @@ export default function AuditReportPrintPage() {
                                     <div className="grid grid-cols-2 gap-12 mb-8">
                                         <div>
                                             <label className="text-[10px] font-black uppercase opacity-40 block mb-1">実行者</label>
-                                            <div className="text-xl font-black underline decoration-4 underline-offset-4 decoration-[#00F0FF]">{ano.actor}</div>
+                                            <div className="text-xl font-black underline decoration-4 underline-offset-4 decoration-[#0EA5E9]">{ano.actor}</div>
                                             <div className="text-xs font-bold opacity-40">{ano.actorCode}</div>
                                         </div>
                                         <div>
@@ -443,7 +443,7 @@ export default function AuditReportPrintPage() {
                                                             <span>日時: {format(new Date(ano.acknowledged_at), 'yyyy/MM/dd HH:mm')}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2 bg-[#00F0FF] text-[#0A0E27] px-4 py-1">
+                                                    <div className="flex items-center gap-2 bg-[#0EA5E9] text-[#0A0E27] px-4 py-1">
                                                         <ShieldCheck size={18} />
                                                         <span className="text-[10px] font-black uppercase">Verified</span>
                                                     </div>
@@ -521,7 +521,7 @@ function KPICardPrint({ title, value, icon, alert = false }: { title: string, va
             className="p-8 border-4 border-[#0A0E27] space-y-4"
             style={{
                 backgroundColor: alert ? 'rgba(255, 107, 107, 0.05)' : '#FFFFFF',
-                boxShadow: alert ? '6px 6px 0px 0px #FF6B6B' : '6px 6px 0px 0px #00F0FF'
+                boxShadow: alert ? '6px 6px 0px 0px #FF6B6B' : '6px 6px 0px 0px #0EA5E9'
             }}
         >
             <div className="flex justify-between items-start opacity-40">
