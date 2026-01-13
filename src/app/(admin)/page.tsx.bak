@@ -32,15 +32,15 @@ function DashboardContent() {
 
     // 1. iPhone Logic
     const iPhoneTotal = iPhones.length;
-    const iPhoneUsed = iPhones.filter(i => i.status === 'in-use').length;
+    const iPhoneUsed = iPhones.filter(i => i.lendDate && !i.returnDate).length;
 
     // 2. Feature Phone Logic
     const featurePhoneTotal = featurePhones.length;
-    const featurePhoneUsed = featurePhones.filter(f => f.status === 'in-use').length;
+    const featurePhoneUsed = featurePhones.filter(f => f.lendDate && !f.returnDate).length;
 
     // 3. Router Logic
     const routerTotal = routers.length;
-    const routerUsed = routers.filter(r => r.status === 'in-use').length;
+    const routerUsed = routers.filter(r => r.lendingHistory && !r.notes).length;
 
     // 4. Tablet Logic
     const tabletTotal = tablets.length;
@@ -133,16 +133,16 @@ function DashboardContent() {
                         color="#0D9488"
                     />
                     <DonutChart
-                        title="勤怠タブレット"
-                        total={tabletTotal}
-                        used={tabletUsed}
-                        color="#4338CA"
-                    />
-                    <DonutChart
                         title="モバイルルーター"
                         total={routerTotal}
                         used={routerUsed}
                         color="#FF6B6B"
+                    />
+                    <DonutChart
+                        title="勤怠タブレット"
+                        total={tabletTotal}
+                        used={tabletUsed}
+                        color="#4338CA"
                     />
                 </div>
             </div>

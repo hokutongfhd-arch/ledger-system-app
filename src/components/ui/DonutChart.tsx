@@ -59,7 +59,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({ title, total, used, colo
                     <span className="font-semibold">{total}台</span>
                 </div>
                 <div className="flex justify-between text-sm text-text-secondary">
-                    <span>貸与中</span>
+                    <span>使用中</span>
                     <span className="font-semibold text-text-main">{used}台</span>
                 </div>
             </div>
