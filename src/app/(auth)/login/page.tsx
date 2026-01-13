@@ -8,7 +8,6 @@ import { Database, Eye, EyeOff } from 'lucide-react';
 export default function LoginPage() {
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
-    const [showCode, setShowCode] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const { login } = useAuth();
@@ -26,6 +25,11 @@ export default function LoginPage() {
         } else {
             setError('社員番号またはパスワードが間違っています');
         }
+    };
+
+    const handleHalfWidthChange = (setter: (val: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const filteredValue = e.target.value.replace(/[^\x20-\x7e]/g, '');
+        setter(filteredValue);
     };
 
     return (
@@ -50,25 +54,19 @@ export default function LoginPage() {
                     </label>
                     <div className="relative">
                         <input
-                            type={showCode ? "text" : "password"}
+                            type="text"
                             value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            className="w-full pl-4 pr-12 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
+                            onChange={handleHalfWidthChange(setCode)}
+                            className="w-full pl-4 pr-4 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
                             placeholder="EMP001"
                             name="employee-code"
                             autoComplete="off"
                             data-lpignore="true"
                             data-form-type="other"
+                            inputMode="email"
+                            pattern="[\x20-\x7e]*"
                             required
                         />
-                        <button
-                            type="button"
-                            onClick={() => setShowCode(!showCode)}
-                            tabIndex={-1}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-ink-light hover:text-ink hover:bg-black/5 transition-colors rounded"
-                        >
-                            {showCode ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
                     </div>
                 </div>
 
@@ -80,13 +78,15 @@ export default function LoginPage() {
                         <input
                             type={showPassword ? "text" : "password"}
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={handleHalfWidthChange(setPassword)}
                             className="w-full pl-4 pr-12 py-3 border-2 border-ink bg-background-subtle focus:bg-white focus:outline-none focus:shadow-offset transition-all font-mono text-ink placeholder-ink-light/50"
                             placeholder="••••••••"
                             name="employee-password"
                             autoComplete="new-password"
                             data-lpignore="true"
                             data-form-type="other"
+                            inputMode="email"
+                            pattern="[\x20-\x7e]*"
                             required
                         />
                         <button
