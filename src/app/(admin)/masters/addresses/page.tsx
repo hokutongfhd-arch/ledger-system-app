@@ -221,8 +221,8 @@ function AddressListContent() {
     const handleDelete = async (item: Address) => {
         const confirmed = await confirm({
             title: '確認',
-            description: '本当に削除しますか？',
-            confirmText: '削除',
+            description: '本当にこの住所を削除しますか？',
+            confirmText: 'Delete',
             variant: 'destructive'
         });
 
@@ -240,8 +240,8 @@ function AddressListContent() {
 
         const confirmed = await confirm({
             title: '確認',
-            description: `選択した ${selectedIds.size} 件を削除しますか？`,
-            confirmText: '一括削除',
+            description: `選択した ${selectedIds.size} 件の住所を削除しますか？`,
+            confirmText: 'Delete',
             variant: 'destructive'
         });
 

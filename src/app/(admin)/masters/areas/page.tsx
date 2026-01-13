@@ -176,8 +176,8 @@ function AreaListContent() {
     const handleDelete = async (item: Area) => {
         const confirmed = await confirm({
             title: '確認',
-            description: '本当に削除しますか？',
-            confirmText: '削除',
+            description: '本当にエリアを削除しますか？',
+            confirmText: 'Delete',
             variant: 'destructive'
         });
 
@@ -194,8 +194,8 @@ function AreaListContent() {
         if (selectedIds.size === 0) return;
         const confirmed = await confirm({
             title: '確認',
-            description: `選択した ${selectedIds.size} 件を削除しますか？`,
-            confirmText: '一括削除',
+            description: `選択した ${selectedIds.size} 件のエリアを削除しますか？`,
+            confirmText: 'Delete',
             variant: 'destructive'
         });
         if (confirmed) {
