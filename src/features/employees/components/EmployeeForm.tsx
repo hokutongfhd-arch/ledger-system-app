@@ -9,6 +9,8 @@ import { Select } from '../../../components/ui/Select';
 import { FormLabel, FormError } from '../../../components/ui/Form';
 import { SectionHeader } from '../../../components/ui/Section';
 
+import { calculateAge, calculateServicePeriod } from '../../../lib/utils/dateHelpers';
+
 interface EmployeeFormProps {
     initialData?: Employee;
     onSubmit: (data: Omit<Employee, 'id'>) => void;
@@ -94,6 +96,18 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                 .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
                 .replace(/[^0-9]/g, '');
             setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
+            return;
+        }
+
+        if (name === 'birthDate') {
+            const age = calculateAge(value);
+            setFormData(prev => ({ ...prev, birthDate: value, age }));
+            return;
+        }
+
+        if (name === 'joinDate') {
+            const period = calculateServicePeriod(value);
+            setFormData(prev => ({ ...prev, joinDate: value, yearsOfService: period.years, monthsHasuu: period.months }));
             return;
         }
 
