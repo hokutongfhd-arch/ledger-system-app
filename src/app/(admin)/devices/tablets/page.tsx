@@ -12,6 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { TabletForm } from '../../../../features/devices/components/TabletForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
+import ExcelJS from 'exceljs';
 import { TabletDetailModal } from '../../../../features/devices/components/TabletDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { useToast } from '../../../../features/context/ToastContext';
@@ -103,8 +104,8 @@ function TabletListContent() {
 
     const { handleExport } = useCSVExport<Tablet>();
     const headers = [
-        'メーカー', '機種番号', 'シリアルコード', '端末管理番号', '契約年数',
-        '社員コード', '事業所コード', '事業所CD', '過去貸与履歴', '備考'
+        'メーカー', '型番', '端末CD', '契約年数',
+        '社員コード', '事業所コード', '事業所CD', '過去貸与履歴', '備考', '状況'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
@@ -281,26 +282,59 @@ function TabletListContent() {
         });
 
         handleExport(filteredData, headers, `tablet_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
-            item.terminalCode,
             item.maker || '',
-            item.modelNumber,
-            statusMap[item.status] || item.status,
+            item.modelNumber || '',
+            item.terminalCode || '',
             normalizeContractYear(item.contractYears || ''),
             item.employeeCode || '',
             item.addressCode || '',
             item.officeCode || '',
             `"${item.history || ''}"`,
-            `"${item.notes || ''}"`
+            `"${item.notes || ''}"`,
+            statusMap[item.status] || item.status
         ]);
     };
 
-    const handleDownloadTemplate = () => {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const handleDownloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
+
+        // Add headers
+        worksheet.addRow(headers);
+
+        // Styling headers
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
         const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: totalRows, c: headers.length - 1 } });
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'タブレットエクセルフォーマット.xlsx');
+
+        // Data Validation (Status dropdown) - column J (index 10)
+        for (let i = 2; i <= totalRows + 1; i++) {
+            worksheet.getCell(i, 10).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
+            };
+        }
+
+        // Set column widths
+        worksheet.columns.forEach(col => {
+            col.width = 20;
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'タブレットエクセルフォーマット.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     const isAdmin = user?.role === 'admin';

@@ -12,6 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { RouterForm } from '../../../../features/devices/components/RouterForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
+import ExcelJS from 'exceljs';
 import { RouterDetailModal } from '../../../../features/devices/components/RouterDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { useToast } from '../../../../features/context/ToastContext';
@@ -78,7 +79,7 @@ function RouterListContent() {
         'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番',
         '通信容量', '端末CD', '社員コード', '事業所コード', '実貸与先',
         '実貸与先名', '会社', 'IPアドレス', 'サブネットマスク', '開始IP',
-        '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)'
+        '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)', '状況'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
@@ -136,6 +137,14 @@ function RouterListContent() {
                 });
 
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+                const statusMap: Record<string, string> = {
+                    '使用中': 'in-use',
+                    '予備機': 'backup',
+                    '在庫': 'available',
+                    '故障': 'broken',
+                    '修理中': 'repairing',
+                    '廃棄': 'discarded'
+                };
 
                 const rawTerminalCode = String(rowData['端末CD'] || '');
                 const terminalCode = toHalfWidth(rawTerminalCode).trim();
@@ -200,7 +209,10 @@ function RouterListContent() {
                     lendingHistory: String(rowData['貸与履歴'] || ''),
                     notes: String(rowData['備考(返却日)'] || ''),
                     returnDate: '',
+                    status: (statusMap[rowData['状況']] || 'available') as any
                 };
+
+                if (newRouter.employeeCode) newRouter.status = 'in-use';
 
                 try {
                     await addRouter(newRouter, true, true);
@@ -277,6 +289,15 @@ function RouterListContent() {
             message: `ルーター一覧のエクスポート: ${filteredData.length}件`
         });
 
+        const statusLabelMap: Record<string, string> = {
+            'in-use': '使用中',
+            'backup': '予備機',
+            'available': '在庫',
+            'broken': '故障',
+            'repairing': '修理中',
+            'discarded': '廃棄'
+        };
+
         handleExport(filteredData, headers, `router_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.no || '',
             item.contractStatus || '',
@@ -300,25 +321,82 @@ function RouterListContent() {
             item.costTransfer || '',
             item.costBearer || '',
             `"${item.lendingHistory || ''}"`,
-            `"${item.notes || ''}"`
+            `"${item.notes || ''}"`,
+            statusLabelMap[item.status] || item.status
         ]);
     };
 
-    const handleDownloadTemplate = () => {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-        const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: totalRows, c: headers.length - 1 } });
-        for (let R = 1; R <= totalRows; ++R) {
-            const ref = XLSX.utils.encode_cell({ r: R, c: 5 });
-            ws[ref] = { t: 's', v: '', z: '@' };
+    const handleDownloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
+
+        // Add headers
+        worksheet.addRow(headers);
+
+        // Styling headers
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        const totalRows = 500; // Routers are fewer, 500 is enough
+
+        // Data Validation (Status dropdown) - column X (index 24)
+        for (let i = 2; i <= totalRows + 1; i++) {
+            worksheet.getCell(i, 24).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
+            };
         }
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'モバイルルーターエクセルフォーマット.xlsx');
+
+        // Format phone number / numeric columns as text if needed
+        worksheet.getColumn(6).numFmt = '@'; // SIM number
+
+        // Set column widths
+        worksheet.columns.forEach(col => {
+            col.width = 20;
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'モバイルルーターエクセルフォーマット.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     const isAdmin = user?.role === 'admin';
     const hasPermission = (item: Router) => isAdmin || user?.code === item.employeeCode;
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'in-use': return 'bg-green-100 text-green-700 border-green-200';
+            case 'backup': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'available': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'broken': return 'bg-red-100 text-red-700 border-red-200';
+            case 'repairing': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'discarded': return 'bg-gray-100 text-gray-700 border-gray-200';
+            default: return 'bg-gray-50 text-gray-500 border-gray-100';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        const map: Record<string, string> = {
+            'in-use': '使用中',
+            'backup': '予備機',
+            'available': '在庫',
+            'broken': '故障',
+            'repairing': '修理中',
+            'discarded': '廃棄',
+        };
+        return map[status] || status;
+    };
 
     const getSortIcon = (key: keyof Router | 'userName') => { // Cast
         const idx = sortCriteria.findIndex(c => c.key === (key === 'userName' ? 'employeeCode' : key));
@@ -371,6 +449,14 @@ function RouterListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('actualLenderName')}>実貸与先名{getSortIcon('actualLenderName')}</div>, accessor: 'actualLenderName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: (item) => normalizeContractYear(item.contractYears || '') },
+                    {
+                        header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('status')}>状況{getSortIcon('status')}</div>,
+                        accessor: (item) => (
+                            <span className={`px-2 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
+                                {getStatusLabel(item.status)}
+                            </span>
+                        )
+                    },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}

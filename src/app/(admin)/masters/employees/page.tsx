@@ -12,7 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { EmployeeForm } from '../../../../features/employees/components/EmployeeForm';
 import { EmployeeDetailModal } from '../../../../features/employees/components/EmployeeDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
-import * as XLSX from 'xlsx'; // Still used for template download
+import ExcelJS from 'exceljs';
 import { useToast } from '../../../../features/context/ToastContext';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
@@ -299,31 +299,46 @@ function EmployeeListContent() {
         ]);
     };
 
-    const handleDownloadTemplate = () => {
+    const handleDownloadTemplate = async () => {
         const headers = [
             '社員コード', '性別', '氏名', '氏名カナ', '生年月日', '年齢',
             'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '職種', '役付', '社員区分', '給与区分', '原価区分', '権限', 'パスワード'
         ];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
 
-        const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({
-            s: { r: 0, c: 0 },
-            e: { r: totalRows, c: headers.length - 1 }
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
+
+        // Add headers
+        worksheet.addRow(headers);
+
+        // Styling headers
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        // Format code columns as text (Column A, G, H)
+        worksheet.getColumn(1).numFmt = '@'; // 社員コード
+        worksheet.getColumn(7).numFmt = '@'; // エリアコード
+        worksheet.getColumn(8).numFmt = '@'; // 事業所コード
+
+        // Set column widths
+        worksheet.columns.forEach(col => {
+            col.width = 20;
         });
 
-        const textCols = [0, 6, 7];
-        for (let R = 1; R <= totalRows; ++R) {
-            textCols.forEach(C => {
-                const ref = XLSX.utils.encode_cell({ r: R, c: C });
-                ws[ref] = { t: 's', v: '', z: '@' };
-            });
-        }
-
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, '社員マスタエクセルフォーマット.xlsx');
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '社員マスタエクセルフォーマット.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     const getSortIcon = (key: keyof Employee) => {

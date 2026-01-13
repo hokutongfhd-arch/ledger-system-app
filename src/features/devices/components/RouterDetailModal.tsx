@@ -29,6 +29,31 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
     const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
 
 
+    // Status Badge Helper
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'in-use': return 'bg-green-100 text-green-700 border-green-200';
+            case 'backup': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'available': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'broken': return 'bg-red-100 text-red-700 border-red-200';
+            case 'repairing': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'discarded': return 'bg-gray-100 text-gray-700 border-gray-200';
+            default: return 'bg-gray-50 text-gray-500 border-gray-100';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        const map: Record<string, string> = {
+            'in-use': '使用中',
+            'backup': '予備機',
+            'available': '在庫',
+            'broken': '故障',
+            'repairing': '修理中',
+            'discarded': '廃棄',
+        };
+        return map[status] || status;
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="ルーター デバイス詳細">
             <div className="space-y-8 font-sans">
@@ -36,7 +61,12 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                 {/* Header Section */}
                 <div className="flex justify-between items-start border-b border-gray-100 pb-6">
                     <div>
-                        <h3 className="text-2xl font-bold text-gray-800 tracking-tight mb-1">{item.terminalCode}</h3>
+                        <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-2xl font-bold text-gray-800 tracking-tight">{item.terminalCode}</h3>
+                            <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
+                                {getStatusLabel(item.status)}
+                            </span>
+                        </div>
                         <div className="text-gray-500 text-sm space-y-1">
                             <div className="flex items-center gap-1">
                                 <Wifi size={14} />

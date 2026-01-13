@@ -101,7 +101,7 @@ const mapIPhoneFromDb = (d: any): IPhone => ({
     notes: s(d.notes),
     returnDate: s(d.return_date),
     modelName: s(d.model_name),
-    status: '貸出中', // Placeholder as 'status' column is missing in provided DB schema
+    status: (d.status as DeviceStatus) || 'available',
     contractYears: s(d.contract_years),
 });
 
@@ -119,6 +119,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     notes: t.notes,
     return_date: t.returnDate,
     model_name: t.modelName,
+    status: t.status,
     contract_years: t.contractYears,
 });
 
@@ -136,7 +137,7 @@ const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
     notes: s(d.notes),
     returnDate: s(d.return_date),
     modelName: s(d.model_name),
-    status: d.employee_code ? '貸出中' : '貸出準備中',
+    status: (d.status as DeviceStatus) || 'available',
     contractYears: s(d.contract_years),
 });
 
@@ -153,6 +154,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     notes: t.notes,
     return_date: t.returnDate,
     model_name: t.modelName,
+    status: t.status,
     contract_years: t.contractYears,
 });
 
@@ -178,6 +180,7 @@ const mapRouterFromDb = (d: any): Router => ({
     actualLenderName: s(d.actual_lender_name),
     lendingHistory: s(d.lend_history),
     notes: s(d.notes),
+    status: (d.status as DeviceStatus) || 'available',
     contractStatus: s(d.contract_status),
     returnDate: '', // Missing in DB
     contractYears: s(d.contract_years),
@@ -207,6 +210,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     notes: t.notes,
     contract_status: t.contractStatus,
     contract_years: t.contractYears,
+    status: t.status,
     employee_code: t.employeeCode,
 });
 
@@ -426,8 +430,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         } catch (error: any) {
             console.error(`Failed to update item in ${table}:`, error);
+            const errorMessage = error?.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
             if (!skipToast) {
-                showToast('更新に失敗しました', 'error', error.message);
+                showToast('更新に失敗しました', 'error', errorMessage);
             }
             throw error;
         }

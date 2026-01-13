@@ -12,6 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { IPhoneForm } from '../../../../features/devices/components/IPhoneForm';
 import * as XLSX from 'xlsx';
 import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
+import ExcelJS from 'exceljs';
 import { IPhoneDetailModal } from '../../../../features/devices/components/IPhoneDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
@@ -79,7 +80,7 @@ function IPhoneListContent() {
     const headers = [
         'キャリア', '電話番号', '管理番号', '機種名', '契約年数',
         '社員コード', '事業所コード', '貸与日', '受領書提出日', '返却日',
-        'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考'
+        'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考', '状況'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
@@ -138,6 +139,14 @@ function IPhoneListContent() {
 
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
                 const normalizePhone = (phone: string) => toHalfWidth(phone).trim().replace(/-/g, '');
+                const statusMap: Record<string, string> = {
+                    '使用中': 'in-use',
+                    '予備機': 'backup',
+                    '在庫': 'available',
+                    '故障': 'broken',
+                    '修理中': 'repairing',
+                    '廃棄': 'discarded'
+                };
 
                 let rowHasError = false;
                 const rawManagementNumber = String(rowData['管理番号'] || '');
@@ -200,12 +209,12 @@ function IPhoneListContent() {
                     notes: String(rowData['備考'] || ''),
                     returnDate: formatDate(rowData['返却日']),
                     modelName: String(rowData['機種名'] || ''),
-                    status: '貸出準備中',
+                    status: (statusMap[rowData['状況']] || 'available') as any,
                     id: rowData['ID'] ? String(rowData['ID']) : undefined,
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || ''))
                 };
 
-                if (newIPhone.employeeId) newIPhone.status = '貸出中';
+                if (newIPhone.employeeId) newIPhone.status = 'in-use';
 
                 try {
                     await addIPhone(newIPhone as Omit<IPhone, 'id'>, true, true);
@@ -284,12 +293,20 @@ function IPhoneListContent() {
             message: `iPhone一覧のエクスポート: ${filteredData.length}件`
         });
 
+        const statusLabelMap: Record<string, string> = {
+            'in-use': '使用中',
+            'backup': '予備機',
+            'available': '在庫',
+            'broken': '故障',
+            'repairing': '修理中',
+            'discarded': '廃棄'
+        };
+
         handleExport(filteredData, headers, `iphone_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
-            item.id,
-            item.managementNumber,
-            item.phoneNumber,
-            item.modelName,
             item.carrier,
+            item.phoneNumber,
+            item.managementNumber,
+            item.modelName,
             normalizeContractYear(item.contractYears || ''),
             item.employeeId,
             item.addressCode,
@@ -298,21 +315,54 @@ function IPhoneListContent() {
             item.returnDate,
             item.smartAddressId,
             item.smartAddressPw,
-            `"${item.notes}"`
+            `"${item.notes}"`,
+            statusLabelMap[item.status] || item.status
         ]);
     };
 
-    const handleDownloadTemplate = () => {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const handleDownloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
+
+        // Add headers
+        worksheet.addRow(headers);
+
+        // Styling headers
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
         const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: totalRows, c: headers.length - 1 } });
-        for (let R = 1; R <= totalRows; ++R) {
-            const ref = XLSX.utils.encode_cell({ r: R, c: 2 });
-            ws[ref] = { t: 's', v: '', z: '@' };
+
+        // Data Validation (Status dropdown) - column N (index 14)
+        for (let i = 2; i <= totalRows + 1; i++) {
+            worksheet.getCell(i, 14).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
+            };
         }
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'iPhoneエクセルフォーマット.xlsx');
+
+        // Format phone number column as text to prevent dropping leading zero
+        worksheet.getColumn(2).numFmt = '@';
+
+        // Set column widths
+        worksheet.columns.forEach(col => {
+            col.width = 20;
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'iPhoneエクセルフォーマット.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     const isAdmin = user?.role === 'admin';
@@ -328,6 +378,30 @@ function IPhoneListContent() {
                 {sortCriteria.length > 1 && <span className="text-[10px] bg-blue-100 text-blue-600 rounded-full w-4 h-4 flex items-center justify-center font-bold">{idx + 1}</span>}
             </div>
         );
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'in-use': return 'bg-green-100 text-green-700 border-green-200';
+            case 'backup': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'available': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'broken': return 'bg-red-100 text-red-700 border-red-200';
+            case 'repairing': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'discarded': return 'bg-gray-100 text-gray-700 border-gray-200';
+            default: return 'bg-gray-50 text-gray-500 border-gray-100';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        const map: Record<string, string> = {
+            'in-use': '使用中',
+            'backup': '予備機',
+            'available': '在庫',
+            'broken': '故障',
+            'repairing': '修理中',
+            'discarded': '廃棄',
+        };
+        return map[status] || status;
     };
 
     // Highlight effect
@@ -373,6 +447,14 @@ function IPhoneListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('lendDate')}>貸与日{getSortIcon('lendDate')}</div>, accessor: 'lendDate' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: (item) => normalizeContractYear(item.contractYears || '') },
+                    {
+                        header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('status')}>状況{getSortIcon('status')}</div>,
+                        accessor: (item) => (
+                            <span className={`px-2 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
+                                {getStatusLabel(item.status)}
+                            </span>
+                        )
+                    },
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}

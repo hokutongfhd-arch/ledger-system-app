@@ -36,7 +36,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         modelName: '',
         notes: '',
         contractYears: '',
-        status: '貸出準備中',
+        status: 'available',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
 
@@ -264,6 +264,21 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 <option value="Softbank">Softbank</option>
                                 <option value="Docomo">Docomo</option>
                                 <option value="Rakuten">Rakuten</option>
+                            </Select>
+                        </div>
+                        <div>
+                            <FormLabel>状況</FormLabel>
+                            <Select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                            >
+                                <option value="in-use">使用中</option>
+                                <option value="backup">予備機</option>
+                                <option value="available">在庫</option>
+                                <option value="broken">故障</option>
+                                <option value="repairing">修理中</option>
+                                <option value="discarded">廃棄</option>
                             </Select>
                         </div>
                         <div>

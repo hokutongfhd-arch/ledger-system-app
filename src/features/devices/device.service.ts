@@ -50,7 +50,7 @@ export const deviceService = {
         notes: s(d.notes),
         returnDate: s(d.return_date),
         modelName: s(d.model_name),
-        status: '貸出中',
+        status: (d.status as DeviceStatus) || 'available',
         contractYears: s(d.contract_years),
     }),
     mapIPhoneToDb: (t: Partial<IPhone>) => ({
@@ -66,6 +66,7 @@ export const deviceService = {
         notes: t.notes,
         return_date: t.returnDate,
         model_name: t.modelName,
+        status: t.status,
         contract_years: t.contractYears,
     }),
 
@@ -83,7 +84,7 @@ export const deviceService = {
         notes: s(d.notes),
         returnDate: s(d.return_date),
         modelName: s(d.model_name),
-        status: '貸出中',
+        status: (d.status as DeviceStatus) || 'available',
         contractYears: s(d.contract_years),
     }),
     mapFeaturePhoneToDb: (t: Partial<FeaturePhone>) => ({
@@ -98,6 +99,7 @@ export const deviceService = {
         notes: t.notes,
         return_date: t.returnDate,
         model_name: t.modelName,
+        status: t.status,
         contract_years: t.contractYears,
     }),
 
@@ -124,6 +126,7 @@ export const deviceService = {
         actualLenderName: s(d.actual_lender_name),
         lendingHistory: s(d.lend_history),
         notes: s(d.notes),
+        status: (d.status as DeviceStatus) || 'available',
         contractStatus: s(d.contract_status),
         returnDate: '',
         contractYears: s(d.contract_years),
@@ -152,6 +155,7 @@ export const deviceService = {
         notes: t.notes,
         contract_status: t.contractStatus,
         contract_years: t.contractYears,
+        status: t.status,
         employee_code: t.employeeCode,
     }),
 

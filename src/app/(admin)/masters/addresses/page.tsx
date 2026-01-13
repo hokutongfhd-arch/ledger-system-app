@@ -12,7 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { AddressForm } from '../../../../features/addresses/components/AddressForm';
 import { AddressDetailModal } from '../../../../features/addresses/components/AddressDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { useToast } from '../../../../features/context/ToastContext';
 import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
 import { formatZipCode } from '../../../../lib/utils/zipCodeUtils';
@@ -294,26 +294,41 @@ function AddressListContent() {
         });
     };
 
-    const handleDownloadTemplate = () => {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const handleDownloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
 
-        const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({
-            s: { r: 0, c: 0 },
-            e: { r: totalRows, c: headers.length - 1 }
+        // Add headers
+        worksheet.addRow(headers);
+
+        // Styling headers
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        // Format numeric/string columns as text (Column B, C, E, F, H, L, N)
+        // № (B), 事業所コード (C), TEL (E), FAX (F), 〒 (H), 枝番 (N)
+        [2, 3, 5, 6, 8, 14].forEach(colIndex => {
+            worksheet.getColumn(colIndex).numFmt = '@';
         });
 
-        const textCols = [1, 2, 4, 5, 7, 16]; // №, 事業所コード, TEL, FAX, 〒, 宛名ラベル用〒
-        for (let R = 1; R <= totalRows; ++R) {
-            textCols.forEach(C => {
-                const ref = XLSX.utils.encode_cell({ r: R, c: C });
-                ws[ref] = { t: 's', v: '', z: '@' };
-            });
-        }
+        // Set column widths
+        worksheet.columns.forEach(col => {
+            col.width = 20;
+        });
 
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, '事業所マスタエクセルフォーマット.xlsx');
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '事業所マスタエクセルフォーマット.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     const getSortIcon = (key: keyof Address) => {

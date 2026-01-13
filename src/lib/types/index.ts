@@ -30,7 +30,7 @@ export interface IPhone {
     notes: string; // notes1
     returnDate: string;
     modelName: string;
-    status: '貸出中' | '返却済み' | '貸出準備中';
+    status: DeviceStatus;
     contractYears?: string;
 }
 
@@ -48,7 +48,7 @@ export interface FeaturePhone {
     notes: string; // notes1
     returnDate: string;
     modelName: string;
-    status: '貸出中' | '返却済み' | '貸出準備中';
+    status: DeviceStatus;
     contractYears?: string;
 }
 
@@ -75,6 +75,7 @@ export interface Router {
     lendingHistory: string; // 貸与履歴
     notes: string; // 備考
     returnDate: string; // 返却日 (part of notes requirement but good to have separate)
+    status: DeviceStatus;
     contractStatus: string; // 契約状況
     contractYears?: string;
     employeeCode: string;

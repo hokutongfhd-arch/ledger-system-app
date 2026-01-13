@@ -12,7 +12,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { AreaForm } from '../../../../features/areas/components/AreaForm';
 import { AreaDetailModal } from '../../../../features/areas/components/AreaDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { useToast } from '../../../../features/context/ToastContext';
 import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
@@ -224,17 +224,38 @@ function AreaListContent() {
         ]);
     };
 
-    const handleDownloadTemplate = () => {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-        const totalRows = 1000;
-        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: totalRows, c: headers.length - 1 } });
-        for (let R = 1; R <= totalRows; ++R) {
-            const ref = XLSX.utils.encode_cell({ r: R, c: 0 });
-            ws[ref] = { t: 's', v: '', z: '@' };
-        }
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'エリアマスタエクセルフォーマット.xlsx');
+    const handleDownloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
+
+        // Add headers
+        worksheet.addRow(headers);
+
+        // Styling headers
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        // Format code column as text (Column A)
+        worksheet.getColumn(1).numFmt = '@';
+
+        // Set column widths
+        worksheet.columns.forEach(col => {
+            col.width = 25;
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'エリアマスタエクセルフォーマット.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     const isAdmin = user?.role === 'admin';
