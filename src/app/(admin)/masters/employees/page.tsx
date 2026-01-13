@@ -162,7 +162,7 @@ function EmployeeListContent() {
 
                 const parseNumber = (val: any) => {
                     const parsed = parseInt(String(val || ''));
-                    return isNaN(parsed) ? 0 : parsed;
+                    return isNaN(parsed) ? 0 : Math.max(0, parsed);
                 };
 
                 const newEmployee: Omit<Employee, 'id'> & { id?: string } = {

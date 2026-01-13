@@ -147,6 +147,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         onSubmit(formData);
     };
 
+    const today = new Date().toISOString().split('T')[0];
+
     return (
         <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-2">
             <div className="space-y-8">
@@ -221,6 +223,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 name="birthDate"
                                 value={formData.birthDate}
                                 onChange={handleChange}
+                                max={today}
                             />
                         </div>
                         <div>
@@ -230,6 +233,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 name="age"
                                 value={formData.age}
                                 onChange={handleChange}
+                                min="0"
                             />
                         </div>
                     </div>
@@ -264,6 +268,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 name="joinDate"
                                 value={formData.joinDate}
                                 onChange={handleChange}
+                                max={today}
                             />
                         </div>
                         <div>
@@ -273,6 +278,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 name="yearsOfService"
                                 value={formData.yearsOfService}
                                 onChange={handleChange}
+                                min="0"
                             />
                         </div>
                         <div>
@@ -282,6 +288,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 name="monthsHasuu"
                                 value={formData.monthsHasuu}
                                 onChange={handleChange}
+                                min="0"
                             />
                         </div>
                         <div>
