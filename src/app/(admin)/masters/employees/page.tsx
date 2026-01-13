@@ -165,16 +165,25 @@ function EmployeeListContent() {
                     return isNaN(parsed) ? 0 : Math.max(0, parsed);
                 };
 
+                const birthDateValue = formatDate(rowData['生年月日']);
+                const joinDateValue = formatDate(rowData['入社年月日']);
+
+                if (birthDateValue && joinDateValue && new Date(birthDateValue) > new Date(joinDateValue)) {
+                    errors.push(`${i + 2}行目: 入社年月日（${joinDateValue}）は生年月日（${birthDateValue}）以降である必要があります`);
+                    errorCount++;
+                    continue;
+                }
+
                 const newEmployee: Omit<Employee, 'id'> & { id?: string } = {
                     code: code,
                     gender: String(rowData['性別'] || ''),
                     name: String(rowData['氏名'] || ''),
                     nameKana: String(rowData['氏名カナ'] || ''),
-                    birthDate: formatDate(rowData['生年月日']),
+                    birthDate: birthDateValue,
                     age: parseNumber(rowData['年齢']),
                     areaCode: toHalfWidth(String(rowData['エリアコード'] || '')).trim(),
                     addressCode: toHalfWidth(String(rowData['事業所コード'] || '')).trim(),
-                    joinDate: formatDate(rowData['入社年月日']),
+                    joinDate: joinDateValue,
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
                     jobType: String(rowData['職種'] || ''),

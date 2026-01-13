@@ -283,6 +283,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 value={formData.joinDate}
                                 onChange={handleChange}
                                 max={today}
+                                min={formData.birthDate}
                             />
                         </div>
                         <div>
