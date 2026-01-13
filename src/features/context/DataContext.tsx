@@ -8,7 +8,7 @@ import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
-import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin } from '../../app/actions/employee_setup';
+import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '../../app/actions/employee_setup';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -237,7 +237,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     roleTitle: s(d.position),
     jobType: s(d.job_type),
     role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
-    profileImage: localStorage.getItem(`profile_image_${d.id}`) || '',
+    profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
 });
 
 const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
@@ -444,6 +444,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (error) throw error;
 
             setState(prev => prev.filter(p => p.id !== id));
+
+            if (!skipLog) {
+                const targetType = TARGET_MAP[table] || 'unknown';
+                await logger.info({
+                    action: 'DELETE',
+                    targetType,
+                    targetId: id,
+                    message: `${table} から ID: ${id} を削除しました`
+                });
+            }
+
             if (!skipToast) {
                 showToast('削除しました', 'success');
             }
@@ -456,13 +467,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [showToast]);
 
-    const deleteItems = useCallback(async <T extends { id: string }>(table: string, ids: string[], setState: React.Dispatch<React.SetStateAction<T[]>>, isArea: boolean = false) => {
+    const deleteItems = useCallback(async <T extends { id: string }>(table: string, ids: string[], setState: React.Dispatch<React.SetStateAction<T[]>>, isArea: boolean = false, skipLog: boolean = false) => {
         try {
             const pkField = isArea ? 'area_code' : 'id';
             const { error } = await supabase.from(table).delete().in(pkField, ids);
             if (error) throw error;
 
             setState(prev => prev.filter(p => !ids.includes(p.id)));
+
+            if (!skipLog) {
+                const targetType = TARGET_MAP[table] || 'unknown';
+                await logger.info({
+                    action: 'DELETE',
+                    targetType,
+                    message: `${table} から ${ids.length} 件を一括削除しました`,
+                    metadata: { deletedIds: ids }
+                });
+            }
+
             showToast(`${ids.length}件、削除しました`, 'success');
         } catch (error: any) {
             console.error(`Failed to delete items from ${table}:`, error);
@@ -626,7 +648,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const deleteManyFeaturePhones = (ids: string[]) => deleteItems('featurephones', ids, setFeaturePhones);
     const deleteManyTablets = (ids: string[]) => deleteItems('tablets', ids, setTablets);
     const deleteManyRouters = (ids: string[]) => deleteItems('routers', ids, setRouters);
-    const deleteManyEmployees = (ids: string[]) => deleteItems('employees', ids, setEmployees);
+    const deleteManyEmployees = (ids: string[]) => {
+        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
+            return (async () => {
+                try {
+                    await deleteManyEmployeesBySetupAdmin(ids);
+                    setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
+                    showToast(`${ids.length}件、削除しました (Setup)`, 'success');
+                } catch (error: any) {
+                    console.error('Setup Admin DB Bulk Delete Failed:', error);
+                    showToast('削除に失敗しました', 'error', error.message);
+                    throw error;
+                }
+            })();
+        }
+        return deleteItems('employees', ids, setEmployees);
+    };
     const deleteManyAreas = (ids: string[]) => deleteItems('areas', ids, setAreas, true);
     const deleteManyAddresses = (ids: string[]) => deleteItems('addresses', ids, setAddresses);
 

@@ -97,3 +97,13 @@ export async function deleteEmployeeBySetupAdmin(id: string) {
     const { error } = await supabase.from('employees').delete().eq('id', id);
     if (error) throw error;
 }
+
+export async function deleteManyEmployeesBySetupAdmin(ids: string[]) {
+    const cookieStore = await cookies();
+    const isSetup = cookieStore.get(COOKIE_NAME);
+    if (isSetup?.value !== 'true') throw new Error('Unauthorized');
+
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.from('employees').delete().in('id', ids);
+    if (error) throw error;
+}
