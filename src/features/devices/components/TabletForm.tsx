@@ -36,19 +36,21 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
 
     // Prepare Options
     const employeeOptions = useMemo(() => {
-        return employees.map(e => ({
+        const options = employees.map(e => ({
             label: e.name,
             value: e.code,
             subLabel: e.code
         }));
+        return [{ label: '返却', value: '', subLabel: '' }, ...options];
     }, [employees]);
 
     const addressOptions = useMemo(() => {
-        return addresses.map(a => ({
+        const options = addresses.map(a => ({
             label: a.officeName,
             value: a.addressCode,
             subLabel: a.address
         }));
+        return [{ label: '返却', value: '', subLabel: '' }, ...options];
     }, [addresses]);
 
     useEffect(() => {

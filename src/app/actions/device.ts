@@ -63,8 +63,11 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
     }
 
     // 2. Check for User Change
+    // 2. Check for User Change
     // current.employee_code vs data.employeeId
-    if (data.employeeId && current.employee_code && data.employeeId !== current.employee_code) {
+    // 2. Check for User Change
+    // current.employee_code vs data.employeeId
+    if (data.employeeId !== current.employee_code && current.employee_code) {
         // User changed, save history
         const historyData = {
             iphone_id: id,
@@ -80,7 +83,6 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
 
         if (historyError) {
             console.error('Failed to save history:', historyError);
-            // We might want to throw or just log. Proceeding for now but logging is critical.
         }
     }
 
@@ -92,6 +94,39 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
     // So we can just ignore it in the update payload or ensure it matches current.
 
     const dbData = mapIPhoneToDb(data);
+
+    // If User Changed, Update Lend Date to Today to prevent history overlap
+    if (data.employeeId !== current.employee_code) {
+        // If data doesn't explicitly have a new lendDate, set it to Today
+        // Form sends lendDate. If Form has old date, we should override or Form should handle.
+        // Server side enforcement is safer. 
+        // If unassigning (Return), lend_date is irrelevant or can be cleared? 
+        // Usually clearing it is cleaner.
+        if (!data.employeeId) {
+            (dbData as any).lend_date = null; // Clear lend date on return
+        } else {
+            // If Assigning New User, set lend_date to Today IF NOT provided or same as old?
+            // Actually, if we just blindly overwrite, we might lose manual "Started Yesterday" input.
+            // But if we don't, we get overlap.
+            // Let's assume if the date provided is SAME as old one, we should update to Today.
+            // But simpler: The logic "History starts when current assignment starts".
+            // So new assignment MUST have a new start date. 
+            // We'll set it to today if it's missing or if we want to enforce "Change = New Period".
+            // But if user manually entered 2026-01-01, we should respect it.
+            // The issue before was "Old Lend Date" (2023) was kept.
+            // So if the incoming `t.lendDate` is same as `current.lend_date` (or undefined), we force update?
+            // `mapIPhoneToDb` uses `data.lendDate`.
+
+            // If date is NOT in data payload, mapped value is undefined.
+            // If date IS in payload, it's used.
+            // The FORM sends the *current form value* which defaults to `initialData.lendDate`.
+            // So Form sends "2023-11-24".
+            // So we must Override it if it matches the old one?
+            // Or safer: Always default to Today if changing user?
+            // Let's set it to Today.
+            (dbData as any).lend_date = new Date().toISOString().split('T')[0];
+        }
+    }
 
     // Explicitly prevent management_number update just to be safe/compliant with rule
     delete (dbData as any).management_number;
@@ -175,7 +210,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
     }
 
     // 2. Check for User Change
-    if (data.employeeId && current.employee_code && data.employeeId !== current.employee_code) {
+    if (data.employeeId !== current.employee_code && current.employee_code) {
         // User changed, save history
         const historyData = {
             featurephone_id: id,
@@ -196,6 +231,15 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
 
     // 3. Update Device
     const dbData = mapFeaturePhoneToDb(data);
+
+    // If User Changed, Update Lend Date to Today
+    if (data.employeeId !== current.employee_code) {
+        if (!data.employeeId) {
+            (dbData as any).lend_date = null;
+        } else {
+            (dbData as any).lend_date = new Date().toISOString().split('T')[0];
+        }
+    }
 
     // Explicitly prevent management_number update
     delete (dbData as any).management_number;
@@ -271,8 +315,9 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>) {
     }
 
     // 2. Check for User Change
+    // 2. Check for User Change
     // defined as employeeCode in Tablet Type
-    if (data.employeeCode && current.employee_code && data.employeeCode !== current.employee_code) {
+    if (data.employeeCode !== current.employee_code && current.employee_code) {
         // User changed, save history
         const historyData = {
             tablet_id: id,
