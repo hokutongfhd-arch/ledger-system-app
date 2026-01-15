@@ -240,6 +240,16 @@ function EmployeeListContent() {
     const handleEdit = (item: Employee) => { setEditingItem(item); setIsModalOpen(true); };
 
     const handleDelete = async (item: Employee) => {
+        if (item.id === user?.id) {
+            await confirm({
+                title: '操作不可',
+                description: 'ログイン中のアカウントは削除できません。',
+                confirmText: 'OK',
+                cancelText: ''
+            });
+            return;
+        }
+
         const confirmed = await confirm({
             title: '確認',
             description: '本当に削除しますか？',
@@ -259,16 +269,34 @@ function EmployeeListContent() {
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
 
+        // Exclude current user from deletion targets
+        const idsToDelete = Array.from(selectedIds).filter(id => id !== user?.id);
+        const includesSelf = idsToDelete.length < selectedIds.size;
+
+        if (idsToDelete.length === 0) {
+            await confirm({
+                title: '操作不可',
+                description: 'ログイン中のアカウントは削除できません。',
+                confirmText: 'OK',
+                cancelText: ''
+            });
+            return;
+        }
+
+        const message = includesSelf
+            ? `ログイン中のアカウントを除く ${idsToDelete.length} 件を削除しますか？`
+            : `選択した ${idsToDelete.length} 件を削除しますか？`;
+
         const confirmed = await confirm({
             title: '確認',
-            description: `選択した ${selectedIds.size} 件を削除しますか？`,
+            description: message,
             confirmText: 'Delete',
             variant: 'destructive'
         });
 
         if (confirmed) {
             try {
-                await deleteManyEmployees(Array.from(selectedIds));
+                await deleteManyEmployees(idsToDelete);
                 setSelectedIds(new Set());
             } catch (error) {
                 console.error("Bulk delete failed", error);
@@ -433,7 +461,7 @@ function EmployeeListContent() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 canEdit={(item) => isAdmin || user?.id === item.id}
-                canDelete={() => isAdmin}
+                canDelete={(item) => isAdmin && item.id !== user?.id}
             />
 
             <Pagination
