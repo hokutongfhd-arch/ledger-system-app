@@ -180,6 +180,19 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
             return;
         }
 
+        // Password Validation (8+ digits, numeric only)
+        if (isAdmin && formData.password) {
+            const password = formData.password;
+            if (password.length < 8) {
+                setErrorFields(prev => new Set(prev).add('password_length'));
+                return;
+            }
+            if (!/^[0-9]+$/.test(password)) {
+                setErrorFields(prev => new Set(prev).add('password_format'));
+                return;
+            }
+        }
+
         // Combine name parts with half-width space for storage
         const combinedName = `${nameParts.lastName} ${nameParts.firstName}`.trim();
         const combinedNameKana = `${nameParts.lastNameKana} ${nameParts.firstNameKana}`.trim();
@@ -393,10 +406,28 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                     type="text"
                                     name="password"
                                     value={formData.password || ''}
-                                    onChange={handleChange}
+                                    onChange={(e) => {
+                                        handleChange(e);
+                                        if (errorFields.has('password_length')) {
+                                            const next = new Set(errorFields);
+                                            next.delete('password_length');
+                                            setErrorFields(next);
+                                        }
+                                        if (errorFields.has('password_format')) {
+                                            const next = new Set(errorFields);
+                                            next.delete('password_format');
+                                            setErrorFields(next);
+                                        }
+                                    }}
                                     className="bg-yellow-50"
-                                    placeholder="管理者のみ表示"
+                                    placeholder="管理者のみ表示 (半角数字8文字以上)"
                                 />
+                                {errorFields.has('password_length') && (
+                                    <FormError>パスワードは8文字以上必要です</FormError>
+                                )}
+                                {errorFields.has('password_format') && (
+                                    <FormError>パスワードは半角数字のみ使用できます</FormError>
+                                )}
                             </div>
                         )}
                     </div>

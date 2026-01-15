@@ -178,6 +178,20 @@ function EmployeeListContent() {
                 const firstName = String(rowData['名前'] || '').trim();
                 const lastNameKana = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
                 const firstNameKana = String(rowData['名前カナ'] || '').trim();
+                const rawPassword = String(rowData['パスワード'] || '').trim();
+                const password = toHalfWidth(rawPassword);
+
+                // Password Validation (8+ digits, numeric only)
+                if (password.length < 8) {
+                    errors.push(`${i + 2}行目: パスワードは8文字以上である必要があります`);
+                    errorCount++;
+                    continue;
+                }
+                if (!/^[0-9]+$/.test(password)) {
+                    errors.push(`${i + 2}行目: パスワードは半角数字のみ使用可能です`);
+                    errorCount++;
+                    continue;
+                }
 
                 // スペースを除去し、半角スペースで結合
                 const cleanName = `${lastName.replace(/[\s　]+/g, '')} ${firstName.replace(/[\s　]+/g, '')}`.trim();
@@ -196,7 +210,7 @@ function EmployeeListContent() {
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
                     role: String(rowData['権限'] || '') === '管理者' ? 'admin' : 'user',
-                    password: String(rowData['パスワード'] || ''),
+                    password: password,
                     companyNo: '',
                     departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),
                     email: ''

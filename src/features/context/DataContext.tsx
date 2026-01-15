@@ -9,6 +9,7 @@ import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
 import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '../../app/actions/employee_setup';
+import { createEmployeeAction } from '../../app/actions/employee';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -519,7 +520,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 } catch (e) {
                     // Not JSON
                 }
-                if (!skipToast) showToast('Authユーザー作成に失敗しましたが、DB登録を試みます', 'warning');
+                if (!skipToast) showToast('Authユーザー作成に失敗しました', 'error');
+                throw new Error(`Auth Registration Failed: ${errorText}`);
             } else {
                 const authResult = await response.json();
                 if (authResult.userId) {
@@ -552,7 +554,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         }
 
-        return addItem('employees', item, mapEmployeeToDb, mapEmployeeFromDb, setEmployees, skipLog, skipToast);
+        return (async () => {
+            try {
+                // Use Server Action to bypass RLS
+                const result = await createEmployeeAction(item);
+
+                const newItem = mapEmployeeFromDb(result);
+                setEmployees(prev => [...prev, newItem]);
+
+                if (!skipToast) {
+                    showToast('登録しました', 'success');
+                }
+            } catch (error: any) {
+                console.error(`Failed to add employee:`, error);
+                if (!skipToast) {
+                    showToast('登録に失敗しました', 'error', error.message || '不明なエラー');
+                }
+                throw error;
+            }
+        })();
     };
     const updateEmployee = async (item: Employee, skipLog: boolean = false, skipToast: boolean = false) => {
         // Intercept to save profile image to localStorage
