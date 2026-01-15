@@ -195,6 +195,8 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 value={formData.managementNumber}
                                 onChange={handleChange}
                                 required
+                                readOnly={!!initialData?.id}
+                                className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('managementNumber')}
                             />
                             {errorFields.has('managementNumber') && <FormError>既に登録されている管理番号です</FormError>}

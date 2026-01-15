@@ -62,6 +62,17 @@ export interface FeaturePhone {
     contractYears?: string;
 }
 
+
+export interface FeaturePhoneUsageHistory {
+    id: string;
+    featurePhoneId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
+}
+
 export interface Router {
     id: string;
     no: string;
