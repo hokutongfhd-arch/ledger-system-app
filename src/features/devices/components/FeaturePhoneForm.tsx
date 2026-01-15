@@ -115,7 +115,14 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
     };
 
     const handleSelectChange = (name: string, value: string) => {
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const updates: any = { [name]: value };
+            if (value === '') {
+                if (name === 'employeeId') updates.addressCode = '';
+                if (name === 'addressCode') updates.employeeId = '';
+            }
+            return { ...prev, ...updates };
+        });
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {

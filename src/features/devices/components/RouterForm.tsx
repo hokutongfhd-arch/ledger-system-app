@@ -148,7 +148,14 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
     };
 
     const handleSelectChange = (name: string, value: string) => {
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const updates: any = { [name]: value };
+            if (value === '') {
+                if (name === 'employeeCode') updates.addressCode = '';
+                if (name === 'addressCode') updates.employeeCode = '';
+            }
+            return { ...prev, ...updates };
+        });
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
