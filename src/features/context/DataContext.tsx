@@ -10,7 +10,7 @@ import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
 import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
 import { createEmployeeAction } from '@/app/actions/employee';
-import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction } from '@/app/actions/device';
+import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction } from '@/app/actions/device';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -559,7 +559,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const deleteFeaturePhone = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('featurephones', id, setFeaturePhones, skipLog, skipToast);
 
     const addRouter = (item: Omit<Router, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('routers', item, mapRouterToDb, mapRouterFromDb, setRouters, skipLog, skipToast);
-    const updateRouter = (item: Router, skipLog: boolean = false, skipToast: boolean = false) => updateItem('routers', item, mapRouterToDb, routers, setRouters, skipLog, skipToast);
+    const updateRouter = async (item: Router, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            // Use Server Action for Router updates to handle usage history
+            const { id, ...data } = item;
+            const result = await updateRouterAction(id, data);
+
+            const newItem = mapRouterFromDb(result);
+            setRouters(prev => prev.map(p => p.id === item.id ? newItem : p));
+
+            if (!skipToast) {
+                showToast('更新しました', 'success');
+            }
+        } catch (error: any) {
+            console.error('Failed to update Router:', error);
+            if (!skipToast) {
+                showToast('更新に失敗しました', 'error', error.message);
+            }
+            throw error;
+        }
+    };
     const deleteRouter = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('routers', id, setRouters, skipLog, skipToast);
 
 

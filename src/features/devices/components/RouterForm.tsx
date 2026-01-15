@@ -382,6 +382,10 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 name="terminalCode"
                                 value={formData.terminalCode}
                                 onChange={handleChange}
+                                required
+                                required
+                                readOnly={!!initialData?.id}
+                                className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('terminalCode')}
                             />
                             {errorFields.has('terminalCode') && <FormError>既に登録されている端末CDです</FormError>}

@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { IPhone, IPhoneUsageHistory, FeaturePhone, FeaturePhoneUsageHistory, Tablet, TabletUsageHistory } from '@/features/devices/device.types';
+import { IPhone, IPhoneUsageHistory, FeaturePhone, FeaturePhoneUsageHistory, Tablet, TabletUsageHistory, Router, RouterUsageHistory } from '@/features/devices/device.types';
 import { normalizePhoneNumber } from '@/lib/utils/phoneUtils';
 
 const getSupabaseAdmin = () => {
@@ -333,4 +333,118 @@ export async function getTabletHistoryAction(tabletId: string) {
         endDate: d.end_date,
         createdAt: d.created_at,
     } as TabletUsageHistory));
+}
+
+// -----------------------------------------------------------------------------
+// Router Actions
+// -----------------------------------------------------------------------------
+
+// Simplified mapper for Router
+const mapRouterToDb = (t: Partial<Router>) => ({
+    no: t.no,
+    biller: t.biller,
+    terminal_code: t.terminalCode,
+    model_number: t.modelNumber,
+    carrier: t.carrier,
+    cost: String(t.cost),
+    cost_transfer: t.costTransfer,
+    data_limit: t.dataCapacity,
+    sim_number: t.simNumber,
+    ip_address: t.ipAddress,
+    subnet_mask: t.subnetMask,
+    start_ip: t.startIp,
+    end_ip: t.endIp,
+    company: t.company,
+    address_code: t.addressCode,
+    actual_lender: t.actualLender,
+    payer: t.costBearer,
+    actual_lender_name: t.actualLenderName,
+    lend_history: t.lendingHistory,
+    notes: t.notes,
+    contract_status: t.contractStatus,
+    contract_years: t.contractYears,
+    status: t.status,
+    employee_code: t.employeeCode,
+});
+
+export async function updateRouterAction(id: string, data: Partial<Router>) {
+    const supabase = getSupabaseAdmin();
+
+    // 1. Get Current Data
+    const { data: current, error: fetchError } = await supabase
+        .from('routers')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !current) {
+        throw new Error('Device not found');
+    }
+
+    // 2. Check for User Change
+    // 2. Check for User Change
+    // We check if the new employeeCode is different from the current one.
+    // AND the current device MUST have had an employee assigned (otherwise there is no history to save).
+    // This allows recording history when Unassigning (data.employeeCode is empty) or Changing User.
+    if (data.employeeCode !== current.employee_code && current.employee_code) {
+        // User changed, save history
+        const historyData = {
+            router_id: id,
+            employee_code: current.employee_code,
+            office_code: current.address_code,
+            start_date: '', // Router typically doesn't have a clear structured start_date in DB other than lendingHistory text
+            end_date: new Date().toISOString().split('T')[0],
+        };
+
+        const { error: historyError } = await supabase
+            .from('router_usage_history')
+            .insert(historyData);
+
+        if (historyError) {
+            console.error('Failed to save history:', historyError);
+        }
+    }
+
+    // 3. Update Device
+    const dbData = mapRouterToDb(data);
+
+    // Explicitly prevent terminal_code update
+    delete (dbData as any).terminal_code;
+
+    const { data: updated, error: updateError } = await supabase
+        .from('routers')
+        .update(dbData)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (updateError) {
+        throw new Error(updateError.message);
+    }
+
+    return updated;
+}
+
+export async function getRouterHistoryAction(routerId: string) {
+    const supabase = getSupabaseAdmin();
+
+    const { data, error } = await supabase
+        .from('router_usage_history')
+        .select('*')
+        .eq('router_id', routerId)
+        .order('end_date', { ascending: false });
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return data.map((d: any) => ({
+        id: d.id,
+        routerId: d.router_id,
+        employeeCode: d.employee_code,
+        officeCode: d.office_code,
+        startDate: d.start_date,
+        endDate: d.end_date,
+        createdAt: d.created_at,
+    } as RouterUsageHistory));
 }

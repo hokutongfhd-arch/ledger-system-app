@@ -26,6 +26,17 @@ export interface TabletUsageHistory {
     createdAt: string;
 }
 
+
+export interface RouterUsageHistory {
+    id: string;
+    routerId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
+}
+
 export interface IPhone {
     id: string;
     carrier: string;
