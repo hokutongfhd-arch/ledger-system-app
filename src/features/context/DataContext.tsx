@@ -511,8 +511,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
 
             if (!response.ok) {
-                const errRes = await response.json();
-                console.error('Auth Registration Failed:', errRes);
+                const errorText = await response.text();
+                console.error(`Auth Registration Failed (${response.status}):`, errorText);
+                try {
+                    const errRes = JSON.parse(errorText);
+                    console.error('Parsed Error Details:', errRes);
+                } catch (e) {
+                    // Not JSON
+                }
                 if (!skipToast) showToast('Authユーザー作成に失敗しましたが、DB登録を試みます', 'warning');
             } else {
                 const authResult = await response.json();

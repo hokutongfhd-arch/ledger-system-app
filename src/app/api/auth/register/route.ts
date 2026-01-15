@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
         if (error) {
             if (error.message.includes('already registered') || error.status === 422) {
-                const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+                const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
                 const existingUser = listData.users.find((u: any) => u.email === email);
 
                 if (existingUser) {
@@ -85,6 +85,7 @@ export async function POST(req: Request) {
 
     } catch (err: any) {
         console.error('API Error:', err);
-        return NextResponse.json({ error: (err as any).message }, { status: 500 });
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        return NextResponse.json({ error: errorMessage, details: String(err) }, { status: 500 });
     }
 }

@@ -54,15 +54,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
             // Re-fetch profile
-            const { data: employeeData } = await supabase
+            const { data: employeeData, error: dbError } = await supabase
                 .from('employees')
                 .select('*')
                 .eq('auth_id', session.user.id)
-                .single();
+                .maybeSingle();
 
             if (employeeData) {
                 const employee = mapEmployeeFromDb(employeeData);
                 setUser(employee);
+            } else {
+                // Should have found, but if not, try fallback by code (if available in metadata)
+                const code = session.user.app_metadata?.employee_code;
+                if (code) {
+                    console.warn(`Profile not found by auth_id, trying fallback with code: ${code}`);
+                    const { data: fallbackData } = await supabase
+                        .from('employees')
+                        .select('*')
+                        .eq('employee_code', code)
+                        .maybeSingle();
+
+                    if (fallbackData) {
+                        // Heal the link
+                        await supabase
+                            .from('employees')
+                            .update({ auth_id: session.user.id })
+                            .eq('id', fallbackData.id);
+
+                        const employee = mapEmployeeFromDb({ ...fallbackData, auth_id: session.user.id });
+                        setUser(employee);
+                        return;
+                    }
+                }
+                console.error('Failed to find employee profile for session user');
+                // Optional: Force logout if strictly required? 
+                // await supabase.auth.signOut();
             }
         } catch (error) {
             console.error('Failed to refresh user:', error);
@@ -151,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .from('employees')
                 .select('*')
                 .eq('auth_id', authData.session.user.id)
-                .single();
+                .maybeSingle();
 
             // Fallback: If auth_id link is missing (during migration gap), try matching by code
             // This is a safety net but ideally auth_id should be populated.
