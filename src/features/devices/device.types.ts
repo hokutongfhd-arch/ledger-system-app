@@ -34,6 +34,16 @@ export interface IPhone {
     contractYears?: string;
 }
 
+export interface IPhoneUsageHistory {
+    id: string;
+    iphoneId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
+}
+
 export interface FeaturePhone {
     id: string;
     carrier: string;

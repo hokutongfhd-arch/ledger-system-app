@@ -8,8 +8,9 @@ import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
-import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '../../app/actions/employee_setup';
-import { createEmployeeAction } from '../../app/actions/employee';
+import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
+import { createEmployeeAction } from '@/app/actions/employee';
+import { updateIPhoneAction } from '@/app/actions/device';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -490,7 +491,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const deleteTablet = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('tablets', id, setTablets, skipLog, skipToast);
 
     const addIPhone = (item: Omit<IPhone, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('iphones', item, mapIPhoneToDb, mapIPhoneFromDb, setIPhones, skipLog, skipToast);
-    const updateIPhone = (item: IPhone, skipLog: boolean = false, skipToast: boolean = false) => updateItem('iphones', item, mapIPhoneToDb, iPhones, setIPhones, skipLog, skipToast);
+    const updateIPhone = async (item: IPhone, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            // Use Server Action for IPhone updates to handle history tracking
+            const { id, ...data } = item;
+
+            const result = await updateIPhoneAction(id, data);
+
+            // Map the result (raw DB data) back to IPhone type
+            const newItem = mapIPhoneFromDb(result);
+            setIPhones(prev => prev.map(p => p.id === item.id ? newItem : p));
+
+            if (!skipToast) {
+                showToast('更新しました', 'success');
+            }
+        } catch (error: any) {
+            console.error('Failed to update iPhone:', error);
+            if (!skipToast) {
+                showToast('更新に失敗しました', 'error', error.message);
+            }
+            throw error;
+        }
+    };
     const deleteIPhone = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('iphones', id, setIPhones, skipLog, skipToast);
 
     const addFeaturePhone = (item: Omit<FeaturePhone, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('featurephones', item, mapFeaturePhoneToDb, mapFeaturePhoneFromDb, setFeaturePhones, skipLog, skipToast);

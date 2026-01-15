@@ -1,11 +1,13 @@
 import { DetailRow } from '../../../components/ui/DetailView';
 import { SectionHeader } from '../../../components/ui/Section';
 import { Modal } from '../../../components/ui/Modal';
-import { IPhone } from '../device.types';
+import { getIPhoneHistoryAction } from '../../../app/actions/device';
+import { IPhone, IPhoneUsageHistory } from '../device.types';
 import { Employee, Address } from '../../../lib/types';
-import { Smartphone, MapPin, Calendar, FileText, User, Shield, Phone } from 'lucide-react';
+import { Smartphone, MapPin, Calendar, FileText, User, Shield, Phone, History, ArrowLeft } from 'lucide-react';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 import { normalizeContractYear } from '../../../lib/utils/stringUtils';
+import { useState, useEffect } from 'react';
 
 interface IPhoneDetailModalProps {
     isOpen: boolean;
@@ -22,9 +24,40 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
     employees,
     addresses,
 }) => {
+
+    const [showHistory, setShowHistory] = useState(false);
+    const [history, setHistory] = useState<IPhoneUsageHistory[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setShowHistory(false);
+            setHistory([]);
+        }
+    }, [isOpen]);
+
+    const handleFetchHistory = async () => {
+        if (!item) return;
+        setLoadingHistory(true);
+        try {
+            const data = await getIPhoneHistoryAction(item.id);
+            setHistory(data);
+            setShowHistory(true);
+        } catch (error) {
+            console.error('Failed to fetch history:', error);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
     if (!item) return null;
 
     const employeeName = employees.find(e => e.code === item.employeeId)?.name || '-';
+    // When showing history, we need to map historical codes to names too.
+    const getEmployeeName = (code: string) => employees.find(e => e.code === code)?.name || code;
+
+    // Address (Office) mapping
+    // Current item address
     const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
 
     // Status Badge Helper
@@ -53,70 +86,128 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="iPhone デバイス詳細">
-            <div className="space-y-8 font-sans">
-
+        <Modal isOpen={isOpen} onClose={onClose} title={showHistory ? "iPhone 使用履歴" : "iPhone デバイス詳細"}>
+            <div className="space-y-6 font-sans">
                 {/* Header Section with Status */}
-                <div className="flex justify-between items-start border-b border-gray-100 pb-6">
+                <div className="flex justify-between items-start border-b border-gray-100 pb-4">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h3 className="text-2xl font-bold text-gray-800 tracking-tight">{item.managementNumber}</h3>
-                            <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
-                                {getStatusLabel(item.status)}
-                            </span>
+                            {!showHistory && (
+                                <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
+                                    {getStatusLabel(item.status)}
+                                </span>
+                            )}
                         </div>
                         <p className="text-gray-500 text-sm flex items-center gap-1">
                             <Smartphone size={14} />
                             {item.modelName} / {item.carrier}
                         </p>
-                        <p className="text-blue-600 font-bold text-lg flex items-center gap-1 mt-1">
-                            <Phone size={16} />
-                            {formatPhoneNumber(item.phoneNumber)}
-                        </p>
                     </div>
-                    <div className="text-right">
-                        {/* Device ID display removed as per user request */}
+                    <div>
+                        {!showHistory ? (
+                            <button
+                                onClick={handleFetchHistory}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                                <History size={16} />
+                                旧使用者を確認
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setShowHistory(false)}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                <ArrowLeft size={16} />
+                                詳細に戻る
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column: User & Location */}
-                    <div className="space-y-6">
-                        <SectionHeader icon={<User size={18} />} title="使用者情報 (User Info)" />
-
-                        <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="社員名" value={employeeName} subValue={item.employeeId} />
-                            <DetailRow label="設置場所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
-                        </div>
-
-                        <SectionHeader icon={<Shield size={18} />} title="アカウント情報 (Account)" />
-                        <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="SMARTアドレス帳ID" value={item.smartAddressId || '-'} />
-                            <DetailRow label="SMARTアドレス帳PW" value={item.smartAddressPw || '••••••••'} isSensitive />
-                        </div>
+                {showHistory ? (
+                    <div className="space-y-4">
+                        {loadingHistory ? (
+                            <div className="text-center py-8 text-gray-500">読み込み中...</div>
+                        ) : history.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                履歴はありません
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden border border-gray-200 rounded-lg">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用者</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">設置場所</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">貸与期間</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {history.map((record) => (
+                                            <tr key={record.id}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900">{getEmployeeName(record.employeeCode)}</div>
+                                                    <div className="text-xs text-gray-500">{record.employeeCode}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-900">{record.officeCode}</div>
+                                                    {/* Ideally map officeCode to Name if possible, but addressCode might be raw string or ID. 
+                                                        Assuming addressCode matches Address.addressCode */}
+                                                    <div className="text-xs text-gray-500">
+                                                        {addresses.find(a => a.addressCode === record.officeCode)?.officeName || ''}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {record.startDate || '?'} 〜 {record.endDate || '?'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left Column: User & Location */}
+                        <div className="space-y-6">
+                            <SectionHeader icon={<User size={18} />} title="使用者情報 (User Info)" />
 
-                    {/* Right Column: Contract & Dates */}
-                    <div className="space-y-6">
-                        <SectionHeader icon={<Calendar size={18} />} title="契約・日付 (Contract & Dates)" />
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                                <DetailRow label="社員名" value={employeeName} subValue={item.employeeId} />
+                                <DetailRow label="設置場所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
+                            </div>
 
-                        <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <DetailRow label="貸与日" value={item.lendDate} />
-                                <DetailRow label="返却日" value={item.returnDate} />
-                                <DetailRow label="受領提出日" value={item.receiptDate} />
-                                <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
+                            <SectionHeader icon={<Shield size={18} />} title="アカウント情報 (Account)" />
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                                <DetailRow label="SMARTアドレス帳ID" value={item.smartAddressId || '-'} />
+                                <DetailRow label="SMARTアドレス帳PW" value={item.smartAddressPw || '••••••••'} isSensitive />
                             </div>
                         </div>
 
-                        <SectionHeader icon={<FileText size={18} />} title="備考 (Notes)" />
-                        <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100 min-h-[100px]">
-                            <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
-                                {item.notes || <span className="text-gray-400 italic">備考なし</span>}
-                            </p>
+                        {/* Right Column: Contract & Dates */}
+                        <div className="space-y-6">
+                            <SectionHeader icon={<Calendar size={18} />} title="契約・日付 (Contract & Dates)" />
+
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <DetailRow label="貸与日" value={item.lendDate} />
+                                    <DetailRow label="返却日" value={item.returnDate} />
+                                    <DetailRow label="受領提出日" value={item.receiptDate} />
+                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
+                                </div>
+                            </div>
+
+                            <SectionHeader icon={<FileText size={18} />} title="備考 (Notes)" />
+                            <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100 min-h-[100px]">
+                                <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                                    {item.notes || <span className="text-gray-400 italic">備考なし</span>}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Footer / Meta */}
                 <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between">
