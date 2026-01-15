@@ -10,7 +10,7 @@ import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
 import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
 import { createEmployeeAction } from '@/app/actions/employee';
-import { updateIPhoneAction, updateFeaturePhoneAction } from '@/app/actions/device';
+import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction } from '@/app/actions/device';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -487,7 +487,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Specific implementations
     const addTablet = (item: Omit<Tablet, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('tablets', item, mapTabletToDb, mapTabletFromDb, setTablets, skipLog, skipToast);
-    const updateTablet = (item: Tablet, skipLog: boolean = false, skipToast: boolean = false) => updateItem('tablets', item, mapTabletToDb, tablets, setTablets, skipLog, skipToast);
+
+    const updateTablet = async (item: Tablet, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            // Use Server Action for Tablet updates to handle usage history
+            const { id, ...data } = item;
+            const result = await updateTabletAction(id, data);
+
+            const newItem = mapTabletFromDb(result);
+            setTablets(prev => prev.map(p => p.id === item.id ? newItem : p));
+
+            if (!skipToast) {
+                showToast('更新しました', 'success');
+            }
+        } catch (error: any) {
+            console.error('Failed to update Tablet:', error);
+            if (!skipToast) {
+                showToast('更新に失敗しました', 'error', error.message);
+            }
+            throw error;
+        }
+    };
     const deleteTablet = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('tablets', id, setTablets, skipLog, skipToast);
 
     const addIPhone = (item: Omit<IPhone, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('iphones', item, mapIPhoneToDb, mapIPhoneFromDb, setIPhones, skipLog, skipToast);

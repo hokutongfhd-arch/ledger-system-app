@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { IPhone, IPhoneUsageHistory, FeaturePhone, FeaturePhoneUsageHistory } from '@/features/devices/device.types';
+import { IPhone, IPhoneUsageHistory, FeaturePhone, FeaturePhoneUsageHistory, Tablet, TabletUsageHistory } from '@/features/devices/device.types';
 import { normalizePhoneNumber } from '@/lib/utils/phoneUtils';
 
 const getSupabaseAdmin = () => {
@@ -236,4 +236,101 @@ export async function getFeaturePhoneHistoryAction(featurePhoneId: string) {
         endDate: d.end_date,
         createdAt: d.created_at,
     } as FeaturePhoneUsageHistory));
+}
+
+// -----------------------------------------------------------------------------
+// Tablet Actions
+// -----------------------------------------------------------------------------
+
+// Simplified mapper for Tablet
+const mapTabletToDb = (t: Partial<Tablet>) => ({
+    terminal_code: t.terminalCode,
+    maker: t.maker,
+    model_number: t.modelNumber,
+    office_code: t.officeCode,
+    address_code: t.addressCode,
+    notes: t.notes,
+    lend_history: t.history,
+    status: t.status,
+    contract_years: t.contractYears,
+    employee_code: t.employeeCode,
+});
+
+export async function updateTabletAction(id: string, data: Partial<Tablet>) {
+    const supabase = getSupabaseAdmin();
+
+    // 1. Get Current Data
+    const { data: current, error: fetchError } = await supabase
+        .from('tablets')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !current) {
+        throw new Error('Device not found');
+    }
+
+    // 2. Check for User Change
+    // defined as employeeCode in Tablet Type
+    if (data.employeeCode && current.employee_code && data.employeeCode !== current.employee_code) {
+        // User changed, save history
+        const historyData = {
+            tablet_id: id,
+            employee_code: current.employee_code,
+            office_code: current.address_code,
+            start_date: '', // DB might not have lend_date for tablets
+            end_date: new Date().toISOString().split('T')[0],
+        };
+
+        const { error: historyError } = await supabase
+            .from('tablet_usage_history')
+            .insert(historyData);
+
+        if (historyError) {
+            console.error('Failed to save history:', historyError);
+        }
+    }
+
+    // 3. Update Device
+    const dbData = mapTabletToDb(data);
+
+    // Explicitly prevent terminal_code update
+    delete (dbData as any).terminal_code;
+
+    const { data: updated, error: updateError } = await supabase
+        .from('tablets')
+        .update(dbData)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (updateError) {
+        throw new Error(updateError.message);
+    }
+
+    return updated;
+}
+
+export async function getTabletHistoryAction(tabletId: string) {
+    const supabase = getSupabaseAdmin();
+
+    const { data, error } = await supabase
+        .from('tablet_usage_history')
+        .select('*')
+        .eq('tablet_id', tabletId)
+        .order('end_date', { ascending: false });
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return data.map((d: any) => ({
+        id: d.id,
+        tabletId: d.tablet_id,
+        employeeCode: d.employee_code,
+        officeCode: d.office_code,
+        startDate: d.start_date,
+        endDate: d.end_date,
+        createdAt: d.created_at,
+    } as TabletUsageHistory));
 }

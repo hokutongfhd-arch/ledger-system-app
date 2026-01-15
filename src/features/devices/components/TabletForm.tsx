@@ -113,6 +113,8 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 value={formData.terminalCode}
                                 onChange={handleChange}
                                 required
+                                readOnly={!!initialData?.id}
+                                className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('terminalCode')}
                             />
                             {errorFields.has('terminalCode') && <FormError>既に登録されている端末CDです</FormError>}

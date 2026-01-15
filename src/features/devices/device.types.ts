@@ -15,6 +15,17 @@ export interface Tablet {
     employeeCode: string;
 }
 
+
+export interface TabletUsageHistory {
+    id: string;
+    tabletId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
+}
+
 export interface IPhone {
     id: string;
     carrier: string;
