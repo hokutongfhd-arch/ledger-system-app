@@ -2,10 +2,19 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase Client with Service Role Key to bypass RLS for administrative view
+// Initialize Supabase Client with Service Role Key to bypass RLS fully.
+// This ensures the System Logs are visible even if the current user (e.g. Setup Account)
+// fails the specific 'is_admin()' RLS check.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!serviceRoleKey) {
+    console.error('CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing. Operation Logs cannot be fetched.');
+}
+
 const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    supabaseUrl,
+    serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // Fallback only to prevent crash, but will likely fail fetch if RLS is strict
 );
 
 export async function fetchOperationLogsServer(params: {
@@ -20,6 +29,7 @@ export async function fetchOperationLogsServer(params: {
     includeArchived?: boolean;
 }) {
     try {
+        // Use the Admin client (Service Role)
         let query = supabaseAdmin
             .from('logs')
             .select('*', { count: 'exact' });
@@ -61,6 +71,10 @@ export async function fetchOperationLogsServer(params: {
 
         if (error) {
             console.error('Fetch Operation Logs Error:', error);
+            // If error is 401/403, it means Key is invalid or RLS blocked Anon fallback
+            if (error.code === '42501' || error.message.includes('permission denied')) {
+                throw new Error('Access Denied: Service Role Key configuration issue.');
+            }
             throw new Error(error.message);
         }
 
