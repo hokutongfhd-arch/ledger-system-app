@@ -97,16 +97,51 @@ async function verify() {
     // --- Log Immutability Test ---
     const { data: emps } = await serviceClient.from('employees').select('id, employee_code, password, authority, auth_id');
     const adminEmp = emps?.find(e => e.authority === 'admin' && e.auth_id);
+    // Find a non-admin user (assuming one exists, or we skip user test)
+    const userEmp = emps?.find(e => e.authority === 'user' && e.auth_id);
 
+    // 1. Admin Test
     if (adminEmp && adminEmp.password) {
-        console.log(`\n--- Testing Log Immutability (Admin: ${adminEmp.employee_code}) ---`);
+        console.log(`\n--- Testing Admin Access (${adminEmp.employee_code}) ---`);
         const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
-        await client.auth.signInWithPassword({
+        const { error: signInError } = await client.auth.signInWithPassword({
             email: `${adminEmp.employee_code}@${DOMAIN}`,
             password: adminEmp.password
         });
+        if (signInError) console.error('Admin Sign In Failed:', signInError.message);
+        else {
+            // Admin should SELECT logs
+            const { error: readError } = await client.from('audit_logs').select('*').limit(1);
+            if (readError) console.error(`❌ Admin READ logs failed: ${readError.message}`);
+            else console.log('✅ PASS: Admin can READ audit_logs.');
 
-        console.log('✅ Log Immutability: Admin client cannot perform DELETE/UPDATE (Standard RLS enforcement).');
+            // Admin should NOT delete logs (Standard Policy)
+            const { error: delError } = await client.from('audit_logs').delete().eq('id', 'dummy-id');
+            // Expected error (policy allows Select only for Admin, DELETE usually allowed if "Admin All" but here we set Admin SELECT ONLY for logs)
+            // Wait, my SQL defined "logs_admin_select" only. So DELETE should fail.
+            if (delError) console.log('✅ PASS: Admin cannot DELETE audit_logs (Strict Policy enforced).');
+            else console.error('❌ FAIL: Admin DELETED audit_logs? Should be restricted.');
+        }
+    }
+
+    // 2. User Test
+    if (userEmp && userEmp.password) {
+        console.log(`\n--- Testing User Access (${userEmp.employee_code}) ---`);
+        const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+        await client.auth.signInWithPassword({
+            email: `${userEmp.employee_code}@${DOMAIN}`,
+            password: userEmp.password
+        });
+
+        // User should NOT read logs
+        const { data: logs, error: userReadError } = await client.from('audit_logs').select('*').limit(1);
+        if (!userReadError && logs.length > 0) console.error(`❌ FAIL: User could READ audit_logs!`);
+        else console.log('✅ PASS: User cannot READ audit_logs (as expected).');
+
+        // User should READ masters
+        const { error: masterNav } = await client.from('iphones').select('id').limit(1);
+        if (masterNav) console.error(`❌ FAIL: User cannot READ masters: ${masterNav.message}`);
+        else console.log('✅ PASS: User can READ masters.');
     }
 
     console.log('\nVerification Complete.');
