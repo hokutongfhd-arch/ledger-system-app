@@ -333,7 +333,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { user } = useAuth();
     const { showToast } = useToast();
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [t, i, f, r, e, a, ad] = await Promise.all([
                 supabase.from('tablets').select('*'),
@@ -365,11 +365,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
             console.error('Failed to fetch data from Supabase:', error);
         }
-    };
+    }, [supabase]);
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (user) {
+            fetchData();
+        }
+    }, [user, fetchData]);
 
     // Generic CRUD helpers
     const addItem = useCallback(async <T,>(
