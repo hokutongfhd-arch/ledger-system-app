@@ -1,13 +1,22 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { IPhone, IPhoneUsageHistory, FeaturePhone, FeaturePhoneUsageHistory, Tablet, TabletUsageHistory, Router, RouterUsageHistory } from '@/features/devices/device.types';
 import { normalizePhoneNumber } from '@/lib/utils/phoneUtils';
 
-const getSupabaseAdmin = () => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    return createClient(url, key);
+const getSupabase = async () => {
+    // Use Server Action Client to preserve User Context (auth.uid) for Triggers/RLS
+    try {
+        const cookieStore = await cookies();
+        return createServerActionClient({ cookies: () => cookieStore as any });
+    } catch (e) {
+        // Fallback to Service Role if cookies fail (unlikely in Server Action)
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        return createClient(url, key);
+    }
 };
 
 // Mapper (Simplified version of deviceService.mapIPhoneToDb)
@@ -49,7 +58,7 @@ const formatPhoneNumber = (phoneNumber: string) => {
 
 
 export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     // 1. Get Current Data
     const { data: current, error: fetchError } = await supabase
@@ -59,7 +68,7 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
         .single();
 
     if (fetchError || !current) {
-        throw new Error('Device not found');
+        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
     }
 
     // 2. Check for User Change
@@ -151,7 +160,7 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
 }
 
 export async function getIPhoneHistoryAction(iphoneId: string) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     const { data, error } = await supabase
         .from('iphone_usage_history')
@@ -196,7 +205,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
 });
 
 export async function updateFeaturePhoneAction(id: string, data: Partial<FeaturePhone>) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     // 1. Get Current Data
     const { data: current, error: fetchError } = await supabase
@@ -206,7 +215,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
         .single();
 
     if (fetchError || !current) {
-        throw new Error('Device not found');
+        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
     }
 
     // 2. Check for User Change
@@ -259,7 +268,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
 }
 
 export async function getFeaturePhoneHistoryAction(featurePhoneId: string) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     const { data, error } = await supabase
         .from('featurephone_usage_history')
@@ -301,7 +310,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
 });
 
 export async function updateTabletAction(id: string, data: Partial<Tablet>) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     // 1. Get Current Data
     const { data: current, error: fetchError } = await supabase
@@ -311,7 +320,7 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>) {
         .single();
 
     if (fetchError || !current) {
-        throw new Error('Device not found');
+        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
     }
 
     // 2. Check for User Change
@@ -357,7 +366,7 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>) {
 }
 
 export async function getTabletHistoryAction(tabletId: string) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     const { data, error } = await supabase
         .from('tablet_usage_history')
@@ -413,7 +422,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
 });
 
 export async function updateRouterAction(id: string, data: Partial<Router>) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     // 1. Get Current Data
     const { data: current, error: fetchError } = await supabase
@@ -423,7 +432,7 @@ export async function updateRouterAction(id: string, data: Partial<Router>) {
         .single();
 
     if (fetchError || !current) {
-        throw new Error('Device not found');
+        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
     }
 
     // 2. Check for User Change
@@ -471,7 +480,7 @@ export async function updateRouterAction(id: string, data: Partial<Router>) {
 }
 
 export async function getRouterHistoryAction(routerId: string) {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabase();
 
     const { data, error } = await supabase
         .from('router_usage_history')
