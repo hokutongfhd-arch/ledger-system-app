@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../../lib/supabaseClient';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Memo } from '../../../lib/types';
 
 export const useMemos = (employeeCode: string) => {
+    const supabase = createClientComponentClient();
     const [memos, setMemos] = useState<Memo[]>([]);
     const [loading, setLoading] = useState(false);
 
