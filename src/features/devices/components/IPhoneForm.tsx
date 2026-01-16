@@ -4,6 +4,7 @@ import type { IPhone } from '../device.types';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
+import { useAutoFocus } from '../../../hooks/useAutoFocus';
 import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
@@ -21,7 +22,11 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
     const { employees, addresses, iPhones } = useData();
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const managementNumberRef = useRef<HTMLInputElement>(null);
-    const phoneNumberRef = useRef<HTMLInputElement>(null);
+    const phonePart1Ref = useRef<HTMLInputElement>(null);
+    const phonePart2Ref = useRef<HTMLInputElement>(null);
+    const phonePart3Ref = useRef<HTMLInputElement>(null);
+
+    const { handleAutoTab } = useAutoFocus();
 
     const [formData, setFormData] = useState<Omit<IPhone, 'id'> & { id?: string }>({
         id: '',
@@ -138,6 +143,13 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
             setErrorFields(next);
         }
 
+        if (name === 'part1') {
+            if (onlyNums.length >= 3) phonePart2Ref.current?.focus();
+        }
+        if (name === 'part2') {
+            if (onlyNums.length >= 4) phonePart3Ref.current?.focus();
+        }
+
         const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
         setFormData(prev => ({ ...prev, phoneNumber: combined }));
     };
@@ -164,7 +176,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         );
         if (isPhoneNumberDuplicate) {
             newErrorFields.add('phoneNumber');
-            if (!firstErrorField) firstErrorField = phoneNumberRef.current;
+            if (!firstErrorField) firstErrorField = phonePart1Ref.current;
         }
 
         if (newErrorFields.size > 0) {
@@ -219,7 +231,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                             <FormLabel required>電話番号</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
-                                    ref={phoneNumberRef}
+                                    ref={phonePart1Ref}
                                     type="text"
                                     name="part1"
                                     value={phoneParts.part1}
@@ -232,6 +244,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={phonePart2Ref}
                                     type="text"
                                     name="part2"
                                     value={phoneParts.part2}
@@ -244,6 +257,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={phonePart3Ref}
                                     type="text"
                                     name="part3"
                                     value={phoneParts.part3}

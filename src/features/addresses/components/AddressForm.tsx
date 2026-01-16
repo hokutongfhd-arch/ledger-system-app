@@ -4,6 +4,7 @@ import type { Address } from '../address.types';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
+import { useAutoFocus } from '../../../hooks/useAutoFocus';
 import { Input } from '../../../components/ui/Input';
 import { TextArea } from '../../../components/ui/TextArea';
 import { FormLabel, FormError } from '../../../components/ui/Form';
@@ -39,6 +40,19 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         labelAddress: '',
         attentionNote: '',
     });
+
+    const telPart1Ref = useRef<HTMLInputElement>(null);
+    const telPart2Ref = useRef<HTMLInputElement>(null);
+    const telPart3Ref = useRef<HTMLInputElement>(null);
+    const faxPart1Ref = useRef<HTMLInputElement>(null);
+    const faxPart2Ref = useRef<HTMLInputElement>(null);
+    const faxPart3Ref = useRef<HTMLInputElement>(null);
+    const zipPart1Ref = useRef<HTMLInputElement>(null);
+    const zipPart2Ref = useRef<HTMLInputElement>(null);
+    const labelZipPart1Ref = useRef<HTMLInputElement>(null);
+    const labelZipPart2Ref = useRef<HTMLInputElement>(null);
+
+    const { handleAutoTab } = useAutoFocus();
 
     const [telParts, setTelParts] = useState({ part1: '', part2: '', part3: '' });
     const [faxParts, setFaxParts] = useState({ part1: '', part2: '', part3: '' });
@@ -150,6 +164,10 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         const onlyNums = value.replace(/[^0-9]/g, '');
         const newParts = { ...telParts, [name]: onlyNums };
         setTelParts(newParts);
+
+        if (name === 'part1') handleAutoTab(e, 3, telPart2Ref);
+        if (name === 'part2') handleAutoTab(e, 4, telPart3Ref);
+
         const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
         setFormData(prev => ({ ...prev, tel: combined }));
     };
@@ -159,6 +177,10 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         const onlyNums = value.replace(/[^0-9]/g, '');
         const newParts = { ...faxParts, [name]: onlyNums };
         setFaxParts(newParts);
+
+        if (name === 'part1') handleAutoTab(e, 3, faxPart2Ref);
+        if (name === 'part2') handleAutoTab(e, 4, faxPart3Ref);
+
         const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
         setFormData(prev => ({ ...prev, fax: combined }));
     };
@@ -168,6 +190,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         const onlyNums = value.replace(/[^0-9]/g, '');
         const newParts = { ...zipParts, [name]: onlyNums };
         setZipParts(newParts);
+
+        if (name === 'part1') handleAutoTab(e, 3, zipPart2Ref);
+
         const combined = `${newParts.part1}-${newParts.part2}`;
         setFormData(prev => ({ ...prev, zipCode: combined }));
     };
@@ -177,6 +202,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         const onlyNums = value.replace(/[^0-9]/g, '');
         const newParts = { ...labelZipParts, [name]: onlyNums };
         setLabelZipParts(newParts);
+
+        if (name === 'part1') handleAutoTab(e, 3, labelZipPart2Ref);
+
         const combined = `${newParts.part1}-${newParts.part2}`;
         setFormData(prev => ({ ...prev, labelZip: combined }));
     };
@@ -255,6 +283,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             <FormLabel>ＴＥＬ</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
+                                    ref={telPart1Ref}
                                     name="part1"
                                     value={telParts.part1}
                                     onChange={handleTelChange}
@@ -264,6 +293,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={telPart2Ref}
                                     name="part2"
                                     value={telParts.part2}
                                     onChange={handleTelChange}
@@ -273,6 +303,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={telPart3Ref}
                                     name="part3"
                                     value={telParts.part3}
                                     onChange={handleTelChange}
@@ -286,6 +317,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             <FormLabel>ＦＡＸ</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
+                                    ref={faxPart1Ref}
                                     name="part1"
                                     value={faxParts.part1}
                                     onChange={handleFaxChange}
@@ -295,6 +327,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={faxPart2Ref}
                                     name="part2"
                                     value={faxParts.part2}
                                     onChange={handleFaxChange}
@@ -304,6 +337,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={faxPart3Ref}
                                     name="part3"
                                     value={faxParts.part3}
                                     onChange={handleFaxChange}
@@ -321,6 +355,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             <FormLabel>〒</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
+                                    ref={zipPart1Ref}
                                     name="part1"
                                     value={zipParts.part1}
                                     onChange={handleZipChange}
@@ -330,6 +365,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={zipPart2Ref}
                                     name="part2"
                                     value={zipParts.part2}
                                     onChange={handleZipChange}
@@ -399,6 +435,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             <FormLabel>宛名ラベル用〒</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
+                                    ref={labelZipPart1Ref}
                                     name="part1"
                                     value={labelZipParts.part1}
                                     onChange={handleLabelZipChange}
@@ -408,6 +445,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
+                                    ref={labelZipPart2Ref}
                                     name="part2"
                                     value={labelZipParts.part2}
                                     onChange={handleLabelZipChange}

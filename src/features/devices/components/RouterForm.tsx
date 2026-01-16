@@ -4,6 +4,7 @@ import type { Router } from '../device.types';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
+import { useAutoFocus } from '../../../hooks/useAutoFocus';
 import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
@@ -22,6 +23,9 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const terminalCodeRef = useRef<HTMLInputElement>(null);
     const simNumberRef = useRef<HTMLInputElement>(null);
+    const simPart2Ref = useRef<HTMLInputElement>(null);
+    const simPart3Ref = useRef<HTMLInputElement>(null);
+    const { handleAutoTab } = useAutoFocus();
     const [formData, setFormData] = useState<Omit<Router, 'id'>>({
         no: '',
         biller: '',
@@ -168,6 +172,10 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         } else {
             const newParts = { ...phoneParts, [name]: onlyNums };
             setPhoneParts(newParts);
+
+            if (name === 'part1') handleAutoTab(e, 3, simPart2Ref);
+            if (name === 'part2') handleAutoTab(e, 4, simPart3Ref);
+
             const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
             setFormData(prev => ({ ...prev, simNumber: combined }));
         }
@@ -357,6 +365,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                     <span className="text-gray-500">-</span>
                                     <Input
                                         type="text"
+                                        ref={simPart2Ref}
                                         name="part2"
                                         value={phoneParts.part2}
                                         onChange={handlePhoneChange}
@@ -368,6 +377,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                     <span className="text-gray-500">-</span>
                                     <Input
                                         type="text"
+                                        ref={simPart3Ref}
                                         name="part3"
                                         value={phoneParts.part3}
                                         onChange={handlePhoneChange}
