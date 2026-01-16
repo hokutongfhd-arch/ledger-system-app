@@ -182,13 +182,18 @@ function EmployeeListContent() {
                 const password = toHalfWidth(rawPassword);
 
                 // Password Validation (8+ digits, numeric only)
+                const passwordErrors = [];
                 if (password.length < 8) {
-                    errors.push(`${i + 2}行目: パスワードは8文字以上である必要があります`);
-                    errorCount++;
-                    continue;
+                    passwordErrors.push('パスワードは8文字以上である必要があります');
                 }
                 if (!/^[0-9]+$/.test(password)) {
-                    errors.push(`${i + 2}行目: パスワードは半角数字のみ使用可能です`);
+                    passwordErrors.push('パスワードは半角数字のみ使用可能です');
+                }
+
+                if (passwordErrors.length > 0) {
+                    passwordErrors.forEach(err => {
+                        errors.push(`${i + 2}行目: ${err}`);
+                    });
                     errorCount++;
                     continue;
                 }

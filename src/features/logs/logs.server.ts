@@ -177,11 +177,30 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
 
         if (recentError) console.warn('Recent Anomalies Error:', recentError);
 
+        let recentAnomalies = recentAnomaliesData || [];
+
+        // Resolve responder names for recent anomalies
+        const responderIds = Array.from(new Set(recentAnomalies.filter((l: any) => l.acknowledged_by).map((l: any) => l.acknowledged_by)));
+        if (responderIds.length > 0) {
+            const { data: employees } = await supabase
+                .from('employees')
+                .select('auth_id, name')
+                .in('auth_id', responderIds);
+
+            if (employees) {
+                const nameMap = new Map(employees.map(e => [e.auth_id, e.name]));
+                recentAnomalies = recentAnomalies.map((l: any) => ({
+                    ...l,
+                    acknowledged_by_name: l.acknowledged_by ? nameMap.get(l.acknowledged_by) : undefined
+                }));
+            }
+        }
+
         return {
             logs: logs || [],
             loginFailcount24h: loginFail24h || 0,
             unacknowledgedAnomalyCount: unackCount || 0,
-            recentAnomalies: recentAnomaliesData || [],
+            recentAnomalies: recentAnomalies,
             error: null
         };
 
@@ -240,7 +259,20 @@ export async function fetchAuditLogByIdServer(id: string) {
             .single();
 
         if (error) throw error;
-        return { log: data, error: null };
+
+        let log = data;
+        if (log && log.acknowledged_by) {
+            const { data: emp } = await supabase
+                .from('employees')
+                .select('name')
+                .eq('auth_id', log.acknowledged_by)
+                .single();
+            if (emp) {
+                log = { ...log, acknowledged_by_name: emp.name };
+            }
+        }
+
+        return { log: log, error: null };
     } catch (error: any) {
         console.error('Fetch Audit Log by ID Error:', error);
         return { log: null, error: error.message };
