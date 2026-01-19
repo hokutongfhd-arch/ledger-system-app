@@ -1,15 +1,16 @@
 'use client';
 
+import { useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { AlertCircle, ChevronRight } from 'lucide-react';
+
+import { useData } from '../../../features/context/DataContext';
 import { useAuth } from '../../../features/context/AuthContext';
 import { useSystemAlerts } from '../../../features/notifications/hooks/useSystemAlerts';
-import { AlertCircle, ChevronRight } from 'lucide-react';
 import { UserProfileCard } from '../../../features/employees/components/UserProfileCard';
 import { UserDeviceList } from '../../../features/employees/components/UserDeviceList';
 import { MemoPad } from '../../../features/dashboard/components/MemoPad';
-import { useEffect } from 'react';
-import toast from 'react-hot-toast';
-
 
 export default function UserDashboardPage() {
     const { user } = useAuth();
@@ -28,6 +29,7 @@ export default function UserDashboardPage() {
 
 function UserDashboardContent() {
     const { user } = useAuth();
+    const { iPhones, featurePhones, tablets, routers } = useData();
     const alerts = useSystemAlerts();
     const router = useRouter();
 
@@ -36,7 +38,28 @@ function UserDashboardContent() {
     }, []);
 
     // Filter alerts for the current user (Employee record)
-    const myAlerts = user ? alerts.filter(a => a.recordId === user.id && (a.type === 'unregistered_area' || a.type === 'unregistered_address')) : [];
+    const myAlerts = useMemo(() => {
+        if (!user) return [];
+
+        // 1. Identify devices assigned to this user
+        const userDeviceIds = new Set<string>();
+        iPhones.forEach(d => { if (d.employeeId === user.code) userDeviceIds.add(d.id); });
+        featurePhones.forEach(d => { if (d.employeeId === user.code) userDeviceIds.add(d.id); });
+        tablets.forEach(d => { if (d.employeeCode === user.code) userDeviceIds.add(d.id); });
+        routers.forEach(d => { if (d.employeeCode === user.code) userDeviceIds.add(d.id); });
+
+        return alerts.filter(alert => {
+            // Case A: Alert is directly for the employee record
+            // CAUTION: alert.recordId for Employee alerts is the database ID (uuid), not the employee code.
+            // But we have user.id (uuid) from AuthContext.
+            if (alert.source === 'Employee' && alert.recordId === user.id) return true;
+
+            // Case B: Alert is for a device assigned to the employee
+            if (userDeviceIds.has(alert.recordId)) return true;
+
+            return false;
+        });
+    }, [user, alerts, iPhones, featurePhones, tablets, routers]);
 
     const handleAlertClick = (path: string) => {
         router.push(path);
