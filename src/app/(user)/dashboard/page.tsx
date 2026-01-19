@@ -65,6 +65,20 @@ function UserDashboardContent() {
         router.push(path);
     };
 
+    // Helper to map AlertSource to Japanese Label
+    const getSourceLabel = (source: string) => {
+        switch (source) {
+            case 'iPhone': return 'iPhone';
+            case 'FeaturePhone': return 'ガラホ';
+            case 'Tablet': return 'タブレット';
+            case 'Router': return 'ルーター';
+            case 'Employee': return '社員';
+            case 'Area': return 'エリア';
+            case 'Address': return '事業所';
+            default: return source;
+        }
+    };
+
     return (
         <div className="font-sans text-pulsar-text-main">
             {/* Header Area */}
@@ -125,6 +139,9 @@ function UserDashboardContent() {
                                                 <span className="text-xs font-bold px-2 py-0.5 rounded text-white bg-accent-coral">
                                                     要確認
                                                 </span>
+                                                <span className="text-xs font-bold px-2 py-0.5 rounded text-white bg-slate-500">
+                                                    {getSourceLabel(alert.source)}
+                                                </span>
                                                 <span className="text-xs text-text-secondary">登録データ不整合</span>
                                             </div>
                                             <p className="text-sm font-medium text-text-main">{alert.message}</p>
@@ -137,7 +154,6 @@ function UserDashboardContent() {
                     </div>
                 </div>
             </div>
-
             {/* Memo Section */}
             <div className="space-y-6 mt-12 mb-12">
                 <h2 className="text-2xl font-bold text-text-main font-display border-l-4 border-secondary-ocean pl-4 flex items-center gap-3">
@@ -147,6 +163,6 @@ function UserDashboardContent() {
                     {user && <MemoPad employeeCode={user.code} />}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
