@@ -315,11 +315,10 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 onChange={handleChange}
                                 placeholder="選択してください"
                             >
-                                <option value="KDDI">KDDI</option>
-                                <option value="Au">Au</option>
-                                <option value="Softbank">Softbank</option>
-                                <option value="Docomo">Docomo</option>
-                                <option value="Rakuten">Rakuten</option>
+                                <option value="au・wimax2+">au・wimax2+</option>
+                                <option value="au">au</option>
+                                <option value="docomo(iij)">docomo(iij)</option>
+                                <option value="SoftBank">SoftBank</option>
                             </Select>
                         </div>
                         <div>

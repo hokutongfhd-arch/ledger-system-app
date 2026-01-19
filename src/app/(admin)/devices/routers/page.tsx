@@ -347,6 +347,14 @@ function RouterListContent() {
 
         // Data Validation (Status dropdown) - column X (index 24)
         for (let i = 2; i <= totalRows + 1; i++) {
+            // 通信キャリア - column D (index 4)
+            worksheet.getCell(i, 4).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"au・wimax2+,au,docomo(iij),SoftBank"']
+            };
+
+            // 状況 - column X (index 24)
             worksheet.getCell(i, 24).dataValidation = {
                 type: 'list',
                 allowBlank: true,

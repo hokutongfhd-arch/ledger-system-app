@@ -286,7 +286,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             >
                                 <option value="KDDI">KDDI</option>
 
-                                <option value="Softbank">Softbank</option>
+                                <option value="SoftBank">SoftBank</option>
                                 <option value="Docomo">Docomo</option>
                                 <option value="Rakuten">Rakuten</option>
                                 <option value="その他">その他</option>

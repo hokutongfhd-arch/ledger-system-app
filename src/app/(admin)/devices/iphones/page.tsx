@@ -352,7 +352,7 @@ function IPhoneListContent() {
             worksheet.getCell(i, 1).dataValidation = {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"KDDI,Softbank,Docomo,Rakuten,その他"']
+                formulae: ['"KDDI,SoftBank,Docomo,Rakuten,その他"']
             };
         }
 
