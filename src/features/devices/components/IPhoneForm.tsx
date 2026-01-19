@@ -30,7 +30,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
 
     const [formData, setFormData] = useState<Omit<IPhone, 'id'> & { id?: string }>({
         id: '',
-        carrier: '',
+        carrier: 'KDDI',
         phoneNumber: '',
         managementNumber: '',
         employeeId: '',
@@ -292,10 +292,11 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 placeholder="選択してください"
                             >
                                 <option value="KDDI">KDDI</option>
-                                <option value="Au">Au</option>
+
                                 <option value="Softbank">Softbank</option>
                                 <option value="Docomo">Docomo</option>
                                 <option value="Rakuten">Rakuten</option>
+                                <option value="その他">その他</option>
                             </Select>
                         </div>
 

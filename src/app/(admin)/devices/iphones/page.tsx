@@ -196,12 +196,20 @@ function IPhoneListContent() {
                     return String(val).trim().replace(/\//g, '-');
                 };
 
+                const formatAddressCode = (code: string) => {
+                    const cleanCode = String(code || '').trim();
+                    if (cleanCode.length === 6 && /^\d+$/.test(cleanCode)) {
+                        return `${cleanCode.slice(0, 4)}-${cleanCode.slice(4)}`;
+                    }
+                    return cleanCode;
+                };
+
                 const newIPhone: Omit<IPhone, 'id'> & { id?: string } = {
                     carrier: String(rowData['キャリア'] || ''),
                     phoneNumber: phoneNumber,
                     managementNumber: managementNumber,
                     employeeId: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['事業所コード'] || ''),
+                    addressCode: formatAddressCode(rowData['事業所コード']),
                     smartAddressId: String(rowData['SMARTアドレス帳ID'] || ''),
                     smartAddressPw: String(rowData['SMARTアドレス帳PW'] || ''),
                     lendDate: formatDate(rowData['貸与日']),
@@ -339,6 +347,15 @@ function IPhoneListContent() {
 
         const totalRows = 1000;
 
+        // Data Validation (Carrier dropdown) - column A (index 1)
+        for (let i = 2; i <= totalRows + 1; i++) {
+            worksheet.getCell(i, 1).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"KDDI,Softbank,Docomo,Rakuten,その他"']
+            };
+        }
+
         // Data Validation (Status dropdown) - column N (index 14)
         for (let i = 2; i <= totalRows + 1; i++) {
             worksheet.getCell(i, 14).dataValidation = {
@@ -350,6 +367,8 @@ function IPhoneListContent() {
 
         // Format phone number column as text to prevent dropping leading zero
         worksheet.getColumn(2).numFmt = '@';
+        // Format address code column as text
+        worksheet.getColumn(7).numFmt = '@';
 
         // Set column widths
         worksheet.columns.forEach(col => {

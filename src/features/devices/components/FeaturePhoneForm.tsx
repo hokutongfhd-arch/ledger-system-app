@@ -29,7 +29,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
     const { handleAutoTab } = useAutoFocus();
     const [formData, setFormData] = useState<Omit<FeaturePhone, 'id'> & { id?: string }>({
         id: '',
-        carrier: '',
+        carrier: 'KDDI',
         phoneNumber: '',
         managementNumber: '',
         employeeId: '',
@@ -285,10 +285,11 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 placeholder="選択してください"
                             >
                                 <option value="KDDI">KDDI</option>
-                                <option value="Au">Au</option>
+
                                 <option value="Softbank">Softbank</option>
                                 <option value="Docomo">Docomo</option>
                                 <option value="Rakuten">Rakuten</option>
+                                <option value="その他">その他</option>
                             </Select>
                         </div>
                         <div>

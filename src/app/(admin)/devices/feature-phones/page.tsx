@@ -196,12 +196,20 @@ function FeaturePhoneListContent() {
                 processedManagementNumbers.add(managementNumber);
                 processedPhoneNumbers.add(normalizedPhone);
 
+                const formatAddressCode = (code: string) => {
+                    const cleanCode = String(code || '').trim();
+                    if (cleanCode.length === 6 && /^\d+$/.test(cleanCode)) {
+                        return `${cleanCode.slice(0, 4)}-${cleanCode.slice(4)}`;
+                    }
+                    return cleanCode;
+                };
+
                 const newFeaturePhone: Omit<FeaturePhone, 'id'> = {
                     carrier: String(rowData['キャリア'] || ''),
                     phoneNumber: phoneNumber,
                     managementNumber: managementNumber,
                     employeeId: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['事業所コード'] || ''),
+                    addressCode: formatAddressCode(rowData['事業所コード']),
                     lendDate: formatDate(rowData['貸与日']),
                     receiptDate: formatDate(rowData['受領書提出日']),
                     notes: String(rowData['備考'] || ''),
@@ -334,6 +342,15 @@ function FeaturePhoneListContent() {
 
         const totalRows = 1000;
 
+        // Data Validation (Carrier dropdown) - column A (index 1)
+        for (let i = 2; i <= totalRows + 1; i++) {
+            worksheet.getCell(i, 1).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"KDDI,Softbank,Docomo,Rakuten,その他"']
+            };
+        }
+
         // Data Validation (Status dropdown) - column M (index 13)
         for (let i = 2; i <= totalRows + 1; i++) {
             worksheet.getCell(i, 13).dataValidation = {
@@ -345,6 +362,8 @@ function FeaturePhoneListContent() {
 
         // Format phone number column as text to prevent dropping leading zero
         worksheet.getColumn(2).numFmt = '@';
+        // Format address code column as text
+        worksheet.getColumn(7).numFmt = '@';
 
         // Set column widths
         worksheet.columns.forEach(col => {
