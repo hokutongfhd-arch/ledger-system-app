@@ -22,7 +22,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
     const terminalCodeRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState<Omit<Tablet, 'id'>>({
         terminalCode: '',
-        maker: '',
+        maker: '富士通',
         modelNumber: '',
         officeCode: '',
         addressCode: '',
