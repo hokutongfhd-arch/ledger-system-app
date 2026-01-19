@@ -128,7 +128,7 @@ export const useSystemAlerts = () => {
                     id: `unreg-addr-${source}-${item.id}`,
                     type: 'unregistered_address',
                     source,
-                    message: `登録されていない住所コード「${item.addressCode}」が使用されています`,
+                    message: `登録されていない事業所コード「${item.addressCode}」が使用されています`,
                     recordId: item.id,
                     path: `${path}?highlight=${item.id}&field=addressCode`
                 });
@@ -193,28 +193,28 @@ export const useSystemAlerts = () => {
 
         checkDuplicates(employees, 'code', 'Employee', '/masters/employees', '社員コード');
         checkDuplicates(areas, 'areaCode', 'Area', '/masters/areas', 'エリアコード');
-        checkDuplicates(addresses, 'addressCode', 'Address', '/masters/addresses', '住所コード');
+        checkDuplicates(addresses, 'addressCode', 'Address', '/masters/addresses', '事業所コード');
 
         // 6. Missing Code Checks
         // iPhone
         checkMissing(iPhones, 'employeeId', 'iPhone', '/devices/iphones', '社員コード', 'missing_employee_code');
-        checkMissing(iPhones, 'addressCode', 'iPhone', '/devices/iphones', '住所コード', 'missing_address_code');
+        checkMissing(iPhones, 'addressCode', 'iPhone', '/devices/iphones', '事業所コード', 'missing_address_code');
 
         // FeaturePhone
         checkMissing(featurePhones, 'employeeId', 'FeaturePhone', '/devices/feature-phones', '社員コード', 'missing_employee_code');
-        checkMissing(featurePhones, 'addressCode', 'FeaturePhone', '/devices/feature-phones', '住所コード', 'missing_address_code');
+        checkMissing(featurePhones, 'addressCode', 'FeaturePhone', '/devices/feature-phones', '事業所コード', 'missing_address_code');
 
         // Tablet
         checkMissing(tablets, 'employeeCode', 'Tablet', '/devices/tablets', '社員コード', 'missing_employee_code');
-        checkMissing(tablets, 'addressCode', 'Tablet', '/devices/tablets', '住所コード', 'missing_address_code');
+        checkMissing(tablets, 'addressCode', 'Tablet', '/devices/tablets', '事業所コード', 'missing_address_code');
 
         // Router
         checkMissing(routers, 'employeeCode', 'Router', '/devices/routers', '社員コード', 'missing_employee_code');
-        checkMissing(routers, 'addressCode', 'Router', '/devices/routers', '住所コード', 'missing_address_code');
+        checkMissing(routers, 'addressCode', 'Router', '/devices/routers', '事業所コード', 'missing_address_code');
 
         // Employee
         checkMissing(employees, 'areaCode', 'Employee', '/masters/employees', 'エリアコード', 'missing_area_code');
-        checkMissing(employees, 'addressCode', 'Employee', '/masters/employees', '住所コード', 'missing_address_code');
+        checkMissing(employees, 'addressCode', 'Employee', '/masters/employees', '事業所コード', 'missing_address_code');
 
         // 7. Contract Expiration Check
         const checkExpiry = (item: any, source: AlertSource, path: string) => {
