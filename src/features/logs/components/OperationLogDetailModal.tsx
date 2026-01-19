@@ -21,7 +21,7 @@ const TABLE_LABELS: Record<string, string> = {
 const FIELD_LABELS: Record<string, string> = {
     // Common
     id: 'ID',
-    status: 'ステータス',
+    status: '状況',
     notes: '備考',
     no: '№',
 
@@ -29,8 +29,8 @@ const FIELD_LABELS: Record<string, string> = {
     name: '氏名',
     nameKana: '氏名（カナ）',
     name_kana: '氏名（カナ）',
-    code: '社員番号',
-    employee_code: '社員番号',
+    code: '社員名',
+    employee_code: '社員名',
     email: 'メールアドレス',
     role: '権限',
     companyNo: '会社番号',
@@ -77,10 +77,10 @@ const FIELD_LABELS: Record<string, string> = {
     return_date: '返却日',
     costCompany: '負担先会社',
     cost_company: '負担先会社',
-    employeeId: '社員コード',
-    employee_id: '社員コード',
-    addressCode: '住所コード',
-    address_code: '住所コード',
+    employeeId: '社員名',
+    employee_id: '社員名',
+    addressCode: '事業所',
+    address_code: '事業所',
 
     // Tablet / Router Specific
     terminalCode: '端末CD',
@@ -161,6 +161,43 @@ const OP_MAP: Record<string, { label: string; color: string; icon: React.ReactNo
     DELETE: { label: '削除', color: 'text-red-600 bg-red-50', icon: <MinusCircle size={16} /> },
 };
 
+const STATUS_VALUE_MAP: Record<string, string> = {
+    'available': '在庫',
+    'in-use': '使用中',
+    'broken': '故障',
+    'discarded': '廃棄',
+    'repairing': '修理中',
+    'backup': '予備機'
+};
+
+
+
+const formatLogValue = (key: string, value: any): React.ReactNode => {
+    // 1. Handle explicit null/undefined
+    if (value === undefined || value === null) return <span className="text-gray-400 italic font-normal text-[10px]">(なし)</span>;
+
+    const strVal = String(value);
+
+    // 2. Handle Status Translation
+    if (key === 'status') {
+        return STATUS_VALUE_MAP[strVal] || strVal;
+    }
+
+    // 3. Handle "Return" (Empty values for specific fields)
+    // When Employee or Office is set to "Return" (unassigned), the value becomes empty.
+    const RETURN_FIELDS = ['employee_code', 'employeeId', 'employee_id', 'address_code', 'addressCode', 'office_code', 'officeCode'];
+    if (RETURN_FIELDS.includes(key) && strVal === '') {
+        return '返却';
+    }
+
+    // 4. Handle other empty strings (if not caught above)
+    if (strVal === '') {
+        return <span className="text-gray-400 italic font-normal text-[10px]">(なし)</span>;
+    }
+
+    return strVal;
+};
+
 export const OperationLogDetailModal: React.FC<OperationLogDetailModalProps> = ({ log, isOpen, onClose }) => {
     if (!isOpen || !log) return null;
 
@@ -206,7 +243,7 @@ export const OperationLogDetailModal: React.FC<OperationLogDetailModalProps> = (
                                 </td>
                                 <td className="px-4 py-2">
                                     <div className="text-red-600 bg-red-50 px-2 py-1 rounded line-through break-all whitespace-pre-wrap">
-                                        {log.oldData?.[key] !== undefined ? String(log.oldData[key]) : <span className="text-gray-400 italic font-normal text-[10px]">(なし)</span>}
+                                        {formatLogValue(key, log.oldData?.[key])}
                                     </div>
                                 </td>
                                 <td className="px-2 py-2 text-center text-gray-400">
@@ -214,7 +251,7 @@ export const OperationLogDetailModal: React.FC<OperationLogDetailModalProps> = (
                                 </td>
                                 <td className="px-4 py-2">
                                     <div className="text-green-700 bg-green-50 px-2 py-1 rounded font-medium break-all whitespace-pre-wrap">
-                                        {log.newData?.[key] !== undefined ? String(log.newData[key]) : <span className="text-gray-400 italic font-normal text-[10px]">(なし)</span>}
+                                        {formatLogValue(key, log.newData?.[key])}
                                     </div>
                                 </td>
                             </tr>
@@ -237,7 +274,7 @@ export const OperationLogDetailModal: React.FC<OperationLogDetailModalProps> = (
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-gray-800">操作ログ詳細</h2>
-                            <p className="text-xs text-gray-500 font-mono italic">ID: {log.id}</p>
+                            {/* <p className="text-xs text-gray-500 font-mono italic">ID: {log.id}</p> */}
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors group">
