@@ -7,80 +7,64 @@ import { useData } from '@/features/context/DataContext';
 import { useAuth } from '@/features/context/AuthContext';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
-import { Download, Plus, Upload, X, FileText, Trash2 } from 'lucide-react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Modal } from '@/components/ui/Modal';
-import { supabase } from '@/lib/supabaseClient';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, TouchSensor } from '@dnd-kit/core';
+import { Download, Plus, Upload, X, FileText, Trash2, GripVertical } from 'lucide-react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { TitleFragment, ManualItem, ManualFile } from '@/features/manuals/manual.types';
+import { supabase } from '@/lib/supabaseClient';
 
-
-interface ManualFile {
-    name: string;
-    url: string;
-}
-
-interface ManualItem {
-    id: string;
-    title: string;
-    files: ManualFile[];
-    updatedAt: string;
-}
-
-interface TitleFragment {
-    id: string; // Unique for Table row
+const SortableFileItem = ({
+    file,
+    fileIndex,
+    itemId,
+    onDelete,
+    onLinkClick
+}: {
+    file: { name: string; url: string };
+    fileIndex: number;
     itemId: string;
-    title: string;
-    files: Array<ManualFile & { originalIndex: number, parentId: string }>;
-    updatedAt: string;
-}
-
-// Sortable Item Component
-const SortableFileItem = ({ file, fileIndex, itemId, onDelete, onLinkClick }: { file: ManualFile, fileIndex: number, itemId: string, onDelete: (itemId: string, index: number) => void, onLinkClick: (e: React.MouseEvent, url: string, name: string) => void }) => {
+    onDelete: (itemId: string, index: number) => void;
+    onLinkClick: (e: React.MouseEvent, url: string, name: string) => void;
+}) => {
     const {
         attributes,
         listeners,
         setNodeRef,
         transform,
         transition,
-        isDragging
     } = useSortable({ id: `${itemId}-${file.name}-${fileIndex}` });
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        zIndex: isDragging ? 1000 : 'auto',
-        opacity: isDragging ? 0.5 : 1,
     };
 
-    const pointerDownTimeRef = useRef<number>(0);
-
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 group w-fit touch-none my-1">
-            <a
-                href={file.url}
-                download={file.name}
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline cursor-grab active:cursor-grabbing"
-                onPointerDown={() => {
-                    pointerDownTimeRef.current = Date.now();
-                }}
-                onClick={(e) => {
-                    if (Date.now() - pointerDownTimeRef.current > 200) {
-                        e.preventDefault();
-                        return;
-                    }
-                    onLinkClick(e, file.url, file.name);
-                }}
-            >
-                <span className="truncate">{file.name}</span>
-                <Download size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-            </a>
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className="group flex items-center justify-between p-2 bg-white border border-border rounded-md hover:shadow-sm transition-all"
+        >
+            <div className="flex items-center gap-2 overflow-hidden">
+                <div className="text-gray-400 cursor-grab active:cursor-grabbing">
+                    <GripVertical size={14} />
+                </div>
+                <a
+                    href={file.url}
+                    onClick={(e) => onLinkClick(e, file.url, file.name)}
+                    className="text-sm text-blue-600 hover:underline truncate flex items-center gap-2"
+                >
+                    <FileText size={14} />
+                    {file.name}
+                </a>
+            </div>
             <button
-                onClick={(e) => {
-                    e.stopPropagation(); // Prevent drag start when clicking delete
-                    onDelete(itemId, fileIndex);
-                }}
+                onClick={() => onDelete(itemId, fileIndex)}
                 className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
                 title="削除"
             >
@@ -129,15 +113,22 @@ const DraggableRow = ({
         <tr
             ref={setNodeRef}
             style={style}
-            {...attributes}
-            {...listeners}
             className={clsx(
-                "transition-colors touch-none cursor-grab active:cursor-grabbing",
+                "transition-colors",
                 isDragging ? "bg-accent-electric/20 shadow-lg z-50" : "hover:bg-accent-electric/5"
             )}
         >
             <td className="px-6 py-4 text-sm font-medium text-ink align-top">
-                {fragment.title}
+                <div className="flex items-start gap-3">
+                    <button
+                        {...attributes}
+                        {...listeners}
+                        className="mt-0.5 text-gray-400 hover:text-blue-600 cursor-grab active:cursor-grabbing touch-none"
+                    >
+                        <GripVertical size={16} />
+                    </button>
+                    {fragment.title}
+                </div>
             </td>
             <td className="px-6 py-4 text-sm text-ink-light whitespace-normal">
                 <DndContext
@@ -200,6 +191,7 @@ const DeviceManualListContent = () => {
             const { data, error } = await supabase
                 .from('device_manuals')
                 .select('*')
+                .order('display_order', { ascending: true })
                 .order('updated_at', { ascending: false });
 
             if (error) throw error;
@@ -348,11 +340,13 @@ const DeviceManualListContent = () => {
                     setManuals(newManuals);
 
                     try {
-                        const { error } = await supabase
-                            .from('device_manuals')
-                            .update({ updated_at: new Date().toISOString() })
-                            .eq('id', activeItemId);
-                        if (error) throw error;
+                        // Persist the new order by updating display_order for all items
+                        await Promise.all(newManuals.map((manual, index) =>
+                            supabase
+                                .from('device_manuals')
+                                .update({ display_order: index })
+                                .eq('id', manual.id)
+                        ));
                     } catch (err) {
                         console.error('Failed to update row order:', err);
                         fetchManuals();
@@ -608,9 +602,9 @@ const DeviceManualListContent = () => {
         return acc;
     }, {} as Record<string, TitleFragment & { allIds: string[] }>);
 
-    const sortedGroups = Object.values(groupedManuals).sort((a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+    // Reconstruct sortedGroups based on the order of 'manuals'
+    const uniqueTitles = Array.from(new Set(manuals.map(m => m.title.trim())));
+    const sortedGroups = uniqueTitles.map(title => groupedManuals[title]).filter(Boolean);
 
     // Flatten to identify individual files across all groups for precise pagination
     const allFilesFlattened = sortedGroups.flatMap(g =>

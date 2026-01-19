@@ -14,6 +14,6 @@ export interface TitleFragment {
     id: string;
     itemId: string;
     title: string;
-    files: Array<ManualFile & { originalIndex: number }>;
+    files: Array<ManualFile & { originalIndex: number; parentId?: string }>;
     updatedAt: string;
 }
