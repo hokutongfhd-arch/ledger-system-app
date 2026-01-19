@@ -14,7 +14,8 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TitleFragment, ManualItem, ManualFile } from '@/features/manuals/manual.types';
-import { supabase } from '@/lib/supabaseClient';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const SortableFileItem = ({
     file,
@@ -46,12 +47,14 @@ const SortableFileItem = ({
         <div
             ref={setNodeRef}
             style={style}
-            {...attributes}
-            {...listeners}
             className="group flex items-center justify-between p-2 bg-white border border-border rounded-md hover:shadow-sm transition-all"
         >
             <div className="flex items-center gap-2 overflow-hidden">
-                <div className="text-gray-400 cursor-grab active:cursor-grabbing">
+                <div
+                    className="text-gray-400 cursor-grab active:cursor-grabbing hover:text-blue-600 outline-none"
+                    {...attributes}
+                    {...listeners}
+                >
                     <GripVertical size={14} />
                 </div>
                 <a
@@ -179,10 +182,13 @@ export default function ManualListPage() {
 }
 
 const DeviceManualListContent = () => {
+    const supabase = createClientComponentClient();
     const [manuals, setManuals] = useState<ManualItem[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
+
     const isDraggingRef = useRef(false);
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const [isDownloading, setIsDownloading] = useState(false);
 
@@ -306,8 +312,7 @@ const DeviceManualListContent = () => {
                     const { error } = await supabase
                         .from('device_manuals')
                         .update({
-                            files: newFiles,
-                            updated_at: new Date().toISOString()
+                            files: newFiles
                         })
                         .eq('id', itemId);
 
@@ -526,9 +531,14 @@ const DeviceManualListContent = () => {
     };
 
     const handleDeleteFile = async (itemId: string, fileIndex: number) => {
-        if (!window.confirm('このファイルを削除してもよろしいですか？')) {
-            return;
-        }
+        const confirmed = await confirm({
+            title: '確認',
+            description: 'このファイルを削除してもよろしいですか？',
+            confirmText: 'Delete',
+            variant: 'destructive',
+        });
+
+        if (!confirmed) return;
 
         try {
             const item = manuals.find(i => i.id === itemId);
@@ -557,9 +567,9 @@ const DeviceManualListContent = () => {
 
             const deletedFileName = item.files[fileIndex]?.name || '不明なファイル';
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting file:', error);
-            showAlert('削除に失敗しました');
+            showAlert(`削除に失敗しました: ${error.message || JSON.stringify(error)}`);
         }
     };
 
@@ -844,6 +854,8 @@ const DeviceManualListContent = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog />
         </div>
     );
 };

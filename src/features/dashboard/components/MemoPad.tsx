@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Trash2, Check, FileText } from 'lucide-react';
 import { useMemos } from '../hooks/useMemos';
+import { useConfirm } from '../../../hooks/useConfirm';
 import { NotificationModal } from '../../../components/ui/NotificationModal';
 
 interface MemoPadProps {
@@ -11,32 +12,28 @@ export const MemoPad: React.FC<MemoPadProps> = ({ employeeCode }) => {
     const { memos, addMemo, deleteMemo } = useMemos(employeeCode);
     const [inputText, setInputText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { confirm, ConfirmDialog } = useConfirm();
 
     // Notification State
     const [notification, setNotification] = useState<{
         isOpen: boolean;
         title: string;
         message: string;
-        type: 'alert' | 'confirm';
-        onConfirm?: () => void;
     }>({
         isOpen: false,
         title: '通知',
         message: '',
-        type: 'alert',
     });
 
     const closeNotification = () => {
         setNotification(prev => ({ ...prev, isOpen: false }));
     };
 
-    const showNotification = (message: string, type: 'alert' | 'confirm' = 'alert', onConfirm?: () => void, title: string = '通知') => {
+    const showNotification = (message: string, title: string = '通知') => {
         setNotification({
             isOpen: true,
             title,
             message,
-            type,
-            onConfirm,
         });
     };
 
@@ -55,15 +52,17 @@ export const MemoPad: React.FC<MemoPadProps> = ({ employeeCode }) => {
         setInputText('');
     };
 
-    const handleDelete = (id: number) => {
-        showNotification(
-            'このメモを削除しますか？',
-            'confirm',
-            async () => {
-                await deleteMemo(id);
-            },
-            '確認'
-        );
+    const handleDelete = async (id: number) => {
+        const confirmed = await confirm({
+            title: '確認',
+            description: 'このメモを削除しますか？',
+            confirmText: 'Delete',
+            variant: 'destructive',
+        });
+
+        if (confirmed) {
+            await deleteMemo(id);
+        }
     };
 
     return (
@@ -139,9 +138,9 @@ export const MemoPad: React.FC<MemoPadProps> = ({ employeeCode }) => {
                 onClose={closeNotification}
                 title={notification.title}
                 message={notification.message}
-                type={notification.type}
-                onConfirm={notification.onConfirm}
+                type="alert"
             />
+            <ConfirmDialog />
         </div>
     );
 };
