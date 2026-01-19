@@ -501,7 +501,7 @@ function IPhoneListContent() {
                 addresses={addresses}
             />
 
-            {ConfirmDialog}
+            <ConfirmDialog />
         </div>
     );
 }
