@@ -31,7 +31,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         companyNo: '',
         departmentCode: '',
         email: '',
-        role: 'user',
+        role: 'admin',
         password: '',
         gender: '',
         birthDate: '',
