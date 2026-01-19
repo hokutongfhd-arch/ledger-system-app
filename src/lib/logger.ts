@@ -1,5 +1,6 @@
 import { supabase as staticSupabase } from './supabaseClient';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createLogAction } from '../app/actions/log';
 
 export type LogActionType =
     | 'LOGIN_SUCCESS'     // 監査ログ
@@ -49,6 +50,7 @@ class LoggerService {
         if (typeof window === 'undefined') return staticSupabase;
         if (this.client) return this.client;
 
+        // クライアントサイドでの一貫したインスタンス管理
         this.client = createClientComponentClient();
         return this.client;
     }
@@ -66,25 +68,13 @@ class LoggerService {
             let actorEmployeeCode = entry.actor?.employeeCode;
             let actorName = entry.actor?.name;
 
+            // ブラウザ環境では、RLS（権限）エラーを避けるためにサーバーアクションを使用する
             if (typeof window !== 'undefined') {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    actorAuthId = actorAuthId || session.user.id;
-
-                    // If we have an authId but no name/code, fetch from employees table
-                    if (actorAuthId && (!actorName || !actorEmployeeCode)) {
-                        const { data: profile } = await supabase
-                            .from('employees')
-                            .select('name, employee_code')
-                            .eq('auth_id', actorAuthId)
-                            .single();
-
-                        if (profile) {
-                            actorName = actorName || profile.name;
-                            actorEmployeeCode = actorEmployeeCode || profile.employee_code;
-                        }
-                    }
+                const result = await createLogAction(entry);
+                if (!result.success) {
+                    console.warn('Logger: Failed to write log via Server Action', result.error);
                 }
+                return;
             }
 
             // 2. Prepare Payload

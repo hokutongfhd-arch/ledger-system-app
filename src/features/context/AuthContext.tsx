@@ -43,8 +43,8 @@ const mapEmployeeFromDb = (d: any): Employee => ({
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Create a Supabase client configured to use cookies
-    const supabase = createClientComponentClient();
+    // Create a Supabase client configured to use cookies - Memoized to prevent multiple instances
+    const [supabase] = useState(() => createClientComponentClient());
 
     const [user, setUser] = useState<Employee | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -101,7 +101,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     React.useEffect(() => {
         const initSession = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    // Refresh Token が無効または見つからない場合
+                    if (error.message.includes('Refresh Token') || error.status === 400) {
+                        console.warn('Invalid session detected, clearing local auth:', error.message);
+                        await supabase.auth.signOut({ scope: 'local' });
+                    } else {
+                        throw error;
+                    }
+                }
+
                 if (session) {
                     await refreshUser();
                 } else {
@@ -247,17 +258,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const logout = async () => {
-        if (user) {
-            await logger.info({
-                action: 'LOGOUT',
-                targetType: 'auth',
-                actor: { employeeCode: user.code, name: user.name }
-            });
+        try {
+            if (user) {
+                // ログの失敗がログアウトを邪魔しないようにする
+                await logger.info({
+                    action: 'LOGOUT',
+                    targetType: 'auth',
+                    actor: { employeeCode: user.code, name: user.name }
+                }).catch(err => console.warn('Logout log failed:', err));
+            }
+            await supabase.auth.signOut().catch(err => console.warn('SignOut failed:', err));
+            await logoutSetupAccount().catch(err => console.warn('Logout setup account failed:', err));
+            setUser(null);
+        } catch (error) {
+            console.error('Logout process error:', error);
+        } finally {
+            // 確実にログイン画面へ飛ばす
+            window.location.href = '/login';
         }
-        await supabase.auth.signOut();
-        await logoutSetupAccount();
-        setUser(null);
-        router.refresh();
     };
 
     return (
