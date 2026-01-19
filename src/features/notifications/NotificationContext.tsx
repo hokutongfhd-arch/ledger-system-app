@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +17,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const supabase = createClientComponentClient();
     const [unreadCount, setUnreadCount] = useState(0);
     const [maxSeverity, setMaxSeverity] = useState<SeverityLevel | null>(null);
     const router = useRouter();
