@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
 import type { Employee } from '../../lib/types';
 // import { supabase } from '../../lib/supabaseClient'; // REMOVE: Don't use static client for auth
 import { logger } from '../../lib/logger';
@@ -47,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const [user, setUser] = useState<Employee | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
 
     const refreshUser = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -131,6 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         role: 'admin' as const,
                     } as Employee;
                     setUser(setupUser);
+                    // Refresh server state
+                    router.refresh();
                     return setupUser;
                 }
                 return null;
@@ -169,8 +173,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             // Immediately refresh the router to allow server components/middleware to see the new cookie
-            // useRouter().refresh() logic is handled by the caller or we can do manual handling here if needed.
-            // But usually the client-side state update + router.push in LoginPage is enough *IF* cookies are set.
+            // This is CRITICAL for correct layout rendering (Sidebar)
+            router.refresh();
 
             // Fetch Employee Profile linked to this Auth User
             const { data: employeeData, error: dbError } = await supabase
@@ -253,6 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
         await logoutSetupAccount();
         setUser(null);
+        router.refresh();
     };
 
     return (

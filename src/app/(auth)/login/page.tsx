@@ -16,7 +16,12 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const user = await login(code, password);
+
         if (user) {
+            router.refresh();
+            // Wait a tick for state/cookie propagation if needed, 
+            // but refresh() usually handles the server-side re-render trigger.
+            // Check role from the returned user object which is reliable.
             if (user.role === 'admin') {
                 router.push('/');
             } else {
