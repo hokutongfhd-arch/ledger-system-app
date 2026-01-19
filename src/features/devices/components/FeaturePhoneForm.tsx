@@ -223,13 +223,12 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             {errorFields.has('managementNumber') && <FormError>既に登録されている管理番号です</FormError>}
                         </div>
                         <div>
-                            <FormLabel required>機種名</FormLabel>
+                            <FormLabel>機種名</FormLabel>
                             <Input
                                 type="text"
                                 name="modelName"
                                 value={formData.modelName}
                                 onChange={handleChange}
-                                required
                             />
                         </div>
                         <div>
