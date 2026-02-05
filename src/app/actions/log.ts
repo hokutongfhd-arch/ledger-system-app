@@ -1,6 +1,7 @@
 'use server';
 
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { LogEntry } from '@/lib/logger';
 
@@ -52,8 +53,14 @@ export async function createLogAction(entry: LogEntry) {
             ip_address: null,
         };
 
-        // 3. 挿入
-        const { error } = await supabase.from('audit_logs').insert(payload);
+        // 3. 挿入 (Service Role を使用して RLS を回避)
+        const supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            { auth: { persistSession: false } }
+        );
+
+        const { error } = await supabaseAdmin.from('audit_logs').insert(payload);
 
         if (error) {
             console.error('createLogAction Error:', error);

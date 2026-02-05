@@ -56,53 +56,106 @@ export const employeeService = {
             }
         }
 
-        // 1. Sync with Supabase Auth (Create or Update Auth User)
-        // We do this BEFORE DB save so we can get the auth_id
-        let authId = item.authId;
+        // Call the Unified Upsert API
         try {
-            const response = await fetch('/api/auth/register', {
+            const response = await fetch('/api/admin/employees/upsert', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    code: item.code,
-                    email: item.email, // Add email to auth sync
-                    password: item.password, // This will update password if provided
+                    employee_code: item.code,
+                    email: item.email,
+                    password: item.password,
                     name: item.name,
-                    role: item.role,
-                    authId: item.authId // Pass authId for reliable updates
+                    name_kana: item.nameKana,
+                    gender: item.gender,
+                    birthday: item.birthDate,
+                    join_date: item.joinDate,
+                    age_at_month_end: String(item.age),
+                    years_in_service: String(item.yearsOfService),
+                    months_in_service: String(item.monthsHasuu),
+                    area_code: item.areaCode,
+                    address_code: item.addressCode,
+                    authority: item.role,
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error('Auth Sync Failed:', errorData);
-                // We might want to throw here, or continue with a warning?
-                // For now, let's throw so the user knows something is wrong.
-                throw new Error(errorData.error || 'Failed to sync authentication account');
+                throw new Error(errorData.error || 'Failed to save employee');
             }
 
             const result = await response.json();
-            if (result.userId) {
-                authId = result.userId;
-            }
-        } catch (error) {
-            console.error('Auth Registration Error:', error);
-            throw error; // Stop saving if auth fails
-        }
+            return employeeService.mapEmployeeFromDb(result.employee);
 
-        // 2. Prepare DB Data with auth_id
-        const dbData = {
-            ...employeeService.mapEmployeeToDb(item),
-            auth_id: authId
+        } catch (error) {
+            console.error('Save Employee Error:', error);
+            throw error;
+        }
+    },
+
+    saveEmployeesBulk: async (items: Employee[]) => {
+        // Reduced chunk size to 20 to avoid serverless function timeouts (e.g. Vercel limit 10s-60s)
+        // Sequential processing of 50 items might take too long (50 * ~500ms = 25s).
+        const CHUNK_SIZE = 20;
+        const results = {
+            successCount: 0,
+            failureCount: 0,
+            totalProcessed: 0,
+            errors: [] as string[]
         };
 
-        if (isUpdate) {
-            return await employeeApi.updateEmployee(item.id, dbData);
-        } else {
-            return await employeeApi.insertEmployee(dbData);
+        for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+            const chunk = items.slice(i, i + CHUNK_SIZE);
+
+            try {
+                // Prepare payload
+                const payload = chunk.map(item => ({
+                    employee_code: item.code,
+                    email: item.email,
+                    password: item.password,
+                    name: item.name,
+                    name_kana: item.nameKana,
+                    gender: item.gender,
+                    birthday: item.birthDate,
+                    join_date: item.joinDate,
+                    age_at_month_end: String(item.age),
+                    years_in_service: String(item.yearsOfService),
+                    months_in_service: String(item.monthsHasuu),
+                    area_code: item.areaCode,
+                    address_code: item.addressCode,
+                    authority: item.role,
+                }));
+
+                const response = await fetch('/api/admin/employees/bulk-upsert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employees: payload }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                results.successCount += data.successCount || 0;
+                results.failureCount += data.failureCount || 0;
+                results.totalProcessed += chunk.length;
+
+                if (data.results) {
+                    data.results.forEach((r: any) => {
+                        if (!r.success) {
+                            results.errors.push(`Code ${r.code}: ${r.error}`);
+                        }
+                    });
+                }
+
+            } catch (error: any) {
+                console.error('Bulk Save Chunk Error:', error);
+                results.failureCount += chunk.length;
+                results.errors.push(`Chunk ${i / CHUNK_SIZE + 1} Error: ${error.message}`);
+            }
         }
+        return results;
     },
 
     deleteEmployee: async (id: string) => {

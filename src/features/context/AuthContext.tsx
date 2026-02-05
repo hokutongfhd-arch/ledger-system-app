@@ -55,42 +55,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!session) return;
 
         try {
-            // Re-fetch profile
-            const { data: employeeData, error: dbError } = await supabase
-                .from('employees')
-                .select('*')
-                .eq('auth_id', session.user.id)
-                .maybeSingle();
+            // Use Secure API to fetch profile (bypasses RLS for unlinked users)
+            const response = await fetch('/api/auth/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}), // Metadata fallback used inside API
+            });
 
-            if (employeeData) {
+            if (response.ok) {
+                const { employee: employeeData } = await response.json();
                 const employee = mapEmployeeFromDb(employeeData);
                 setUser(employee);
             } else {
-                // Should have found, but if not, try fallback by code (if available in metadata)
-                const code = session.user.app_metadata?.employee_code;
-                if (code) {
-                    console.warn(`Profile not found by auth_id, trying fallback with code: ${code}`);
-                    const { data: fallbackData } = await supabase
-                        .from('employees')
-                        .select('*')
-                        .eq('employee_code', code)
-                        .maybeSingle();
-
-                    if (fallbackData) {
-                        // Heal the link
-                        await supabase
-                            .from('employees')
-                            .update({ auth_id: session.user.id })
-                            .eq('id', fallbackData.id);
-
-                        const employee = mapEmployeeFromDb({ ...fallbackData, auth_id: session.user.id });
-                        setUser(employee);
-                        return;
-                    }
-                }
-                console.error('Failed to find employee profile for session user');
-                // Optional: Force logout if strictly required? 
-                // await supabase.auth.signOut();
+                console.error('Failed to find employee profile for session user. Forcing logout.');
+                // alert('アカウント情報が見つかりませんでした。再度ログインしてください。'); // Alert might be annoying on simple refresh
+                await supabase.auth.signOut();
+                window.location.href = '/login';
             }
         } catch (error) {
             console.error('Failed to refresh user:', error);
@@ -184,55 +164,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             // Immediately refresh the router to allow server components/middleware to see the new cookie
-            // This is CRITICAL for correct layout rendering (Sidebar)
             router.refresh();
 
-            // Fetch Employee Profile linked to this Auth User
-            const { data: employeeData, error: dbError } = await supabase
-                .from('employees')
-                .select('*')
-                .eq('auth_id', authData.session.user.id)
-                .maybeSingle();
+            // Fetch Employee Profile linked to this Auth User via Secure API
+            // This handles RLS bypass and auto-linking if necessary
+            const profileResponse = await fetch('/api/auth/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeCode }), // Pass code for fallback linking
+            });
 
-            // Fallback: If auth_id link is missing (during migration gap), try matching by code
-            // This is a safety net but ideally auth_id should be populated.
-            if (dbError || !employeeData) {
-                console.warn('Profile not found via auth_id, trying code fallback...');
-                const { data: fallbackData, error: fallbackError } = await supabase
-                    .from('employees')
-                    .select('*')
-                    .eq('employee_code', employeeCode)
-                    .single();
-
-                if (fallbackError || !fallbackData) {
-                    console.error('Login failed: Profile not found.');
-                    await supabase.auth.signOut(); // Force logout if no profile
-                    await logger.log({
-                        action: 'LOGIN_FAILURE',
-                        targetType: 'auth',
-                        message: 'Profile not found after Auth Success',
-                        actor: { authId: authData.session.user.id, employeeCode },
-                        result: 'failure',
-                        metadata: { reason: 'Profile Not Found' }
-                    });
-                    return null;
-                }
-
-                // Auto-link the auth_id for future logins and auditing
-                await supabase
-                    .from('employees')
-                    .update({ auth_id: authData.session.user.id })
-                    .eq('id', fallbackData.id);
-
-                const employee = mapEmployeeFromDb({ ...fallbackData, auth_id: authData.session.user.id });
-                setUser(employee);
-                await logger.info({
-                    action: 'LOGIN_SUCCESS',
+            if (!profileResponse.ok) {
+                const errorText = await profileResponse.text();
+                console.error(`Login failed: Profile API Error [${profileResponse.status}]`, errorText);
+                await supabase.auth.signOut();
+                await logger.log({
+                    action: 'LOGIN_FAILURE',
                     targetType: 'auth',
-                    actor: { authId: authData.session.user.id, employeeCode: employee.code, name: employee.name }
+                    message: `Profile API Failed: ${profileResponse.status} - ${errorText}`,
+                    actor: { authId: authData.session.user.id, employeeCode },
+                    result: 'failure'
                 });
-                return employee;
+                return null;
             }
+
+            const { employee: employeeData } = await profileResponse.json();
 
             const employee = mapEmployeeFromDb(employeeData);
             setUser(employee);

@@ -68,3 +68,28 @@ export async function createEmployeeAction(data: any) {
 
     return result;
 }
+
+export async function fetchEmployeesAction() {
+    const cookieStore = await cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+
+    // 1. Verify Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        throw new Error('Unauthenticated');
+    }
+
+    // 2. Use Admin Client to Fetch All (Bypass RLS)
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data, error } = await supabaseAdmin
+        .from('employees')
+        .select('*')
+        .order('employee_code', { ascending: true });
+
+    if (error) {
+        console.error('Fetch Employees Action Error:', error);
+        throw new Error(error.message);
+    }
+
+    return data;
+}

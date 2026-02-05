@@ -9,7 +9,7 @@ import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
 import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
-import { createEmployeeAction } from '@/app/actions/employee';
+import { createEmployeeAction, fetchEmployeesAction } from '@/app/actions/employee';
 import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction } from '@/app/actions/device';
 
 interface DataContextType {
@@ -336,12 +336,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchData = useCallback(async () => {
         try {
-            const [t, i, f, r, e, a, ad] = await Promise.all([
+            const [t, i, f, r, employeeData, a, ad] = await Promise.all([
                 supabase.from('tablets').select('*'),
                 supabase.from('iphones').select('*'),
                 supabase.from('featurephones').select('*'),
                 supabase.from('routers').select('*'),
-                supabase.from('employees').select('*'),
+                fetchEmployeesAction(),
                 supabase.from('areas').select('*'),
                 supabase.from('addresses').select('*'),
             ]);
@@ -358,7 +358,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (i.data) setIPhones(i.data.map(mapIPhoneFromDb));
             if (f.data) setFeaturePhones(f.data.map(mapFeaturePhoneFromDb));
             if (r.data) setRouters(r.data.map(mapRouterFromDb));
-            if (e.data) setEmployees(e.data.map(mapEmployeeFromDb));
+            if (employeeData) setEmployees(employeeData.map(mapEmployeeFromDb));
             if (a.data) setAreas(a.data.map(mapAreaFromDb));
             if (ad.data) setAddresses(ad.data.map(mapAddressFromDb));
             if (logData) setLogs(logData.map(logService.mapLogFromDb));

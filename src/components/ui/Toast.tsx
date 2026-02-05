@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { CheckCircle, AlertCircle, Info, X, XCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, X, XCircle, Loader2 } from 'lucide-react';
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'loading';
 
 export interface ToastMessage {
     id: string;
@@ -35,6 +35,8 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
                 return 'bg-white border-l-4 border-red-500 text-gray-800 shadow-lg';
             case 'warning':
                 return 'bg-white border-l-4 border-yellow-500 text-gray-800 shadow-lg';
+            case 'loading':
+                return 'bg-white border-l-4 border-blue-400 text-gray-800 shadow-lg';
             case 'info':
             default:
                 return 'bg-white border-l-4 border-blue-500 text-gray-800 shadow-lg';
@@ -46,6 +48,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
             case 'success': return <CheckCircle className="text-green-500" size={20} />;
             case 'error': return <XCircle className="text-red-500" size={20} />;
             case 'warning': return <AlertCircle className="text-yellow-500" size={20} />;
+            case 'loading': return <Loader2 className="text-blue-400 animate-spin" size={20} />;
             case 'info': default: return <Info className="text-blue-500" size={20} />;
         }
     };

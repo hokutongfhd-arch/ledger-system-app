@@ -116,12 +116,11 @@ function EmployeeListContent() {
             return true;
         },
         onImport: async (rows, headers) => {
-            const existingCodes = new Set(employees.map(e => e.code));
             const processedCodes = new Set<string>();
-            const errors: string[] = [];
-            let successCount = 0;
-            let errorCount = 0;
+            const importData: Employee[] = [];
+            const validationErrors: string[] = [];
 
+            // 1. Parse all rows into Employee objects first
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -140,14 +139,10 @@ function EmployeeListContent() {
                 const rawCode = String(rowData['社員コード'] || '');
                 const code = toHalfWidth(rawCode).trim();
 
-                if (existingCodes.has(code)) {
-                    errors.push(`${i + 2}行目: 社員コード「${code}」は既に存在します`);
-                    errorCount++;
-                    continue;
-                }
+                // Duplicate check within file only
                 if (processedCodes.has(code)) {
-                    errors.push(`${i + 2}行目: 社員コード「${code}」がファイル内で重複しています`);
-                    errorCount++;
+                    // We skip duplicates in file to prevent double-processing same ID twice in one batch
+                    validationErrors.push(`${i + 2}行目: 社員コード「${code}」がファイル内で重複しています`);
                     continue;
                 }
 
@@ -169,8 +164,7 @@ function EmployeeListContent() {
                 const joinDateValue = formatDate(rowData['入社年月日']);
 
                 if (birthDateValue && joinDateValue && new Date(birthDateValue) > new Date(joinDateValue)) {
-                    errors.push(`${i + 2}行目: 入社年月日（${joinDateValue}）は生年月日（${birthDateValue}）以降である必要があります`);
-                    errorCount++;
+                    validationErrors.push(`${i + 2}行目: 入社年月日（${joinDateValue}）は生年月日（${birthDateValue}）以降である必要があります`);
                     continue;
                 }
 
@@ -192,9 +186,8 @@ function EmployeeListContent() {
 
                 if (passwordErrors.length > 0) {
                     passwordErrors.forEach(err => {
-                        errors.push(`${i + 2}行目: ${err}`);
+                        validationErrors.push(`${i + 2}行目: ${err}`);
                     });
-                    errorCount++;
                     continue;
                 }
 
@@ -202,7 +195,7 @@ function EmployeeListContent() {
                 const cleanName = `${lastName.replace(/[\s　]+/g, '')} ${firstName.replace(/[\s　]+/g, '')}`.trim();
                 const cleanNameKana = `${lastNameKana.replace(/[\s　]+/g, '')} ${firstNameKana.replace(/[\s　]+/g, '')}`.trim();
 
-                const newEmployee: Omit<Employee, 'id'> & { id?: string } = {
+                const emp: Omit<Employee, 'id'> & { id?: string } = {
                     code: code,
                     gender: String(rowData['性別'] || ''),
                     name: cleanName,
@@ -221,34 +214,63 @@ function EmployeeListContent() {
                     email: String(rowData['メールアドレス'] || '').trim()
                 };
 
-                try {
-                    await addEmployee(newEmployee as Omit<Employee, 'id'>, true, true);
-                    processedCodes.add(code);
-                    successCount++;
-                } catch (error: any) {
-                    errors.push(`${i + 2}行目: 登録エラー - ${error.message || '不明なエラー'}`);
-                    errorCount++;
-                }
+                importData.push(emp as Employee);
+                processedCodes.add(code);
             }
 
-            if (errors.length > 0) {
+            // If there are validation errors from parsing, show them and stop.
+            if (validationErrors.length > 0) {
                 await confirm({
-                    title: 'インポート結果 (一部スキップ)',
+                    title: 'インポートエラー',
                     description: (
                         <div className="max-h-60 overflow-y-auto">
-                            <p className="mb-2">以下のデータは登録されませんでした：</p>
+                            <p className="mb-2">以下のデータは処理されませんでした：</p>
                             <ul className="list-disc pl-5 text-sm text-red-600">
-                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                {validationErrors.map((err, idx) => <li key={idx}>{err}</li>)}
                             </ul>
                         </div>
                     ),
                     confirmText: 'OK',
                     cancelText: ''
                 });
-            } else if (successCount > 0) {
-                showToast(`インポート完了 - ${successCount}件登録しました`, 'success');
-            } else if (errorCount > 0 && errors.length === 0) {
-                showToast(`インポート失敗 - ${errorCount}件のエラーが発生しました`, 'error');
+                return;
+            }
+
+            // 2. Call Bulk API
+            if (importData.length === 0) {
+                showToast('インポート可能なデータがありませんでした', 'error');
+                return;
+            }
+
+            const loadingToast = showToast('インポート中...', 'loading');
+
+            try {
+                const { employeeService } = await import('../../../../features/employees/employee.service');
+                const result = await employeeService.saveEmployeesBulk(importData);
+
+                if (result.failureCount === 0) {
+                    showToast(`インポート成功: ${result.successCount}件`, 'success');
+                } else {
+                    await confirm({
+                        title: 'インポート完了 (一部エラー)',
+                        description: (
+                            <div className="max-h-60 overflow-y-auto">
+                                <p className="mb-2">{result.successCount}件成功, {result.failureCount}件失敗</p>
+                                <ul className="list-disc pl-5 text-sm text-red-600">
+                                    {result.errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                </ul>
+                            </div>
+                        ),
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                }
+
+                // Refresh data
+                window.location.reload(); // Simplest way to refresh list for now
+
+            } catch (e: any) {
+                showToast(`インポート予期せぬエラー: ${e.message}`, 'error');
             }
         }
     });
