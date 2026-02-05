@@ -77,9 +77,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                         <SectionHeader icon={<Shield size={18} />} title="システム情報 (System)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="権限" value={item.role === 'admin' ? '管理者' : 'ユーザー'} />
-                            {isAdmin && (
-                                <DetailRow label="パスワード" value={item.password || '••••••••'} isSensitive />
-                            )}
+
                         </div>
                     </div>
                 </div>

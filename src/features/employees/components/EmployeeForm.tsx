@@ -399,7 +399,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 <option value="admin">管理者</option>
                             </Select>
                         </div>
-                        {isAdmin && (
+                        {isAdmin && !initialData && (
                             <div>
                                 <FormLabel>パスワード</FormLabel>
                                 <Input

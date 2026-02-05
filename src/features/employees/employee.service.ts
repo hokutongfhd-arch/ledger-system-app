@@ -12,7 +12,7 @@ export const employeeService = {
         companyNo: '',
         departmentCode: '',
         email: '',
-        password: s(d.password),
+        password: '', // Password is hidden from frontend
         gender: s(d.gender),
         birthDate: s(d.birthday),
         joinDate: s(d.join_date),
