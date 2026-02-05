@@ -223,7 +223,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     nameKana: s(d.name_kana),
     companyNo: '', // Missing
     departmentCode: '', // Missing
-    email: '', // Missing
+    email: s(d.email),
     password: s(d.password),
     gender: s(d.gender),
     birthDate: s(d.birthday),
@@ -243,6 +243,7 @@ const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     password: t.password,
     name: t.name,
     name_kana: t.nameKana,
+    email: t.email,
     gender: t.gender,
     birthday: t.birthDate,
     join_date: t.joinDate,
@@ -679,7 +680,72 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         }
 
-        return updateItem('employees', item, mapEmployeeToDb, employees, setEmployees, skipLog, skipToast);
+        // 1. Auth Sync (similar to addEmployee)
+        try {
+            // Find current employee to check for changes
+            const currentEmployee = employees.find(e => e.id === item.id);
+            const isEmailChanged = currentEmployee && currentEmployee.email !== item.email;
+
+            // Only sync if important fields changed or if we want to ensure consistency
+            // We always sync to ensure Auth DB is up to date (e.g. password, name, role) or if email changed
+
+            // Note: We need to send authId if available to ensure we update the correct user
+            // If item.authId is missing, maybe we can get it from currentEmployee?
+            const authIds = item.authId || currentEmployee?.authId;
+
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...item,
+                    authId: authIds // Ensure authId is passed for update
+                }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Auth Update Failed (${response.status}):`, errorText);
+                // We typically warn but might want to block? 
+                // Let's allow DB update but warn user if Auth fails
+                showToast('Auth情報の更新に失敗しました', 'error');
+            } else {
+                const authResult = await response.json();
+                // If we got a userId back (and we didn't have one or it changed?), update it
+                if (authResult.userId && item.authId !== authResult.userId) {
+                    (item as any).authId = authResult.userId;
+                    (item as any).auth_id = authResult.userId; // For DB mapper
+                }
+            }
+
+            // 2. DB Update
+            await updateItem('employees', item, mapEmployeeToDb, employees, setEmployees, skipLog, skipToast);
+
+            // 3. Logging (Explicitly for Employee Update)
+            if (!skipLog) {
+                let message = `社員情報を更新しました: ${item.name}`;
+                if (isEmailChanged) {
+                    message += ` (メールアドレス変更: ${currentEmployee?.email} -> ${item.email})`;
+                }
+
+                await logger.info({
+                    action: 'UPDATE',
+                    targetType: 'employee',
+                    targetId: item.id,
+                    message: message,
+                    actor: user ? { employeeCode: user.code, name: user.name } : undefined,
+                    metadata: {
+                        changedFields: isEmailChanged ? ['email'] : [],
+                        oldEmail: currentEmployee?.email,
+                        newEmail: item.email
+                    }
+                });
+            }
+
+        } catch (error: any) {
+            console.error('Update Employee Failed:', error);
+            if (!skipToast) showToast('更新に失敗しました', 'error', error.message);
+            throw error;
+        }
     };
     const deleteEmployee = (id: string, skipLog: boolean = false, skipToast: boolean = false) => {
         if (user?.id === 'INITIAL_SETUP_ACCOUNT') {

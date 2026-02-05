@@ -11,7 +11,7 @@ export const employeeService = {
         nameKana: s(d.name_kana),
         companyNo: '',
         departmentCode: '',
-        email: '',
+        email: s(d.email),
         password: '', // Password is hidden from frontend
         gender: s(d.gender),
         birthDate: s(d.birthday),
@@ -27,6 +27,7 @@ export const employeeService = {
 
     mapEmployeeToDb: (t: Partial<Employee>) => ({
         employee_code: t.code,
+        email: t.email, // Add email to DB mapping
         // password: t.password, // Removed to prevent storing plain text password in DB
         name: t.name,
         name_kana: t.nameKana,
@@ -66,9 +67,11 @@ export const employeeService = {
                 },
                 body: JSON.stringify({
                     code: item.code,
+                    email: item.email, // Add email to auth sync
                     password: item.password, // This will update password if provided
                     name: item.name,
-                    role: item.role
+                    role: item.role,
+                    authId: item.authId // Pass authId for reliable updates
                 }),
             });
 

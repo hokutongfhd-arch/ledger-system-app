@@ -304,6 +304,17 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 </div>
                             </div>
                         </div>
+                        <div className="col-span-1 md:col-span-2">
+                            <FormLabel>メールアドレス</FormLabel>
+                            <Input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="taro.yamada@example.com"
+                                required
+                            />
+                        </div>
                         <div>
                             <FormLabel>生年月日</FormLabel>
                             <Input

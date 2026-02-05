@@ -54,6 +54,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="社員コード" value={item.code} />
                             <DetailRow label="性別" value={item.gender} />
+                            <DetailRow label="メールアドレス" value={item.email} />
                             <DetailRow label="生年月日" value={item.birthDate} subValue={`${item.age}歳`} />
                         </div>
 

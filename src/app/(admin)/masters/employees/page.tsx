@@ -77,7 +77,7 @@ function EmployeeListContent() {
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, headers) => {
             const requiredHeaders = [
-                '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
+                '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
                 'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
                 '権限', 'パスワード'
             ];
@@ -218,7 +218,7 @@ function EmployeeListContent() {
                     password: password,
                     companyNo: '',
                     departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),
-                    email: ''
+                    email: String(rowData['メールアドレス'] || '').trim()
                 };
 
                 try {
@@ -334,7 +334,7 @@ function EmployeeListContent() {
         });
 
         const headers = [
-            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
+            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
             'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '権限', 'パスワード'
         ];
@@ -350,6 +350,7 @@ function EmployeeListContent() {
                 firstNameParts.join(' ') || '',
                 lastNameKana || '',
                 firstNameKanaParts.join(' ') || '',
+                item.email || '',
                 item.birthDate || '',
                 item.age || '',
                 item.areaCode || '',
@@ -365,7 +366,7 @@ function EmployeeListContent() {
 
     const handleDownloadTemplate = async () => {
         const headers = [
-            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', '生年月日', '年齢',
+            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
             'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '権限', 'パスワード'
         ];
