@@ -27,7 +27,7 @@ export const employeeService = {
 
     mapEmployeeToDb: (t: Partial<Employee>) => ({
         employee_code: t.code,
-        password: t.password,
+        // password: t.password, // Removed to prevent storing plain text password in DB
         name: t.name,
         name_kana: t.nameKana,
         gender: t.gender,
