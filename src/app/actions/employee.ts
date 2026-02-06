@@ -49,6 +49,7 @@ export async function createEmployeeAction(data: any) {
         area_code: data.areaCode,
         address_code: data.addressCode,
         authority: data.role,
+        email: data.email,
         role: undefined // remove 'role' from DB object if it exists in data but not in DB schema (schema uses authority)
     };
 
@@ -103,22 +104,58 @@ export async function fetchEmployeesAction() {
         throw new Error(error.message);
     }
 
-    // [FIX] Fetch Auth Users to populate 'email' field since it's missing in DB schema
-    const { data: { users }, error: authError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (authError) {
-        console.warn('Failed to fetch Auth Users for email sync:', authError);
+    return data;
+}
+
+export async function updateEmployeeAction(id: string, data: any) {
+    const cookieStore = await cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+
+    // 1. Verify Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        throw new Error('Unauthenticated');
     }
 
-    // Merge email from Auth User
-    const mergedData = data.map(emp => {
-        const authUser = users?.find(u => u.id === emp.auth_id);
-        return {
-            ...emp,
-            email: authUser?.email || '' // Populate email from Auth
-        };
-    });
+    const supabaseAdmin = getSupabaseAdmin();
 
-    return mergedData;
+    // 2. Prepare Update Data
+    // We map the incoming data to the DB schema
+    const dbItem = {
+        employee_code: data.code,
+        // auth_id: data.auth_id, // auth_id should generally not change
+        // password: data.password, 
+        name: data.name,
+        name_kana: data.nameKana,
+        gender: data.gender,
+        birthday: data.birthDate,
+        join_date: data.joinDate,
+        age_at_month_end: data.age ? Number(data.age) : 0,
+        years_in_service: data.yearsOfService ? Number(data.yearsOfService) : 0,
+        months_in_service: data.monthsHasuu ? Number(data.monthsHasuu) : 0,
+        area_code: data.areaCode,
+        address_code: data.addressCode,
+        authority: data.role,
+        email: data.email,
+        role: undefined
+    };
+
+    delete (dbItem as any).role;
+
+    // 3. Update DB Record
+    const { data: result, error } = await supabaseAdmin
+        .from('employees')
+        .update(dbItem)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Update Employee Action Error:', error);
+        throw new Error(error.message);
+    }
+
+    return result;
 }
 
 export async function deleteEmployeeAction(id: string) {

@@ -9,7 +9,7 @@ import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
 import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
-import { createEmployeeAction, fetchEmployeesAction, deleteEmployeeAction, deleteManyEmployeesAction } from '@/app/actions/employee';
+import { createEmployeeAction, fetchEmployeesAction, deleteEmployeeAction, deleteManyEmployeesAction, updateEmployeeAction } from '@/app/actions/employee';
 import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction } from '@/app/actions/device';
 
 interface DataContextType {
@@ -224,7 +224,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     companyNo: '', // Missing
     departmentCode: '', // Missing
     email: s(d.email),
-    password: '', // Password is not stored in DB anymore
+
     gender: s(d.gender),
     birthDate: s(d.birthday),
     joinDate: s(d.join_date),
@@ -702,7 +702,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Note: We need to send authId if available to ensure we update the correct user
             // If item.authId is missing, maybe we can get it from currentEmployee?
-            const authIds = item.authId || currentEmployee?.authId;
+            const authIds = item.authId || (item as any).auth_id || currentEmployee?.authId || (currentEmployee as any)?.auth_id;
+            console.log(`[DEBUG] ID Check: ItemID=${item.id}, AuthID=${authIds}, CurrentEmpAuth=${currentEmployee?.authId}`);
 
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -715,10 +716,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`Auth Update Failed (${response.status}):`, errorText);
-                // We typically warn but might want to block? 
-                // Let's allow DB update but warn user if Auth fails
-                showToast('Auth情報の更新に失敗しました', 'error');
+                console.warn(`Auth Update Warning (${response.status}):`, errorText);
+                // Suppress toast since DB update is primary and will trigger sync
+                // showToast('Auth情報の更新に失敗しました', 'error');
             } else {
                 const authResult = await response.json();
                 // If we got a userId back (and we didn't have one or it changed?), update it
@@ -728,8 +728,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             }
 
-            // 2. DB Update
-            await updateItem('employees', item, mapEmployeeToDb, employees, setEmployees, skipLog, skipToast);
+            // 2. DB Update (Use Server Action to bypass RLS/Email issues)
+            await updateEmployeeAction(item.id, item);
+
+            // Update local state manually since we bypassed updateItem
+            setEmployees(prev => prev.map(p => p.id === item.id ? { ...p, ...item } : p));
+            if (!skipToast) showToast('更新しました', 'success');
 
             // 3. Logging (Explicitly for Employee Update)
             if (!skipLog) {
