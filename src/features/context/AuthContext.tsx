@@ -29,7 +29,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     companyNo: '',
     departmentCode: '',
     email: '',
-    password: '', // Password is not stored in DB anymore
+    // Password is not stored in DB anymore
     gender: s(d.gender),
     birthDate: s(d.birthday),
     joinDate: s(d.join_date),

@@ -51,7 +51,7 @@ export const employeeService = {
         if (item.profileImage && typeof window !== 'undefined') {
             try {
                 localStorage.setItem(`profile_image_${item.id}`, item.profileImage);
-            } catch (e) {
+            } catch (e: any) {
                 console.error('Failed to save profile image to localStorage', e);
             }
         }

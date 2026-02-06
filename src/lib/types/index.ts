@@ -91,6 +91,7 @@ export interface Employee {
     companyNo: string;
     departmentCode: string;
     email: string;
+    password?: string;
     gender: string;
     birthDate: string;
     joinDate: string;

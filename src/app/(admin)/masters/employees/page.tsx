@@ -79,7 +79,7 @@ function EmployeeListContent() {
         onValidate: async (rows, headers) => {
             const requiredHeaders = [
                 '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
-                'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
+                'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
                 '権限', 'パスワード'
             ];
 
@@ -173,16 +173,32 @@ function EmployeeListContent() {
                 const firstName = String(rowData['名前'] || '').trim();
                 const lastNameKana = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
                 const firstNameKana = String(rowData['名前カナ'] || '').trim();
+                const email = String(rowData['メールアドレス'] || '').trim();
+                if (email) {
+                    if (!/^[\x20-\x7E]+$/.test(email)) {
+                        validationErrors.push(`${i + 2}行目: メールアドレスに全角文字が含まれています`);
+                        continue;
+                    }
+                    // Validate email format
+                    if (!/^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+                        validationErrors.push(`${i + 2}行目: メールアドレスの形式が正しくありません`);
+                        continue;
+                    }
+                }
+
                 const rawPassword = String(rowData['パスワード'] || '').trim();
                 const password = toHalfWidth(rawPassword);
 
-                // Password Validation (8+ digits, numeric only)
+                // Password Validation (8-16 digits, numeric only)
                 const passwordErrors = [];
-                if (password.length < 8) {
-                    passwordErrors.push('パスワードは8文字以上である必要があります');
-                }
-                if (!/^[0-9]+$/.test(password)) {
-                    passwordErrors.push('パスワードは半角数字のみ使用可能です');
+                // Only validate password for new users or if provided
+                if (password) {
+                    if (password.length < 8 || password.length > 16) {
+                        passwordErrors.push('パスワードは8文字以上16文字以下である必要があります');
+                    }
+                    if (!/^[0-9]+$/.test(password)) {
+                        passwordErrors.push('パスワードは半角数字のみ使用可能です');
+                    }
                 }
 
                 if (passwordErrors.length > 0) {
@@ -212,7 +228,7 @@ function EmployeeListContent() {
                     password: password,
                     companyNo: '',
                     departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),
-                    email: String(rowData['メールアドレス'] || '').trim()
+                    email: email
                 };
 
                 importData.push(emp as Employee);
@@ -358,7 +374,7 @@ function EmployeeListContent() {
 
         const headers = [
             '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
-            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
             '権限', 'パスワード'
         ];
 
@@ -378,11 +394,12 @@ function EmployeeListContent() {
                 item.age || '',
                 item.areaCode || '',
                 item.addressCode || '',
+                item.departmentCode || '',
                 item.joinDate || '',
                 item.yearsOfService || '',
                 item.monthsHasuu || '',
                 item.role === 'admin' ? '管理者' : 'ユーザー',
-                item.password || ''
+                '********' // Do not export raw password
             ];
         });
     };
@@ -390,7 +407,7 @@ function EmployeeListContent() {
     const handleDownloadTemplate = async () => {
         const headers = [
             '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
-            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
             '権限', 'パスワード'
         ];
 
@@ -423,9 +440,10 @@ function EmployeeListContent() {
             };
         }
 
-        // Data Validation for 権限 (Column N)
+        // Data Validation for 権限 (Column P - calculated from headers index)
+        const roleColChar = 'P'; // 16th column
         for (let i = 2; i <= 100; i++) {
-            worksheet.getCell(`N${i}`).dataValidation = {
+            worksheet.getCell(`${roleColChar}${i}`).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"管理者,ユーザー"']
