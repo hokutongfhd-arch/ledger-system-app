@@ -7,6 +7,7 @@ import type { Employee } from '../../lib/types';
 // import { supabase } from '../../lib/supabaseClient'; // REMOVE: Don't use static client for auth
 import { logger } from '../../lib/logger';
 import { loginInitialSetup, getSetupUserServer, logoutSetupAccount } from '../../app/actions/auth_setup';
+import { getLoginEmailAction } from '@/app/actions/auth';
 
 interface AuthContextType {
     user: Employee | null;
@@ -28,7 +29,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     companyNo: '',
     departmentCode: '',
     email: '',
-    password: s(d.password),
+    password: '', // Password is not stored in DB anymore
     gender: s(d.gender),
     birthDate: s(d.birthday),
     joinDate: s(d.join_date),
@@ -131,10 +132,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return null;
             }
 
-            const email = `${employeeCode}@ledger-system.local`;
+            // 1. Resolve Auth Email from Employee Code
+            const resolvedEmail = await getLoginEmailAction(employeeCode);
+            const loginEmail = resolvedEmail || `${employeeCode}@ledger-system.local`;
+
+            console.log(`Login attempt for Code: ${employeeCode} -> Resolved Email: ${loginEmail}`);
 
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                email,
+                email: loginEmail,
                 password,
             });
 

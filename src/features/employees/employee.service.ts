@@ -1,5 +1,5 @@
 import { employeeApi } from './employee.api';
-import type { Employee } from './employee.types';
+import type { Employee, EmployeeInput } from './employee.types';
 
 const s = (val: any) => (val === null || val === undefined) ? '' : String(val);
 
@@ -12,7 +12,6 @@ export const employeeService = {
         companyNo: '',
         departmentCode: '',
         email: s(d.email),
-        password: '', // Password is hidden from frontend
         gender: s(d.gender),
         birthDate: s(d.birthday),
         joinDate: s(d.join_date),
@@ -23,6 +22,7 @@ export const employeeService = {
         addressCode: s(d.address_code),
         role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
         profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
+        authId: s(d.auth_id),
     }),
 
     mapEmployeeToDb: (t: Partial<Employee>) => ({
@@ -47,7 +47,7 @@ export const employeeService = {
         return (data || []).map(employeeService.mapEmployeeFromDb);
     },
 
-    saveEmployee: async (item: Employee, isUpdate: boolean = false) => {
+    saveEmployee: async (item: EmployeeInput, isUpdate: boolean = false) => {
         if (item.profileImage && typeof window !== 'undefined') {
             try {
                 localStorage.setItem(`profile_image_${item.id}`, item.profileImage);
@@ -93,10 +93,9 @@ export const employeeService = {
         }
     },
 
-    saveEmployeesBulk: async (items: Employee[]) => {
-        // Reduced chunk size to 20 to avoid serverless function timeouts (e.g. Vercel limit 10s-60s)
-        // Sequential processing of 50 items might take too long (50 * ~500ms = 25s).
-        const CHUNK_SIZE = 20;
+    saveEmployeesBulk: async (items: EmployeeInput[]) => {
+        // Reduced chunk size to 10 for safer processing (Hobby Plan limit)
+        const CHUNK_SIZE = 10;
         const results = {
             successCount: 0,
             failureCount: 0,

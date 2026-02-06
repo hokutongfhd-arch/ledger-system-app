@@ -29,9 +29,13 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
     } = data;
 
     try {
+
         // --- Step 1: Resolve Auth User (Identity Resolution) ---
         let targetAuthId: string | null = null;
         let authAction = 'none';
+
+        // Use real email for Auth if provided, otherwise fallback to Code-based email
+        const authEmail = email || `${employee_code}@ledger-system.local`;
 
         // 1-A. Check if Employee exists (Primary Check)
         const { data: existingEmployee, error: empError } = await supabaseAdmin
@@ -49,11 +53,11 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             targetAuthId = existingEmployee.auth_id;
             authAction = 'update_by_id';
         } else {
-            // Priority 2: New Employee -> Lookup by Email
+            // Priority 2: New Employee -> Lookup by Email (Auth Email)
             const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
             if (listError) throw new Error(`Auth lookup failed: ${listError.message}`);
 
-            const existingAuthUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+            const existingAuthUser = users.find(u => u.email?.toLowerCase() === authEmail.toLowerCase());
 
             if (existingAuthUser) {
                 // Priority 3: Reuse existing Auth User
@@ -62,10 +66,10 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             } else {
                 // Priority 4: Create New Auth User
                 const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-                    email,
+                    email: authEmail,
                     password: password || '12345678',
                     email_confirm: true,
-                    user_metadata: { name, employee_code }
+                    user_metadata: { name, employee_code, email: authEmail } // Store email in metadata too
                 });
 
                 if (createError) throw new Error(`Auth create failed: ${createError.message}`);
@@ -78,9 +82,10 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
         if (authAction !== 'created' && targetAuthId) {
             const updates: any = {
                 user_metadata: { name, employee_code },
+                email: authEmail,
                 email_confirm: true
             };
-            if (email) updates.email = email;
+            // Always update email to match current requirement
             if (password) updates.password = password;
 
             const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -96,7 +101,7 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             auth_id: targetAuthId,
             name,
             name_kana,
-            email,
+            email, // Save real email to DB
             gender,
             birthday,
             join_date,

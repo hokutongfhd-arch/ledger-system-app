@@ -37,7 +37,7 @@ export async function createEmployeeAction(data: any) {
     const dbItem = {
         employee_code: data.code,
         auth_id: data.auth_id,
-        password: data.password,
+        // password: data.password, // Password is NOT stored in DB
         name: data.name,
         name_kana: data.nameKana,
         gender: data.gender,
@@ -63,6 +63,18 @@ export async function createEmployeeAction(data: any) {
 
     if (error) {
         console.error('Create Employee Action Error:', error);
+
+        // Compensation: If DB insert fails, delete the Auth User we just tried to link to avoid orphans
+        if (dbItem.auth_id) {
+            console.log(`Compensating: Deleting Auth User ${dbItem.auth_id} due to DB failure`);
+            const { error: cleanupError } = await supabaseAdmin.auth.admin.deleteUser(dbItem.auth_id);
+            if (cleanupError) {
+                console.error(`Compensation Failed for ${dbItem.auth_id}:`, cleanupError);
+            } else {
+                console.log(`Compensation Success: Deleted orphan Auth User ${dbItem.auth_id}`);
+            }
+        }
+
         throw new Error(error.message);
     }
 
@@ -92,4 +104,114 @@ export async function fetchEmployeesAction() {
     }
 
     return data;
+}
+
+export async function deleteEmployeeAction(id: string) {
+    const cookieStore = await cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+
+    // 1. Verify Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        throw new Error('Unauthenticated');
+    }
+
+    // 2. Fetch Employee to get Auth ID before deletion
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data: employee, error: fetchError } = await supabaseAdmin
+        .from('employees')
+        .select('auth_id, employee_code')
+        .eq('id', id)
+        .single();
+
+    if (fetchError) {
+        throw new Error(`Employee not found: ${fetchError.message}`);
+    }
+
+    // 3. Delete DB Record First (to avoid FK constraint issues)
+    const { error: deleteError } = await supabaseAdmin
+        .from('employees')
+        .delete()
+        .eq('id', id);
+
+    if (deleteError) {
+        throw new Error(deleteError.message);
+    }
+
+    // 4. Delete Auth User if linked (now safe)
+    if (employee.auth_id) {
+        const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(employee.auth_id);
+        if (authDeleteError) {
+            console.error(`Failed to delete Auth User ${employee.auth_id}:`, authDeleteError);
+        }
+    } else {
+        // Fallback: If auth_id is missing in DB (inconsistency), try to find by metadata
+        console.warn(`Employee ${id} (Code: ${employee.employee_code}) has no auth_id. Attempting fallback cleanup...`);
+        const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+        // Find orphan by code
+        const orphan = users.find(u => u.user_metadata?.employee_code === employee.employee_code || u.user_metadata?.employee_code === String(employee.employee_code));
+
+        if (orphan) {
+            console.log(`Found orphan Auth User via Code ${employee.employee_code}: ${orphan.id}. Deleting...`);
+            const { error: orphanError } = await supabaseAdmin.auth.admin.deleteUser(orphan.id);
+            if (orphanError) console.error('Fallback Orphan Delete Failed:', orphanError);
+        }
+    }
+
+    return { success: true };
+}
+
+export async function deleteManyEmployeesAction(ids: string[]) {
+    const cookieStore = await cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+
+    // 1. Verify Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        throw new Error('Unauthenticated');
+    }
+
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // 2. Fetch Employees to get Auth IDs
+    const { data: employees, error: fetchError } = await supabaseAdmin
+        .from('employees')
+        .select('auth_id, employee_code')
+        .in('id', ids);
+
+    if (fetchError) {
+        throw new Error(`Employees fetch failed: ${fetchError.message}`);
+    }
+
+    // 3. Delete DB Records First
+    const { error: deleteError } = await supabaseAdmin
+        .from('employees')
+        .delete()
+        .in('id', ids);
+
+    if (deleteError) {
+        throw new Error(deleteError.message);
+    }
+
+    // 4. Delete Auth Users
+    if (employees && employees.length > 0) {
+        // Run in parallel
+        await Promise.all(employees.map(async (emp) => {
+            if (emp.auth_id) {
+                const { error } = await supabaseAdmin.auth.admin.deleteUser(emp.auth_id);
+                if (error) {
+                    console.error(`Failed to delete Auth User ${emp.auth_id} (Code: ${emp.employee_code}):`, error);
+                }
+            } else {
+                // Fallback for bulk delete
+                const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+                const orphan = users.find(u => u.user_metadata?.employee_code === emp.employee_code || u.user_metadata?.employee_code === String(emp.employee_code));
+                if (orphan) {
+                    await supabaseAdmin.auth.admin.deleteUser(orphan.id);
+                }
+            }
+        }));
+    }
+
+    return { success: true };
 }

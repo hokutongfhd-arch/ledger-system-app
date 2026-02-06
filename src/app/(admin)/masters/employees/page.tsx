@@ -18,6 +18,7 @@ import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
 import { logger } from '../../../../lib/logger';
+import { deleteOrphanedAuthUserAction, diagnoseEmployeeStateAction, forceDeleteEmployeeByCodeAction } from '@/app/actions/admin_maintenance';
 
 export default function EmployeeListPage() {
     const { user } = useAuth();
@@ -468,6 +469,70 @@ function EmployeeListContent() {
                     )}
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
                     <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
+                    <button onClick={async () => {
+                        // 1. Diagnose first
+                        const diag = await diagnoseEmployeeStateAction('7300');
+
+                        if (diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) === 0) {
+                            // Case 1: DB exists, Auth missing -> Force DB Delete
+                            const confirmed = await confirm({
+                                title: 'Force Cleanup 7300',
+                                description: (
+                                    <div>
+                                        <p className="font-bold mb-2 text-red-600">State: DB Record Only</p>
+                                        <p>DB record exists but Auth is missing.</p>
+                                        <p>Force Delete DB record?</p>
+                                    </div>
+                                ),
+                                confirmText: 'FORCE DB DELETE',
+                                cancelText: 'Cancel',
+                                variant: 'destructive'
+                            });
+
+                            if (confirmed) {
+                                const res = await forceDeleteEmployeeByCodeAction('7300');
+                                if (res.success) {
+                                    showToast('DB Record Deleted. Please re-register.', 'success');
+                                    window.location.reload();
+                                } else {
+                                    showToast('Delete Failed: ' + res.error, 'error');
+                                }
+                            }
+                        } else if (!diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) > 0) {
+                            // Case 2: DB missing, Auth exists -> Force Auth Delete
+                            const confirmed = await confirm({
+                                title: 'Force Cleanup 7300',
+                                description: (
+                                    <div>
+                                        <p className="font-bold mb-2 text-red-600">State: Auth User Only (Orphan)</p>
+                                        <p>Auth Users found but DB record is gone.</p>
+                                        <p>Force Delete {diag.data?.inAuth?.length ?? 0} Auth Users?</p>
+                                    </div>
+                                ),
+                                confirmText: 'FORCE AUTH DELETE',
+                                cancelText: 'Cancel',
+                                variant: 'destructive'
+                            });
+
+                            if (confirmed) {
+                                const res = await deleteOrphanedAuthUserAction('7300');
+                                if (res.success) {
+                                    showToast('Auth Users Deleted. Please re-register.', 'success');
+                                    window.location.reload();
+                                } else {
+                                    showToast('Delete Failed: ' + res.error, 'error');
+                                }
+                            }
+                        } else {
+                            // Case 3: Both exist or neither (or messy)
+                            showToast(`Diagnostic: DB=${!!diag.data?.inDatabase}, Auth=${diag.data?.inAuth?.length ?? 0}`, 'info');
+                            if (diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) > 0) {
+                                // Both exist - suggest regular delete? Or allow Force Both?
+                                // For now, simple info is likely enough as regular delete should work if synced, 
+                                // preventing deletion if auth_id mismatch is blocked.
+                            }
+                        }
+                    }} className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700">Debug: Fix 7300 Error</button>
                     <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     {isAdmin && <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>}
                 </div>

@@ -20,6 +20,10 @@ export interface Employee {
     authId?: string;
 }
 
+export interface EmployeeInput extends Omit<Employee, 'id'> {
+    password?: string;
+}
+
 export interface Memo {
     id: number;
     employee_code: string;

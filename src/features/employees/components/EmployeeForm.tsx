@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Employee } from '../employee.types';
+import type { Employee, EmployeeInput } from '../employee.types';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
@@ -13,7 +13,7 @@ import { calculateAge, calculateServicePeriod } from '../../../lib/utils/dateHel
 
 interface EmployeeFormProps {
     initialData?: Employee;
-    onSubmit: (data: Omit<Employee, 'id'>) => void;
+    onSubmit: (data: EmployeeInput) => void;
     onCancel: () => void;
     isSelfEdit?: boolean;
 }
@@ -23,7 +23,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
     const { employees, areas, addresses } = useData();
     const isAdmin = user?.role === 'admin';
 
-    const [formData, setFormData] = useState<Omit<Employee, 'id'>>({
+    const [formData, setFormData] = useState<EmployeeInput>({
         code: '',
         name: '',
         nameKana: '',

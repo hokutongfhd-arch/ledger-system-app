@@ -9,7 +9,7 @@ import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
 import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
-import { createEmployeeAction, fetchEmployeesAction } from '@/app/actions/employee';
+import { createEmployeeAction, fetchEmployeesAction, deleteEmployeeAction, deleteManyEmployeesAction } from '@/app/actions/employee';
 import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction } from '@/app/actions/device';
 
 interface DataContextType {
@@ -224,7 +224,7 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     companyNo: '', // Missing
     departmentCode: '', // Missing
     email: s(d.email),
-    password: s(d.password),
+    password: '', // Password is not stored in DB anymore
     gender: s(d.gender),
     birthDate: s(d.birthday),
     joinDate: s(d.join_date),
@@ -235,12 +235,13 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     addressCode: s(d.address_code),
     role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
     profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
+    authId: s(d.auth_id),
 });
 
 const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     employee_code: t.code,
     auth_id: t.auth_id,
-    password: t.password,
+    // password: t.password, // Password is NOT stored in DB, strictly used for Auth User creation
     name: t.name,
     name_kana: t.nameKana,
     email: t.email,
@@ -464,9 +465,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const deleteItems = useCallback(async <T extends { id: string }>(table: string, ids: string[], setState: React.Dispatch<React.SetStateAction<T[]>>, isArea: boolean = false, skipLog: boolean = false) => {
         try {
-            const pkField = isArea ? 'area_code' : 'id';
-            const { error } = await supabase.from(table).delete().in(pkField, ids);
-            if (error) throw error;
+            if (table === 'employees') {
+                // Special handling for Employee bulk delete to sync Auth User deletion
+                if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
+                    await deleteManyEmployeesBySetupAdmin(ids);
+                } else {
+                    await deleteManyEmployeesAction(ids);
+                }
+            } else {
+                // Default generic delete
+                const pkField = isArea ? 'area_code' : 'id';
+                const { error } = await supabase.from(table).delete().in(pkField, ids);
+                if (error) throw error;
+            }
 
             setState(prev => prev.filter(p => !ids.includes(p.id)));
 
@@ -761,7 +772,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             })();
         }
-        return deleteItem('employees', id, setEmployees, skipLog, skipToast);
+        // Use Server Action for Employee deletion to also remove Auth User
+        return (async () => {
+            try {
+                await deleteEmployeeAction(id);
+                setEmployees(prev => prev.filter(p => p.id !== id));
+
+                if (!skipLog) {
+                    await logger.info({
+                        action: 'DELETE',
+                        targetType: 'employee',
+                        targetId: id,
+                        message: `employees から ID: ${id} を削除しました (Auth User含む)`
+                    });
+                }
+
+                if (!skipToast) showToast('削除しました', 'success');
+            } catch (error: any) {
+                console.error('Delete Employee Failed:', error);
+                if (!skipToast) showToast('削除に失敗しました', 'error', error.message);
+                throw error;
+            }
+        })();
     };
 
     const addArea = (item: Omit<Area, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('areas', item, mapAreaToDb, mapAreaFromDb, setAreas, skipLog, skipToast);

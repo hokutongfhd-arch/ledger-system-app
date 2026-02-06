@@ -24,7 +24,6 @@ export async function createEmployeeBySetupAdmin(data: any) {
     const dbItem = {
         employee_code: data.code,
         auth_id: data.auth_id,
-        password: data.password,
         name: data.name,
         name_kana: data.nameKana,
         gender: data.gender,
@@ -71,7 +70,6 @@ export async function updateEmployeeBySetupAdmin(item: any) {
         area_code: item.areaCode,
         address_code: item.addressCode,
         authority: item.role,
-        password: item.password
     };
 
     const { error } = await supabase.from('employees').update(dbItem).eq('id', item.id);
@@ -84,6 +82,15 @@ export async function deleteEmployeeBySetupAdmin(id: string) {
     if (isSetup?.value !== 'true') throw new Error('Unauthorized');
 
     const supabase = getSupabaseAdmin();
+
+    // 1. Get Auth ID
+    const { data: employee } = await supabase.from('employees').select('auth_id').eq('id', id).single();
+
+    // 2. Delete Auth User
+    if (employee?.auth_id) {
+        await supabase.auth.admin.deleteUser(employee.auth_id).catch(e => console.error('Setup Auth Delete Error:', e));
+    }
+
     const { error } = await supabase.from('employees').delete().eq('id', id);
     if (error) throw error;
 }
@@ -94,6 +101,20 @@ export async function deleteManyEmployeesBySetupAdmin(ids: string[]) {
     if (isSetup?.value !== 'true') throw new Error('Unauthorized');
 
     const supabase = getSupabaseAdmin();
+
+    // 1. Get Auth IDs
+    const { data: employees } = await supabase.from('employees').select('auth_id').in('id', ids);
+
+    // 2. Delete Auth Users
+    if (employees && employees.length > 0) {
+        // Run in parallel
+        await Promise.all(employees.map(async (emp) => {
+            if (emp.auth_id) {
+                await supabase.auth.admin.deleteUser(emp.auth_id).catch(e => console.error('Setup Bulk Auth Delete Error:', e));
+            }
+        }));
+    }
+
     const { error } = await supabase.from('employees').delete().in('id', ids);
     if (error) throw error;
 }
