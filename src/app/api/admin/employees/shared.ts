@@ -54,7 +54,7 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             authAction = 'update_by_id';
         } else {
             // Priority 2: New Employee -> Lookup by Email (Auth Email)
-            const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+            const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
             if (listError) throw new Error(`Auth lookup failed: ${listError.message}`);
 
             const existingAuthUser = users.find(u => u.email?.toLowerCase() === authEmail.toLowerCase());

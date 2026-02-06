@@ -196,6 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { employee: employeeData } = await profileResponse.json();
 
             const employee = mapEmployeeFromDb(employeeData);
+            console.log(`[AuthContext] Profile Fetched: Code=${employee.code}, Authority=${employeeData.authority} -> Role=${employee.role}`); // Debug Log
             setUser(employee);
             await logger.info({
                 action: 'LOGIN_SUCCESS',

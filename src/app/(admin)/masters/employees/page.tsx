@@ -224,7 +224,7 @@ function EmployeeListContent() {
                     joinDate: joinDateValue,
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
-                    role: String(rowData['権限'] || '') === '管理者' ? 'admin' : 'user',
+                    role: String(rowData['権限'] || '').trim() === '管理者' ? 'admin' : 'user',
                     password: password,
                     companyNo: '',
                     departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),
@@ -488,13 +488,16 @@ function EmployeeListContent() {
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
                     <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
                     <button onClick={async () => {
-                        // 1. Diagnose first
-                        const diag = await diagnoseEmployeeStateAction('7300');
+                        const identifier = window.prompt("メンテナンス対象の社員コード、またはメールアドレスを入力してください", "");
+                        if (!identifier) return;
+
+                        // 1. Diagnose
+                        const diag = await diagnoseEmployeeStateAction(identifier);
 
                         if (diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) === 0) {
                             // Case 1: DB exists, Auth missing -> Force DB Delete
                             const confirmed = await confirm({
-                                title: 'Force Cleanup 7300',
+                                title: `Force Cleanup ${identifier}`,
                                 description: (
                                     <div>
                                         <p className="font-bold mb-2 text-red-600">State: DB Record Only</p>
@@ -508,7 +511,7 @@ function EmployeeListContent() {
                             });
 
                             if (confirmed) {
-                                const res = await forceDeleteEmployeeByCodeAction('7300');
+                                const res = await forceDeleteEmployeeByCodeAction(identifier);
                                 if (res.success) {
                                     showToast('DB Record Deleted. Please re-register.', 'success');
                                     window.location.reload();
@@ -519,7 +522,7 @@ function EmployeeListContent() {
                         } else if (!diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) > 0) {
                             // Case 2: DB missing, Auth exists -> Force Auth Delete
                             const confirmed = await confirm({
-                                title: 'Force Cleanup 7300',
+                                title: `Force Cleanup ${identifier}`,
                                 description: (
                                     <div>
                                         <p className="font-bold mb-2 text-red-600">State: Auth User Only (Orphan)</p>
@@ -533,7 +536,7 @@ function EmployeeListContent() {
                             });
 
                             if (confirmed) {
-                                const res = await deleteOrphanedAuthUserAction('7300');
+                                const res = await deleteOrphanedAuthUserAction(identifier);
                                 if (res.success) {
                                     showToast('Auth Users Deleted. Please re-register.', 'success');
                                     window.location.reload();
@@ -544,13 +547,10 @@ function EmployeeListContent() {
                         } else {
                             // Case 3: Both exist or neither (or messy)
                             showToast(`Diagnostic: DB=${!!diag.data?.inDatabase}, Auth=${diag.data?.inAuth?.length ?? 0}`, 'info');
-                            if (diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) > 0) {
-                                // Both exist - suggest regular delete? Or allow Force Both?
-                                // For now, simple info is likely enough as regular delete should work if synced, 
-                                // preventing deletion if auth_id mismatch is blocked.
-                            }
                         }
-                    }} className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700">Debug: Fix 7300 Error</button>
+                    }} className="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-gray-700 flex items-center gap-2 shadow-sm">
+                        <span className="font-bold">Maintenance</span>
+                    </button>
                     <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     {isAdmin && <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>}
                 </div>

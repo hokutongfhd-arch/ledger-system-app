@@ -12,7 +12,7 @@ const getSupabaseAdmin = () => {
  * Clean up an orphaned Auth User by Employee Code or Email.
  * This is used when the DB record is already gone but the Auth User remains.
  */
-export async function deleteOrphanedAuthUserAction(employeeCode: string, email?: string) {
+export async function deleteOrphanedAuthUserAction(identifier: string) {
     const supabaseAdmin = getSupabaseAdmin();
     const results = {
         deletedCount: 0,
@@ -20,18 +20,30 @@ export async function deleteOrphanedAuthUserAction(employeeCode: string, email?:
     };
 
     try {
-        const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
-        if (error) throw error;
+        const users = await getAllAuthUsers(supabaseAdmin);
 
-        // Find users matching code (metadata) or email
+        // Find users matching code (metadata) or email (direct)
+        const trimmedIdentifier = identifier.trim().toLowerCase();
+
+        console.log(`Searching for orphans to delete with identifier: '${trimmedIdentifier}'`);
+
         const targetUsers = users.filter(u => {
             const metaCode = u.user_metadata?.employee_code;
-            const matchesCode = metaCode === employeeCode || metaCode === String(employeeCode);
-            const matchesEmail = email && u.email?.toLowerCase() === email.toLowerCase();
+            const matchesCode = metaCode === identifier.trim() || metaCode === String(identifier.trim());
+
+            const userEmail = u.email || '';
+            const normalizedUserEmail = userEmail.toLowerCase().trim();
+            const normalizedInput = trimmedIdentifier; // already trimmed and lowered above
+            const matchesEmail = normalizedUserEmail === normalizedInput;
+
+            if (matchesCode || matchesEmail) {
+                console.log(`[DELETE TARGET FOUND] ID: ${u.id}, Email: ${u.email}, Code: ${metaCode}`);
+            }
+
             return matchesCode || matchesEmail;
         });
 
-        console.log(`Found ${targetUsers.length} orphaned candidates for code ${employeeCode} / email ${email}`);
+        console.log(`Found ${targetUsers.length} orphaned candidates for identifier ${identifier}`);
 
         for (const user of targetUsers) {
             const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
@@ -52,10 +64,45 @@ export async function deleteOrphanedAuthUserAction(employeeCode: string, email?:
     }
 }
 
+const getAllAuthUsers = async (supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) => {
+    let allUsers: any[] = [];
+    let page = 1;
+    const perPage = 1000;
+
+    console.log('Starting getAllAuthUsers fetch...');
+    while (true) {
+        const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({
+            page: page,
+            perPage: perPage
+        });
+
+        if (error) {
+            console.error('listUsers error:', error);
+            throw error;
+        }
+
+        if (!users || users.length === 0) {
+            break;
+        }
+
+        console.log(`Fetched page ${page}: ${users.length} users`);
+        allUsers = allUsers.concat(users);
+
+        if (users.length < perPage) {
+            break;
+        }
+
+        page++;
+    }
+
+    console.log(`Total users fetched: ${allUsers.length}`);
+    return allUsers;
+};
+
 /**
  * Diagnostic tool to check if an employee exists in DB or Auth
  */
-export async function diagnoseEmployeeStateAction(employeeCode: string) {
+export async function diagnoseEmployeeStateAction(identifier: string) {
     const supabaseAdmin = getSupabaseAdmin();
     const results = {
         inDatabase: null as any,
@@ -64,23 +111,42 @@ export async function diagnoseEmployeeStateAction(employeeCode: string) {
     };
 
     try {
-        // 1. Check DB
+        // 1. Check DB (Try matching code)
         const { data: dbEmp, error: dbError } = await supabaseAdmin
             .from('employees')
             .select('*')
-            .eq('employee_code', employeeCode)
+            .eq('employee_code', identifier)
             .maybeSingle();
 
         results.inDatabase = dbEmp;
 
         // 2. Check Auth
-        const { data: { users }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-        if (!authError) {
-            results.inAuth = users.filter(u =>
-                u.user_metadata?.employee_code === employeeCode ||
-                u.user_metadata?.employee_code === String(employeeCode) ||
-                (dbEmp && dbEmp.email && u.email === dbEmp.email)
-            ).map(u => ({ id: u.id, email: u.email, metadata: u.user_metadata }));
+        try {
+            const users = await getAllAuthUsers(supabaseAdmin);
+            const trimmedIdentifier = identifier.trim().toLowerCase();
+            console.log(`Diagnosing for identifier: '${trimmedIdentifier}'`);
+
+            results.inAuth = users.filter(u => {
+                const metaCode = u.user_metadata?.employee_code;
+                const matchesCode = metaCode && (metaCode === trimmedIdentifier || String(metaCode) === trimmedIdentifier);
+
+                const userEmail = u.email || '';
+                const normalizedUserEmail = userEmail.toLowerCase().trim();
+                const normalizedInput = trimmedIdentifier.trim();
+                const matchesEmail = normalizedUserEmail === normalizedInput;
+
+                if (matchesEmail || matchesCode) {
+                    console.log(`✅ Match found! ID: ${u.id}, Email: ${u.email}, Code: ${metaCode}`);
+                }
+
+                return matchesCode || matchesEmail || (dbEmp && dbEmp.email && u.email?.toLowerCase() === dbEmp.email.toLowerCase());
+            }).map(u => ({ id: u.id, email: u.email, metadata: u.user_metadata }));
+
+            console.log(`Found ${results.inAuth.length} matches in Auth.`);
+
+        } catch (authError) {
+            console.error('Auth check failed:', authError);
+            // Non-fatal, just empty
         }
 
         results.message = `DB: ${dbEmp ? 'FOUND' : 'NOT FOUND'}, Auth: ${results.inAuth.length} users found`;
@@ -90,6 +156,8 @@ export async function diagnoseEmployeeStateAction(employeeCode: string) {
         return { success: false, error: e.message };
     }
 }
+
+
 
 /**
  * Force delete DB record by code (Emergency Cleanup)

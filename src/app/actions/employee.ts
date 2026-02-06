@@ -180,34 +180,53 @@ export async function deleteEmployeeAction(id: string) {
         throw new Error(`Employee not found: ${fetchError.message}`);
     }
 
-    // 3. Delete DB Record First (to avoid FK constraint issues)
+    // 3. Delete Auth User FIRST (to avoid zombies)
+    if (employee.auth_id) {
+        const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(employee.auth_id);
+        if (authDeleteError) {
+            console.error(`Failed to delete Auth User ${employee.auth_id}:`, authDeleteError);
+        } else {
+            console.log(`Auth User ${employee.auth_id} deleted successfully.`);
+        }
+    } else {
+        // Fallback: If auth_id is missing in DB (inconsistency), try to find by metadata
+        console.warn(`Employee ${id} (Code: ${employee.employee_code}) has no auth_id. Attempting fallback cleanup...`);
+
+        // Iterative fetch to find orphan
+        let page = 1;
+        let foundOrphan = null;
+        let hasMore = true;
+
+        while (hasMore && !foundOrphan) {
+            const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+            if (error || !users || users.length === 0) {
+                hasMore = false;
+                break;
+            }
+
+            foundOrphan = users.find(u => u.user_metadata?.employee_code === employee.employee_code || u.user_metadata?.employee_code === String(employee.employee_code));
+
+            if (foundOrphan) break;
+            if (users.length < 1000) hasMore = false;
+            page++;
+        }
+
+        if (foundOrphan) {
+            console.log(`Found orphan Auth User via Code ${employee.employee_code}: ${foundOrphan.id}. Deleting...`);
+            const { error: orphanError } = await supabaseAdmin.auth.admin.deleteUser(foundOrphan.id);
+            if (orphanError) console.error('Fallback Orphan Delete Failed:', orphanError);
+        }
+    }
+
+    // 4. Delete DB Record (after Auth is gone)
     const { error: deleteError } = await supabaseAdmin
         .from('employees')
         .delete()
         .eq('id', id);
 
     if (deleteError) {
-        throw new Error(deleteError.message);
-    }
-
-    // 4. Delete Auth User if linked (now safe)
-    if (employee.auth_id) {
-        const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(employee.auth_id);
-        if (authDeleteError) {
-            console.error(`Failed to delete Auth User ${employee.auth_id}:`, authDeleteError);
-        }
-    } else {
-        // Fallback: If auth_id is missing in DB (inconsistency), try to find by metadata
-        console.warn(`Employee ${id} (Code: ${employee.employee_code}) has no auth_id. Attempting fallback cleanup...`);
-        const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
-        // Find orphan by code
-        const orphan = users.find(u => u.user_metadata?.employee_code === employee.employee_code || u.user_metadata?.employee_code === String(employee.employee_code));
-
-        if (orphan) {
-            console.log(`Found orphan Auth User via Code ${employee.employee_code}: ${orphan.id}. Deleting...`);
-            const { error: orphanError } = await supabaseAdmin.auth.admin.deleteUser(orphan.id);
-            if (orphanError) console.error('Fallback Orphan Delete Failed:', orphanError);
-        }
+        // Critical: Auth key is gone, but DB remains. This triggers "Orphan DB" state which is perfectly fine as it's easier to fix (Force Delete).
+        throw new Error(`DB Delete Failed: ${deleteError.message}`);
     }
 
     return { success: true };
@@ -256,7 +275,7 @@ export async function deleteManyEmployeesAction(ids: string[]) {
                 }
             } else {
                 // Fallback for bulk delete
-                const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+                const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
                 const orphan = users.find(u => u.user_metadata?.employee_code === emp.employee_code || u.user_metadata?.employee_code === String(emp.employee_code));
                 if (orphan) {
                     await supabaseAdmin.auth.admin.deleteUser(orphan.id);
