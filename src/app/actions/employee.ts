@@ -103,7 +103,22 @@ export async function fetchEmployeesAction() {
         throw new Error(error.message);
     }
 
-    return data;
+    // [FIX] Fetch Auth Users to populate 'email' field since it's missing in DB schema
+    const { data: { users }, error: authError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (authError) {
+        console.warn('Failed to fetch Auth Users for email sync:', authError);
+    }
+
+    // Merge email from Auth User
+    const mergedData = data.map(emp => {
+        const authUser = users?.find(u => u.id === emp.auth_id);
+        return {
+            ...emp,
+            email: authUser?.email || '' // Populate email from Auth
+        };
+    });
+
+    return mergedData;
 }
 
 export async function deleteEmployeeAction(id: string) {
