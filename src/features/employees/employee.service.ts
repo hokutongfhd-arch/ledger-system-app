@@ -47,7 +47,7 @@ export const employeeService = {
         return (data || []).map(employeeService.mapEmployeeFromDb);
     },
 
-    saveEmployee: async (item: EmployeeInput, isUpdate: boolean = false) => {
+    saveEmployee: async (item: EmployeeInput & { id?: string }, isUpdate: boolean = false) => {
         if (item.profileImage && typeof window !== 'undefined') {
             try {
                 localStorage.setItem(`profile_image_${item.id}`, item.profileImage);
