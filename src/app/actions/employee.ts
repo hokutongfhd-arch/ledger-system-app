@@ -182,39 +182,42 @@ export async function deleteEmployeeAction(id: string) {
 
     // 3. Delete Auth User FIRST (to avoid zombies)
     if (employee.auth_id) {
-        const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(employee.auth_id);
+        // Use RPC to bypass immutable audit log triggers
+        const { error: authDeleteError } = await supabaseAdmin.rpc('force_delete_auth_user', { target_user_id: employee.auth_id });
         if (authDeleteError) {
             console.error(`Failed to delete Auth User ${employee.auth_id}:`, authDeleteError);
+            throw new Error(`Auth Deletion Failed: ${authDeleteError.message}`); // Stop DB delete
         } else {
             console.log(`Auth User ${employee.auth_id} deleted successfully.`);
         }
     } else {
-        // Fallback: If auth_id is missing in DB (inconsistency), try to find by metadata
-        console.warn(`Employee ${id} (Code: ${employee.employee_code}) has no auth_id. Attempting fallback cleanup...`);
+        // Fallback: If auth_id is missing, try robust search (Email + Code)
+        console.warn(`Employee ${id} (Code: ${employee.employee_code}) has no auth_id. Attempting robust fallback cleanup...`);
 
-        // Iterative fetch to find orphan
-        let page = 1;
-        let foundOrphan = null;
-        let hasMore = true;
+        // Find users matching code (metadata) or email (direct) - Robust Logic
+        // We reuse the robust search logic from admin_maintenance.ts
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (!listError && users) {
+            const targetCode = String(employee.employee_code).trim().toLowerCase();
+            // Assuming we don't have email in 'employee' object here (select was partial), fetch full
+            const { data: fullEmp } = await supabaseAdmin.from('employees').select('email').eq('id', id).single();
+            const targetEmail = fullEmp?.email?.trim().toLowerCase();
 
-        while (hasMore && !foundOrphan) {
-            const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
-            if (error || !users || users.length === 0) {
-                hasMore = false;
-                break;
+            const foundOrphan = users.find(u => {
+                const metaCode = u.user_metadata?.employee_code;
+                const matchesCode = metaCode && (String(metaCode).trim().toLowerCase() === targetCode);
+                const matchesEmail = targetEmail && u.email?.trim().toLowerCase() === targetEmail;
+                return matchesCode || matchesEmail;
+            });
+
+            if (foundOrphan) {
+                console.log(`Found orphan Auth User via Robust Search: ${foundOrphan.id}. Deleting...`);
+                const { error: orphanError } = await supabaseAdmin.rpc('force_delete_auth_user', { target_user_id: foundOrphan.id });
+                if (orphanError) {
+                    console.error('Fallback Orphan Delete Failed:', orphanError);
+                    throw new Error(`Fallback Auth Deletion Failed: ${orphanError.message}`);
+                }
             }
-
-            foundOrphan = users.find(u => u.user_metadata?.employee_code === employee.employee_code || u.user_metadata?.employee_code === String(employee.employee_code));
-
-            if (foundOrphan) break;
-            if (users.length < 1000) hasMore = false;
-            page++;
-        }
-
-        if (foundOrphan) {
-            console.log(`Found orphan Auth User via Code ${employee.employee_code}: ${foundOrphan.id}. Deleting...`);
-            const { error: orphanError } = await supabaseAdmin.auth.admin.deleteUser(foundOrphan.id);
-            if (orphanError) console.error('Fallback Orphan Delete Failed:', orphanError);
         }
     }
 
@@ -254,7 +257,53 @@ export async function deleteManyEmployeesAction(ids: string[]) {
         throw new Error(`Employees fetch failed: ${fetchError.message}`);
     }
 
-    // 3. Delete DB Records First
+    // 3. Delete Auth Users FIRST (Reverse Order Fix)
+    const deletionErrors: string[] = [];
+
+    // We need to fetch full email for robust fallback
+    const { data: fullEmployees } = await supabaseAdmin
+        .from('employees')
+        .select('id, auth_id, employee_code, email')
+        .in('id', ids);
+
+    if (fullEmployees && fullEmployees.length > 0) {
+        // Pre-fetch all users for fallback efficiency
+        let allAuthUsers: any[] = [];
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (!listError && users) allAuthUsers = users;
+
+        await Promise.all(fullEmployees.map(async (emp) => {
+            let targetAuthId = emp.auth_id;
+
+            // Fallback Lookup if no auth_id
+            if (!targetAuthId) {
+                const targetCode = String(emp.employee_code).trim().toLowerCase();
+                const targetEmail = emp.email?.trim().toLowerCase();
+
+                const foundOrphan = allAuthUsers.find(u => {
+                    const metaCode = u.user_metadata?.employee_code;
+                    const matchesCode = metaCode && (String(metaCode).trim().toLowerCase() === targetCode);
+                    const matchesEmail = targetEmail && u.email?.trim().toLowerCase() === targetEmail;
+                    return matchesCode || matchesEmail;
+                });
+                if (foundOrphan) targetAuthId = foundOrphan.id;
+            }
+
+            if (targetAuthId) {
+                const { error } = await supabaseAdmin.rpc('force_delete_auth_user', { target_user_id: targetAuthId });
+                if (error) {
+                    console.error(`Failed to delete Auth User ${targetAuthId} (Code: ${emp.employee_code}):`, error);
+                    deletionErrors.push(`Code ${emp.employee_code}: ${error.message}`);
+                }
+            }
+        }));
+    }
+
+    if (deletionErrors.length > 0) {
+        throw new Error(`Auth Deletion Failed for some users: ${deletionErrors.join(', ')}. DB deletion aborted.`);
+    }
+
+    // 4. Delete DB Records (Only if Auth delete succeeded)
     const { error: deleteError } = await supabaseAdmin
         .from('employees')
         .delete()
@@ -262,26 +311,6 @@ export async function deleteManyEmployeesAction(ids: string[]) {
 
     if (deleteError) {
         throw new Error(deleteError.message);
-    }
-
-    // 4. Delete Auth Users
-    if (employees && employees.length > 0) {
-        // Run in parallel
-        await Promise.all(employees.map(async (emp) => {
-            if (emp.auth_id) {
-                const { error } = await supabaseAdmin.auth.admin.deleteUser(emp.auth_id);
-                if (error) {
-                    console.error(`Failed to delete Auth User ${emp.auth_id} (Code: ${emp.employee_code}):`, error);
-                }
-            } else {
-                // Fallback for bulk delete
-                const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-                const orphan = users.find(u => u.user_metadata?.employee_code === emp.employee_code || u.user_metadata?.employee_code === String(emp.employee_code));
-                if (orphan) {
-                    await supabaseAdmin.auth.admin.deleteUser(orphan.id);
-                }
-            }
-        }));
     }
 
     return { success: true };

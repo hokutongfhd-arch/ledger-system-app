@@ -46,7 +46,7 @@ export async function deleteOrphanedAuthUserAction(identifier: string) {
         console.log(`Found ${targetUsers.length} orphaned candidates for identifier ${identifier}`);
 
         for (const user of targetUsers) {
-            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+            const { error: deleteError } = await supabaseAdmin.rpc('force_delete_auth_user', { target_user_id: user.id });
             if (deleteError) {
                 console.error(`Failed to delete orphaned user ${user.id}:`, deleteError);
                 results.errors.push(`ID ${user.id}: ${deleteError.message}`);
