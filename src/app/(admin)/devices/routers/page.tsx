@@ -302,10 +302,10 @@ function RouterListContent() {
         handleExport(filteredData, headers, `router_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.no || '',
             item.contractStatus || '',
-            item.contractYears || '',
+            normalizeContractYear(item.contractYears || ''),
             item.carrier || '',
             item.modelNumber || '',
-            item.simNumber || '',
+            formatPhoneNumber(item.simNumber || ''),
             item.dataCapacity || '',
             item.terminalCode,
             item.employeeCode || '',

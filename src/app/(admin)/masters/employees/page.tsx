@@ -396,7 +396,7 @@ function EmployeeListContent() {
                 item.addressCode || '',
                 item.departmentCode || '',
                 item.joinDate || '',
-                item.yearsOfService || '',
+                (item.yearsOfService !== undefined && item.yearsOfService !== null) ? `${item.yearsOfService}年` : '',
                 item.monthsHasuu || '',
                 item.role === 'admin' ? '管理者' : 'ユーザー',
                 '********' // Do not export raw password

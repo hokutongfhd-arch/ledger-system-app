@@ -309,10 +309,10 @@ function FeaturePhoneListContent() {
 
         handleExport(filteredData, headers, `feature_phone_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.carrier,
-            item.phoneNumber,
+            formatPhoneNumber(item.phoneNumber),
             item.managementNumber,
             item.modelName,
-            item.contractYears || '',
+            normalizeContractYear(item.contractYears || ''),
             item.employeeId,
             item.addressCode,
             item.lendDate,
