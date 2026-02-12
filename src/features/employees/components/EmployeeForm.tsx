@@ -214,7 +214,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                     <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <FormLabel>社員コード</FormLabel>
+                            <FormLabel required>社員コード</FormLabel>
                             <Input
                                 ref={codeRef}
                                 type="text"
@@ -256,7 +256,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                         </div>
                         <div className="col-span-1 md:col-span-2 space-y-4">
                             <div>
-                                <FormLabel>氏名</FormLabel>
+                                <FormLabel required>氏名</FormLabel>
                                 <div className="flex gap-4">
                                     <div className="flex-1">
                                         <Input
@@ -305,7 +305,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                             </div>
                         </div>
                         <div className="col-span-1 md:col-span-2">
-                            <FormLabel>メールアドレス</FormLabel>
+                            <FormLabel required>メールアドレス</FormLabel>
                             <Input
                                 type="email"
                                 name="email"

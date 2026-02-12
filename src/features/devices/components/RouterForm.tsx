@@ -327,7 +327,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                         </div>
                         <div>
                             <div className="flex justify-between items-end mb-1">
-                                <FormLabel>SIM電番</FormLabel>
+                                <FormLabel required>SIM電番</FormLabel>
                                 <button
                                     type="button"
                                     onClick={togglePhoneMode}
@@ -394,7 +394,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <Input name="dataCapacity" value={formData.dataCapacity} onChange={handleChange} />
                         </div>
                         <div>
-                            <FormLabel>端末CD</FormLabel>
+                            <FormLabel required>端末CD</FormLabel>
                             <Input
                                 ref={terminalCodeRef}
                                 name="terminalCode"
