@@ -487,70 +487,7 @@ function EmployeeListContent() {
                     )}
                     <button onClick={handleDownloadTemplate} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><FileSpreadsheet size={18} />フォーマットDL</button>
                     <button onClick={handleImportClick} className="bg-background-paper text-text-secondary border border-border px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-background-subtle shadow-sm"><Upload size={18} />インポート</button>
-                    <button onClick={async () => {
-                        const identifier = window.prompt("メンテナンス対象の社員コード、またはメールアドレスを入力してください", "");
-                        if (!identifier) return;
 
-                        // 1. Diagnose
-                        const diag = await diagnoseEmployeeStateAction(identifier);
-
-                        if (diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) === 0) {
-                            // Case 1: DB exists, Auth missing -> Force DB Delete
-                            const confirmed = await confirm({
-                                title: `Force Cleanup ${identifier}`,
-                                description: (
-                                    <div>
-                                        <p className="font-bold mb-2 text-red-600">State: DB Record Only</p>
-                                        <p>DB record exists but Auth is missing.</p>
-                                        <p>Force Delete DB record?</p>
-                                    </div>
-                                ),
-                                confirmText: 'FORCE DB DELETE',
-                                cancelText: 'Cancel',
-                                variant: 'destructive'
-                            });
-
-                            if (confirmed) {
-                                const res = await forceDeleteEmployeeByCodeAction(identifier);
-                                if (res.success) {
-                                    showToast('DB Record Deleted. Please re-register.', 'success');
-                                    window.location.reload();
-                                } else {
-                                    showToast('Delete Failed: ' + res.error, 'error');
-                                }
-                            }
-                        } else if (!diag.data?.inDatabase && (diag.data?.inAuth?.length ?? 0) > 0) {
-                            // Case 2: DB missing, Auth exists -> Force Auth Delete
-                            const confirmed = await confirm({
-                                title: `Force Cleanup ${identifier}`,
-                                description: (
-                                    <div>
-                                        <p className="font-bold mb-2 text-red-600">State: Auth User Only (Orphan)</p>
-                                        <p>Auth Users found but DB record is gone.</p>
-                                        <p>Force Delete {diag.data?.inAuth?.length ?? 0} Auth Users?</p>
-                                    </div>
-                                ),
-                                confirmText: 'FORCE AUTH DELETE',
-                                cancelText: 'Cancel',
-                                variant: 'destructive'
-                            });
-
-                            if (confirmed) {
-                                const res = await deleteOrphanedAuthUserAction(identifier);
-                                if (res.success) {
-                                    showToast('Auth Users Deleted. Please re-register.', 'success');
-                                    window.location.reload();
-                                } else {
-                                    showToast('Delete Failed: ' + res.error, 'error');
-                                }
-                            }
-                        } else {
-                            // Case 3: Both exist or neither (or messy)
-                            showToast(`Diagnostic: DB=${!!diag.data?.inDatabase}, Auth=${diag.data?.inAuth?.length ?? 0}`, 'info');
-                        }
-                    }} className="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-gray-700 flex items-center gap-2 shadow-sm">
-                        <span className="font-bold">Maintenance</span>
-                    </button>
                     <input type="file" ref={fileInputRef} accept=".xlsx, .xls" className="hidden" onChange={handleFileChange} />
                     {isAdmin && <button onClick={handleAdd} className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover shadow-sm"><Plus size={18} />新規登録</button>}
                 </div>

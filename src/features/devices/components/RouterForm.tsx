@@ -210,6 +210,20 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         const newErrorFields = new Set<string>();
         let firstErrorField: HTMLElement | null = null;
 
+        // Required Field Check
+        if (!formData.terminalCode) {
+            newErrorFields.add('terminalCode');
+            if (!firstErrorField) firstErrorField = terminalCodeRef.current;
+        }
+
+        const currentSim = is14Digit ? formData.simNumber : `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
+        const hasSim = is14Digit ? formData.simNumber : (phoneParts.part1 || phoneParts.part2 || phoneParts.part3);
+
+        if (!hasSim) {
+            newErrorFields.add('simNumber');
+            if (!firstErrorField) firstErrorField = simNumberRef.current;
+        }
+
         // Check Terminal Code Uniqueness
         const isTerminalCodeDuplicate = routers.some(item =>
             item.terminalCode === formData.terminalCode &&
@@ -222,10 +236,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         }
 
         // Check SIM Number Uniqueness (normalize for comparison)
-        const currentSim = is14Digit ? formData.simNumber : `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
-        // For router SIM, normalization usually removes hyphens. Check utility usage.
-        // normalizePhoneNumber removes hyphens.
-        const isSimNumberDuplicate = routers.some(item =>
+        const isSimNumberDuplicate = hasSim && routers.some(item =>
             normalizePhoneNumber(item.simNumber) === normalizePhoneNumber(currentSim) &&
             (!initialData || item.id !== initialData.id)
         );
@@ -239,14 +250,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
 
         if (newErrorFields.size > 0) {
             setErrorFields(newErrorFields);
-
-            if (newErrorFields.has('terminalCode')) {
-                setFormData(prev => ({ ...prev, terminalCode: '' }));
-            }
-            if (newErrorFields.has('simNumber')) {
-                setFormData(prev => ({ ...prev, simNumber: '' }));
-                setPhoneParts({ part1: '', part2: '', part3: '' });
-            }
 
             if (firstErrorField) {
                 firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -268,8 +271,11 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         });
     };
 
+    // Calculate derived values for render
+    const hasSim = is14Digit ? !!formData.simNumber : (!!phoneParts.part1 || !!phoneParts.part2 || !!phoneParts.part3);
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="space-y-8">
                 {/* Basic Info */}
                 <div className="space-y-4">
@@ -387,7 +393,8 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                     />
                                 </div>
                             )}
-                            {errorFields.has('simNumber') && <FormError>既に登録されているSIM電番です</FormError>}
+                            {errorFields.has('simNumber') && !hasSim && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('simNumber') && hasSim && <FormError>既に登録されているSIM電番です</FormError>}
                         </div>
                         <div>
                             <FormLabel>通信容量</FormLabel>
@@ -400,13 +407,12 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 name="terminalCode"
                                 value={formData.terminalCode}
                                 onChange={handleChange}
-                                required
-
                                 readOnly={!!initialData?.id}
                                 className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('terminalCode')}
                             />
-                            {errorFields.has('terminalCode') && <FormError>既に登録されている端末CDです</FormError>}
+                            {errorFields.has('terminalCode') && !formData.terminalCode && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('terminalCode') && formData.terminalCode && <FormError>既に登録されている端末CDです</FormError>}
                         </div>
                     </div>
                 </div>

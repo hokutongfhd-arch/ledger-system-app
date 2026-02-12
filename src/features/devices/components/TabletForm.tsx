@@ -20,6 +20,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
     const { employees, addresses, tablets } = useData();
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const terminalCodeRef = useRef<HTMLInputElement>(null);
+    const modelNumberRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState<Omit<Tablet, 'id'>>({
         terminalCode: '',
         maker: '富士通',
@@ -86,6 +87,17 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         e.preventDefault();
 
         const newErrorFields = new Set<string>();
+        let firstErrorField: HTMLElement | null = null;
+
+        // Required Field Check
+        if (!formData.terminalCode) {
+            newErrorFields.add('terminalCode');
+            if (!firstErrorField) firstErrorField = terminalCodeRef.current;
+        }
+        if (!formData.modelNumber) {
+            newErrorFields.add('modelNumber');
+            if (!firstErrorField) firstErrorField = modelNumberRef.current;
+        }
 
         // Check Terminal Code Uniqueness
         const isTerminalCodeDuplicate = tablets.some(item =>
@@ -95,11 +107,15 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
 
         if (isTerminalCodeDuplicate) {
             newErrorFields.add('terminalCode');
-            setErrorFields(newErrorFields);
-            setFormData(prev => ({ ...prev, terminalCode: '' }));
+            if (!firstErrorField) firstErrorField = terminalCodeRef.current;
+        }
 
-            terminalCodeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            terminalCodeRef.current?.focus();
+        if (newErrorFields.size > 0) {
+            setErrorFields(newErrorFields);
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
+            }
             return;
         }
 
@@ -108,7 +124,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="space-y-8">
                 <div className="space-y-4">
                     <SectionHeader>基本情報</SectionHeader>
@@ -121,12 +137,15 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 name="terminalCode"
                                 value={formData.terminalCode}
                                 onChange={handleChange}
-                                required
                                 readOnly={!!initialData?.id}
                                 className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('terminalCode')}
                             />
-                            {errorFields.has('terminalCode') && <FormError>既に登録されている端末CDです</FormError>}
+                            {errorFields.has('terminalCode') && !tablets.some(item => item.terminalCode === formData.terminalCode && (!initialData || item.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('terminalCode') && (
+                                tablets.some(item => item.terminalCode === formData.terminalCode && (!initialData || item.id !== initialData.id)) ?
+                                    <FormError>既に登録されている端末CDです</FormError> : null
+                            )}
                         </div>
                         <div>
                             <FormLabel>メーカー</FormLabel>
@@ -140,12 +159,14 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                         <div>
                             <FormLabel required>型番</FormLabel>
                             <Input
+                                ref={modelNumberRef}
                                 type="text"
                                 name="modelNumber"
                                 value={formData.modelNumber}
                                 onChange={handleChange}
-                                required
+                                error={errorFields.has('modelNumber')}
                             />
+                            {errorFields.has('modelNumber') && <FormError>この項目は必須です</FormError>}
                         </div>
                         <div>
                             <FormLabel>状況</FormLabel>

@@ -159,6 +159,20 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         const newErrorFields = new Set<string>();
         let firstErrorField: HTMLElement | null = null;
 
+        // Required Field Check
+        if (!formData.managementNumber) {
+            newErrorFields.add('managementNumber');
+            if (!firstErrorField) firstErrorField = managementNumberRef.current;
+        }
+
+        const currentPhone = `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
+        const hasPhone = phoneParts.part1 || phoneParts.part2 || phoneParts.part3;
+
+        if (!hasPhone) {
+            newErrorFields.add('phoneNumber');
+            if (!firstErrorField) firstErrorField = phonePart1Ref.current;
+        }
+
         const isManagementNumberDuplicate = featurePhones.some(item =>
             item.managementNumber === formData.managementNumber &&
             (!initialData || item.id !== initialData.id)
@@ -168,8 +182,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
             if (!firstErrorField) firstErrorField = managementNumberRef.current;
         }
 
-        const currentPhone = `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
-        const isPhoneNumberDuplicate = featurePhones.some(item =>
+        const isPhoneNumberDuplicate = hasPhone && featurePhones.some(item =>
             normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(currentPhone) &&
             (!initialData || item.id !== initialData.id)
         );
@@ -180,14 +193,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
 
         if (newErrorFields.size > 0) {
             setErrorFields(newErrorFields);
-
-            if (newErrorFields.has('managementNumber')) {
-                setFormData(prev => ({ ...prev, managementNumber: '' }));
-            }
-            if (newErrorFields.has('phoneNumber')) {
-                setPhoneParts({ part1: '', part2: '', part3: '' });
-                setFormData(prev => ({ ...prev, phoneNumber: '' }));
-            }
 
             if (firstErrorField) {
                 firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -202,7 +207,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="space-y-8">
                 <div className="space-y-4">
                     <SectionHeader>基本情報</SectionHeader>
@@ -215,12 +220,15 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 name="managementNumber"
                                 value={formData.managementNumber}
                                 onChange={handleChange}
-                                required
                                 readOnly={!!initialData?.id}
                                 className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('managementNumber')}
                             />
-                            {errorFields.has('managementNumber') && <FormError>既に登録されている管理番号です</FormError>}
+                            {errorFields.has('managementNumber') && !featurePhones.some(item => item.managementNumber === formData.managementNumber && (!initialData || item.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('managementNumber') && (
+                                featurePhones.some(item => item.managementNumber === formData.managementNumber && (!initialData || item.id !== initialData.id)) ?
+                                    <FormError>既に登録されている管理番号です</FormError> : null
+                            )}
                         </div>
                         <div>
                             <FormLabel>機種名</FormLabel>
@@ -243,7 +251,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                     maxLength={3}
                                     className="w-16 text-center"
                                     placeholder="090"
-                                    required
                                     error={errorFields.has('phoneNumber')}
                                 />
                                 <span className="text-gray-500">-</span>
@@ -256,7 +263,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                     maxLength={4}
                                     className="w-20 text-center"
                                     placeholder="1234"
-                                    required
                                     error={errorFields.has('phoneNumber')}
                                 />
                                 <span className="text-gray-500">-</span>
@@ -269,11 +275,13 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                     maxLength={4}
                                     className="w-20 text-center"
                                     placeholder="5678"
-                                    required
                                     error={errorFields.has('phoneNumber')}
                                 />
                             </div>
-                            {errorFields.has('phoneNumber') && <FormError>既に登録されている電話番号です</FormError>}
+                            {errorFields.has('phoneNumber') && !featurePhones.some(item => normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`) && (!initialData || item.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('phoneNumber') && featurePhones.some(item => normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`) && (!initialData || item.id !== initialData.id)) && (
+                                <FormError>既に登録されている電話番号です</FormError>
+                            )}
                         </div>
                         <div>
                             <FormLabel>キャリア</FormLabel>

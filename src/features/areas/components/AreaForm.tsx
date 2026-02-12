@@ -20,6 +20,7 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
     const { areas } = useData();
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const codeRef = useRef<HTMLInputElement>(null);
+    const areaNameRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (initialData) {
@@ -31,10 +32,29 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (errorFields.has(name)) {
+            const next = new Set(errorFields);
+            next.delete(name);
+            setErrorFields(next);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrorFields = new Set<string>();
+        let firstErrorField: HTMLElement | null = null;
+
+        // Required Field Check
+        if (!formData.areaCode) {
+            newErrorFields.add('areaCode');
+            if (!firstErrorField) firstErrorField = codeRef.current;
+        }
+        if (!formData.areaName) {
+            newErrorFields.add('areaName');
+            if (!firstErrorField) firstErrorField = areaNameRef.current;
+        }
 
         // Uniqueness Check
         const isDuplicate = areas.some(area =>
@@ -43,13 +63,15 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
         );
 
         if (isDuplicate) {
-            setErrorFields(prev => new Set(prev).add('areaCode'));
-            setFormData(prev => ({ ...prev, areaCode: '' }));
+            newErrorFields.add('areaCode');
+            if (!firstErrorField) firstErrorField = codeRef.current;
+        }
 
-            // Scroll to the code input
-            if (codeRef.current) {
-                codeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                codeRef.current.focus();
+        if (newErrorFields.size > 0) {
+            setErrorFields(newErrorFields);
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
             }
             return;
         }
@@ -58,7 +80,7 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="space-y-8">
                 <div className="space-y-4">
                     <SectionHeader>基本情報</SectionHeader>
@@ -78,23 +100,26 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
                                         setErrorFields(next);
                                     }
                                 }}
-                                required
                                 error={errorFields.has('areaCode')}
                             />
+                            {errorFields.has('areaCode') && !areas.some(a => a.areaCode === formData.areaCode && (!initialData || a.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
                             {errorFields.has('areaCode') && (
-                                <FormError>既に登録されているエリアコードです</FormError>
+                                areas.some(a => a.areaCode === formData.areaCode && (!initialData || a.id !== initialData.id)) ?
+                                    <FormError>既に登録されているエリアコードです</FormError> : null
                             )}
                         </div>
 
                         <div>
                             <FormLabel required>エリア名</FormLabel>
                             <Input
+                                ref={areaNameRef}
                                 type="text"
                                 name="areaName"
                                 value={formData.areaName}
                                 onChange={handleChange}
-                                required
+                                error={errorFields.has('areaName')}
                             />
+                            {errorFields.has('areaName') && <FormError>この項目は必須です</FormError>}
                         </div>
                     </div>
                 </div>

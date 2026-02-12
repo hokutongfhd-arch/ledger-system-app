@@ -20,6 +20,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     const { areas, addresses } = useData();
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const codeRef = useRef<HTMLInputElement>(null);
+    const officeNameRef = useRef<HTMLInputElement>(null);
+    const addressRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState<Omit<Address, 'id'>>({
         no: '',
         addressCode: '',
@@ -148,9 +150,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        if (name === 'addressCode' && errorFields.has('addressCode')) {
+        if (errorFields.has(name)) {
             const next = new Set(errorFields);
-            next.delete('addressCode');
+            next.delete(name);
             setErrorFields(next);
         }
     };
@@ -212,6 +214,23 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        const newErrorFields = new Set<string>();
+        let firstErrorField: HTMLElement | null = null;
+
+        // Required Field Check
+        if (!formData.addressCode) {
+            newErrorFields.add('addressCode');
+            if (!firstErrorField) firstErrorField = codeRef.current;
+        }
+        if (!formData.officeName) {
+            newErrorFields.add('officeName');
+            if (!firstErrorField) firstErrorField = officeNameRef.current;
+        }
+        if (!formData.address) {
+            newErrorFields.add('address');
+            if (!firstErrorField) firstErrorField = addressRef.current;
+        }
+
         // Uniqueness Check
         const isDuplicate = addresses.some(addr =>
             addr.addressCode === formData.addressCode &&
@@ -219,13 +238,15 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         );
 
         if (isDuplicate) {
-            setErrorFields(prev => new Set(prev).add('addressCode'));
-            setFormData(prev => ({ ...prev, addressCode: '' }));
+            newErrorFields.add('addressCode');
+            if (!firstErrorField) firstErrorField = codeRef.current;
+        }
 
-            // Scroll to the code input
-            if (codeRef.current) {
-                codeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                codeRef.current.focus();
+        if (newErrorFields.size > 0) {
+            setErrorFields(newErrorFields);
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
             }
             return;
         }
@@ -237,7 +258,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-2">
+        <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-2" noValidate>
             <div className="space-y-8">
                 {/* Main Information */}
                 <div className="space-y-4">
@@ -263,14 +284,23 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 name="addressCode"
                                 value={formData.addressCode}
                                 onChange={handleChange}
-                                required
                                 error={errorFields.has('addressCode')}
                             />
-                            {errorFields.has('addressCode') && <FormError>既に登録されている事業所コードです</FormError>}
+                            {errorFields.has('addressCode') && !addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('addressCode') && addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && (
+                                <FormError>既に登録されている事業所コードです</FormError>
+                            )}
                         </div>
                         <div>
                             <FormLabel required>事業所名</FormLabel>
-                            <Input name="officeName" value={formData.officeName} onChange={handleChange} required />
+                            <Input
+                                ref={officeNameRef}
+                                name="officeName"
+                                value={formData.officeName}
+                                onChange={handleChange}
+                                error={errorFields.has('officeName')}
+                            />
+                            {errorFields.has('officeName') && <FormError>この項目は必須です</FormError>}
                         </div>
                     </div>
                 </div>
@@ -377,7 +407,14 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                         </div>
                         <div className="md:col-span-2">
                             <FormLabel required>住所</FormLabel>
-                            <Input name="address" value={formData.address} onChange={handleChange} required />
+                            <Input
+                                ref={addressRef}
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                error={errorFields.has('address')}
+                            />
+                            {errorFields.has('address') && <FormError>この項目は必須です</FormError>}
                         </div>
                     </div>
                 </div>

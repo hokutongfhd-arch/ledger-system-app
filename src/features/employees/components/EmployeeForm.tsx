@@ -54,6 +54,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const [numericError, setNumericError] = useState(false);
     const codeRef = useRef<HTMLInputElement>(null);
+    const lastNameRef = useRef<HTMLInputElement>(null);
+    const firstNameRef = useRef<HTMLInputElement>(null);
+    const emailRef = useRef<HTMLInputElement>(null);
+    const passwordRef = useRef<HTMLInputElement>(null);
 
     // Prepare Options
     const areaOptions = useMemo(() => {
@@ -97,6 +101,13 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         // Remove ANY spaces (half-width, full-width, ideographic)
         const sanitized = value.replace(/[\s　]+/g, '');
         setNameParts(prev => ({ ...prev, [name]: sanitized }));
+
+        // Clear error if user starts typing
+        if (errorFields.has(name)) {
+            const next = new Set(errorFields);
+            next.delete(name);
+            setErrorFields(next);
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -134,6 +145,13 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         }
 
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Clear error if user starts typing
+        if (errorFields.has(name)) {
+            const next = new Set(errorFields);
+            next.delete(name);
+            setErrorFields(next);
+        }
     };
 
     const handleCompositionStart = () => {
@@ -162,6 +180,33 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        const newErrorFields = new Set<string>();
+        let firstErrorField: HTMLElement | null = null;
+
+        // Required Field Check
+        if (!formData.code) {
+            newErrorFields.add('code');
+            if (!firstErrorField) firstErrorField = codeRef.current;
+        }
+        if (!nameParts.lastName) {
+            newErrorFields.add('lastName');
+            if (!firstErrorField) firstErrorField = lastNameRef.current;
+        }
+        if (!nameParts.firstName) {
+            newErrorFields.add('firstName');
+            if (!firstErrorField) firstErrorField = firstNameRef.current;
+        }
+        if (!formData.email) {
+            newErrorFields.add('email');
+            if (!firstErrorField) firstErrorField = emailRef.current;
+        }
+
+        // Password Required Check (New Registration only)
+        if (isAdmin && !initialData && !formData.password) {
+            newErrorFields.add('password');
+            if (!firstErrorField) firstErrorField = passwordRef.current;
+        }
+
         // Uniqueness Check
         const isDuplicate = employees.some(emp =>
             emp.code === formData.code &&
@@ -169,28 +214,36 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         );
 
         if (isDuplicate) {
-            setErrorFields(prev => new Set(prev).add('code'));
-            setFormData(prev => ({ ...prev, code: '' }));
-
-            // Scroll to the code input
-            if (codeRef.current) {
-                codeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                codeRef.current.focus();
-            }
-            return;
+            newErrorFields.add('code');
+            if (!firstErrorField) firstErrorField = codeRef.current;
         }
 
         // Password Validation (8+ digits, numeric only)
         if (isAdmin && formData.password) {
             const password = formData.password;
             if (password.length < 8) {
-                setErrorFields(prev => new Set(prev).add('password_length'));
-                return;
+                newErrorFields.add('password_length');
+                if (!firstErrorField) firstErrorField = passwordRef.current;
             }
             if (!/^[0-9]+$/.test(password)) {
-                setErrorFields(prev => new Set(prev).add('password_format'));
-                return;
+                newErrorFields.add('password_format');
+                if (!firstErrorField) firstErrorField = passwordRef.current;
             }
+        }
+
+        if (newErrorFields.size > 0) {
+            setErrorFields(newErrorFields);
+            if (isDuplicate) {
+                // Special handling for duplicate error message logic if needed, 
+                // but typically duplicate is just another error.
+                // We kept the specific error message logic in render.
+            }
+
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
+            }
+            return;
         }
 
         // Combine name parts with half-width space for storage
@@ -207,7 +260,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
     const today = new Date().toISOString().split('T')[0];
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-2">
+        <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-2" noValidate>
             <div className="space-y-8">
                 {/* Basic Info */}
                 <div className="space-y-4">
@@ -231,11 +284,13 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                     }
                                 }}
                                 error={errorFields.has('code')}
-                                required
                                 disabled={isSelfEdit}
                                 inputMode="numeric"
                             />
-                            {errorFields.has('code') && (
+                            {errorFields.has('code') && !numericError && !employees.some(e => e.code === formData.code && (!initialData || e.id !== initialData.id)) && (
+                                <FormError>この項目は必須です</FormError>
+                            )}
+                            {errorFields.has('code') && employees.some(e => e.code === formData.code && (!initialData || e.id !== initialData.id)) && (
                                 <FormError>既に登録されている社員コードです</FormError>
                             )}
                             {numericError && (
@@ -260,23 +315,27 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 <div className="flex gap-4">
                                     <div className="flex-1">
                                         <Input
+                                            ref={lastNameRef}
                                             type="text"
                                             name="lastName"
                                             value={nameParts.lastName}
                                             onChange={handleNamePartChange}
                                             placeholder="苗字"
-                                            required
+                                            error={errorFields.has('lastName')}
                                         />
+                                        {errorFields.has('lastName') && <FormError>この項目は必須です</FormError>}
                                     </div>
                                     <div className="flex-1">
                                         <Input
+                                            ref={firstNameRef}
                                             type="text"
                                             name="firstName"
                                             value={nameParts.firstName}
                                             onChange={handleNamePartChange}
                                             placeholder="名前"
-                                            required
+                                            error={errorFields.has('firstName')}
                                         />
+                                        {errorFields.has('firstName') && <FormError>この項目は必須です</FormError>}
                                     </div>
                                 </div>
                             </div>
@@ -307,13 +366,15 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                         <div className="col-span-1 md:col-span-2">
                             <FormLabel required>メールアドレス</FormLabel>
                             <Input
+                                ref={emailRef}
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 placeholder="taro.yamada@example.com"
-                                required
+                                error={errorFields.has('email')}
                             />
+                            {errorFields.has('email') && <FormError>この項目は必須です</FormError>}
                         </div>
                         <div>
                             <FormLabel>生年月日</FormLabel>
@@ -412,13 +473,19 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                         </div>
                         {isAdmin && !initialData && (
                             <div>
-                                <FormLabel>パスワード</FormLabel>
+                                <FormLabel required>パスワード</FormLabel>
                                 <Input
+                                    ref={passwordRef}
                                     type="text"
                                     name="password"
                                     value={formData.password || ''}
                                     onChange={(e) => {
                                         handleChange(e);
+                                        if (errorFields.has('password')) {
+                                            const next = new Set(errorFields);
+                                            next.delete('password');
+                                            setErrorFields(next);
+                                        }
                                         if (errorFields.has('password_length')) {
                                             const next = new Set(errorFields);
                                             next.delete('password_length');
@@ -432,7 +499,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                     }}
                                     className="bg-yellow-50"
                                     placeholder="管理者のみ表示 (半角数字8文字以上)"
+                                    error={errorFields.has('password') || errorFields.has('password_length') || errorFields.has('password_format')}
                                 />
+                                {errorFields.has('password') && (
+                                    <FormError>この項目は必須です</FormError>
+                                )}
                                 {errorFields.has('password_length') && (
                                     <FormError>パスワードは8文字以上必要です</FormError>
                                 )}
