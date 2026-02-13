@@ -151,15 +151,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                             )}
                         </div>
                         <div>
-                            <FormLabel>メーカー</FormLabel>
-                            <Input
-                                type="text"
-                                name="maker"
-                                value={formData.maker}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div>
                             <FormLabel required>型番</FormLabel>
                             <Input
                                 ref={modelNumberRef}
@@ -170,6 +161,25 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 error={errorFields.has('modelNumber')}
                             />
                             {errorFields.has('modelNumber') && <FormError>この項目は必須です</FormError>}
+                        </div>
+                        <div>
+                            <FormLabel>メーカー</FormLabel>
+                            <Input
+                                type="text"
+                                name="maker"
+                                value={formData.maker}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
+                            <FormLabel>契約年数</FormLabel>
+                            <Input
+                                type="text"
+                                name="contractYears"
+                                value={formData.contractYears || ''}
+                                onChange={handleChange}
+                                placeholder="例: 2年"
+                            />
                         </div>
                         <div>
                             <FormLabel>状況</FormLabel>
@@ -185,16 +195,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 <option value="repairing">修理中</option>
                                 <option value="discarded">廃棄</option>
                             </Select>
-                        </div>
-                        <div>
-                            <FormLabel>契約年数</FormLabel>
-                            <Input
-                                type="text"
-                                name="contractYears"
-                                value={formData.contractYears || ''}
-                                onChange={handleChange}
-                                placeholder="例: 2年"
-                            />
                         </div>
                     </div>
                 </div>
