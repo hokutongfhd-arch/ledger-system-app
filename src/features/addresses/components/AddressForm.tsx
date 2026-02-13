@@ -161,19 +161,36 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         }
     };
 
+    const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (/^\d*$/.test(value)) {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+            if (errorFields.has(name)) {
+                const newErrorFields = new Set(errorFields);
+                newErrorFields.delete(name);
+                setErrorFields(newErrorFields);
+            }
+        }
+    };
+
     const handleTelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        if (!/^\d*$/.test(value)) return;
+
         const newParts = { ...telParts, [name]: value };
         setTelParts(newParts);
 
         const fullTel = `${newParts.part1}-${newParts.part2}-${newParts.part3}`.replace(/^-+|-+$/g, '');
         setFormData(prev => ({ ...prev, tel: fullTel }));
-
-        // Auto focus logic could be added here if needed
     };
 
     const handleFaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        if (!/^\d*$/.test(value)) return;
+
         const newParts = { ...faxParts, [name]: value };
         setFaxParts(newParts);
 
@@ -183,6 +200,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
     const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        if (!/^\d*$/.test(value)) return;
+
         const newParts = { ...zipParts, [name]: value };
         setZipParts(newParts);
 
@@ -192,6 +211,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
     const handleLabelZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        if (!/^\d*$/.test(value)) return;
+
         const newParts = { ...labelZipParts, [name]: value };
         setLabelZipParts(newParts);
 
@@ -270,7 +291,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                         </div>
                         <div>
                             <FormLabel>No.</FormLabel>
-                            <Input name="no" value={formData.no} onChange={handleChange} />
+                            <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
                             <FormLabel required>事業所コード</FormLabel>
@@ -278,7 +299,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 ref={codeRef}
                                 name="addressCode"
                                 value={formData.addressCode}
-                                onChange={handleChange}
+                                onChange={handleNumberChange}
+                                placeholder="半角数字のみ"
                                 error={errorFields.has('addressCode')}
                             />
                             {errorFields.has('addressCode') && !addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
