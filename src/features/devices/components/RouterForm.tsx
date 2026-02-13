@@ -325,50 +325,18 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
-                            <FormLabel>契約状況</FormLabel>
-                            <Input name="contractStatus" value={formData.contractStatus} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <FormLabel>状況</FormLabel>
-                            <Select
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                            >
-                                <option value="in-use">使用中</option>
-                                <option value="backup">予備機</option>
-                                <option value="available">在庫</option>
-                                <option value="broken">故障</option>
-                                <option value="repairing">修理中</option>
-                                <option value="discarded">廃棄</option>
-                            </Select>
-                        </div>
-                        <div>
-                            <FormLabel>契約年数</FormLabel>
+                            <FormLabel required>端末CD</FormLabel>
                             <Input
-                                name="contractYears"
-                                value={formData.contractYears || ''}
+                                ref={terminalCodeRef}
+                                name="terminalCode"
+                                value={formData.terminalCode}
                                 onChange={handleChange}
-                                placeholder="例: 2年"
+                                readOnly={!!initialData?.id}
+                                className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
+                                error={errorFields.has('terminalCode')}
                             />
-                        </div>
-                        <div>
-                            <FormLabel>通信キャリア</FormLabel>
-                            <Select
-                                name="carrier"
-                                value={formData.carrier}
-                                onChange={handleChange}
-                                placeholder="選択してください"
-                            >
-                                <option value="au・wimax2+">au・wimax2+</option>
-                                <option value="au">au</option>
-                                <option value="docomo(iij)">docomo(iij)</option>
-                                <option value="SoftBank">SoftBank</option>
-                            </Select>
-                        </div>
-                        <div>
-                            <FormLabel>機種型番</FormLabel>
-                            <Input name="modelNumber" value={formData.modelNumber} onChange={handleChange} />
+                            {errorFields.has('terminalCode') && !formData.terminalCode && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('terminalCode') && isTerminalCodeDuplicate && <FormError>既に登録されている端末CDです</FormError>}
                         </div>
                         <div>
                             <div className="flex justify-between items-end mb-1">
@@ -436,22 +404,54 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             {errorFields.has('simNumber') && isSimNumberDuplicate && <FormError>既に登録されているSIM電番です</FormError>}
                         </div>
                         <div>
+                            <FormLabel>機種型番</FormLabel>
+                            <Input name="modelNumber" value={formData.modelNumber} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>通信キャリア</FormLabel>
+                            <Select
+                                name="carrier"
+                                value={formData.carrier}
+                                onChange={handleChange}
+                                placeholder="選択してください"
+                            >
+                                <option value="au・wimax2+">au・wimax2+</option>
+                                <option value="au">au</option>
+                                <option value="docomo(iij)">docomo(iij)</option>
+                                <option value="SoftBank">SoftBank</option>
+                            </Select>
+                        </div>
+                        <div>
                             <FormLabel>通信容量</FormLabel>
                             <Input name="dataCapacity" value={formData.dataCapacity} onChange={handleChange} />
                         </div>
                         <div>
-                            <FormLabel required>端末CD</FormLabel>
+                            <FormLabel>契約状況</FormLabel>
+                            <Input name="contractStatus" value={formData.contractStatus} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>契約年数</FormLabel>
                             <Input
-                                ref={terminalCodeRef}
-                                name="terminalCode"
-                                value={formData.terminalCode}
+                                name="contractYears"
+                                value={formData.contractYears || ''}
                                 onChange={handleChange}
-                                readOnly={!!initialData?.id}
-                                className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
-                                error={errorFields.has('terminalCode')}
+                                placeholder="例: 2年"
                             />
-                            {errorFields.has('terminalCode') && !formData.terminalCode && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('terminalCode') && isTerminalCodeDuplicate && <FormError>既に登録されている端末CDです</FormError>}
+                        </div>
+                        <div>
+                            <FormLabel>状況</FormLabel>
+                            <Select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                            >
+                                <option value="in-use">使用中</option>
+                                <option value="backup">予備機</option>
+                                <option value="available">在庫</option>
+                                <option value="broken">故障</option>
+                                <option value="repairing">修理中</option>
+                                <option value="discarded">廃棄</option>
+                            </Select>
                         </div>
                     </div>
                 </div>
@@ -545,16 +545,16 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <Input name="biller" value={formData.biller || ''} onChange={handleChange} />
                         </div>
                         <div>
+                            <FormLabel>負担先</FormLabel>
+                            <Input name="costBearer" value={formData.costBearer || ''} onChange={handleChange} />
+                        </div>
+                        <div>
                             <FormLabel>費用</FormLabel>
                             <Input type="text" name="cost" value={formData.cost === 0 ? '' : String(formData.cost)} onChange={handleCostChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
                             <FormLabel>費用振替</FormLabel>
                             <Input name="costTransfer" value={formData.costTransfer || ''} onChange={handleNumberChange} placeholder="半角数字のみ" />
-                        </div>
-                        <div>
-                            <FormLabel>負担先</FormLabel>
-                            <Input name="costBearer" value={formData.costBearer || ''} onChange={handleChange} />
                         </div>
                     </div>
                 </div>
