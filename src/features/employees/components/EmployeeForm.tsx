@@ -53,6 +53,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
 
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const [numericError, setNumericError] = useState(false);
+    const [emailError, setEmailError] = useState(false);
     const codeRef = useRef<HTMLInputElement>(null);
     const lastNameRef = useRef<HTMLInputElement>(null);
     const firstNameRef = useRef<HTMLInputElement>(null);
@@ -138,6 +139,32 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
             return;
         }
 
+        if (name === 'email') {
+            // IME入力中は変換をスキップしてそのまま保持
+            if (isComposing.current) {
+                setFormData(prev => ({ ...prev, [name]: value }));
+                return;
+            }
+
+            // 全角文字が含まれているかチェック
+            const hasZenKaku = /[^\x00-\x7F]/.test(value);
+            setEmailError(hasZenKaku);
+
+            // 全角文字を半角に変換し、ASCII以外を除去
+            const sanitizedValue = value
+                .replace(/[！-～]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)) // 全角ASCIIを半角に
+                .replace(/[^\x00-\x7F]/g, ''); // それ以外の非ASCIIを除去
+            setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
+
+            // Clear error if user starts typing
+            if (errorFields.has(name)) {
+                const next = new Set(errorFields);
+                next.delete(name);
+                setErrorFields(next);
+            }
+            return;
+        }
+
         if (name === 'joinDate') {
             const period = calculateServicePeriod(value);
             setFormData(prev => ({ ...prev, joinDate: value, yearsOfService: period.years, monthsHasuu: period.months }));
@@ -161,16 +188,29 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
     const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
         isComposing.current = false;
         const value = e.currentTarget.value;
+        const name = e.currentTarget.getAttribute('name');
 
-        // 確定時に数字以外の文字が含まれているかチェック
-        const hasNonNumeric = /[^0-9０-９]/.test(value);
-        setNumericError(hasNonNumeric);
+        if (name === 'code') {
+            // 確定時に数字以外の文字が含まれているかチェック
+            const hasNonNumeric = /[^0-9０-９]/.test(value);
+            setNumericError(hasNonNumeric);
 
-        // 確定時に強制的に半角数字のみに変換
-        const sanitizedValue = value
-            .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-            .replace(/[^0-9]/g, '');
-        setFormData(prev => ({ ...prev, code: sanitizedValue }));
+            // 確定時に強制的に半角数字のみに変換
+            const sanitizedValue = value
+                .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+                .replace(/[^0-9]/g, '');
+            setFormData(prev => ({ ...prev, code: sanitizedValue }));
+        } else if (name === 'email') {
+            // 確定時に全角文字が含まれているかチェック
+            const hasZenKaku = /[^\x00-\x7F]/.test(value);
+            setEmailError(hasZenKaku);
+
+            // 確定時に強制的に半角（ASCII）のみに変換
+            const sanitizedValue = value
+                .replace(/[！-～]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+                .replace(/[^\x00-\x7F]/g, '');
+            setFormData(prev => ({ ...prev, email: sanitizedValue }));
+        }
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -375,11 +415,14 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 type="email"
                                 name="email"
                                 value={formData.email}
+                                onCompositionStart={handleCompositionStart}
+                                onCompositionEnd={handleCompositionEnd}
                                 onChange={handleChange}
                                 placeholder="taro.yamada@example.com"
-                                error={errorFields.has('email')}
+                                error={errorFields.has('email') || emailError}
                             />
-                            {errorFields.has('email') && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('email') && !emailError && <FormError>この項目は必須です</FormError>}
+                            {emailError && <FormError>全角文字は入力できません</FormError>}
                         </div>
                         <div>
                             <FormLabel>生年月日</FormLabel>
