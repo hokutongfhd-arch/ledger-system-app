@@ -7,6 +7,7 @@ import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phon
 import { useAutoFocus } from '../../../hooks/useAutoFocus';
 import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Input } from '../../../components/ui/Input';
+import { IpInput } from '../../../components/ui/IpInput';
 import { Select } from '../../../components/ui/Select';
 import { TextArea } from '../../../components/ui/TextArea';
 import { FormLabel, FormError } from '../../../components/ui/Form';
@@ -151,6 +152,38 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         }
     };
 
+    const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (/^\d*$/.test(value)) {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+            if (errorFields.has(name)) {
+                const next = new Set(errorFields);
+                next.delete(name);
+                setErrorFields(next);
+            }
+        }
+    };
+
+    const handleCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (/^\d*$/.test(value)) {
+            setFormData(prev => ({
+                ...prev,
+                cost: value === '' ? 0 : parseInt(value, 10)
+            }));
+            if (errorFields.has(name)) {
+                const next = new Set(errorFields);
+                next.delete(name);
+                setErrorFields(next);
+            }
+        }
+    };
+
+
+
     const handleSelectChange = (name: string, value: string) => {
         setFormData(prev => {
             const updates: any = { [name]: value };
@@ -283,7 +316,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FormLabel>No.</FormLabel>
-                            <Input name="no" value={formData.no} onChange={handleChange} />
+                            <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
                             <FormLabel>契約状況</FormLabel>
@@ -460,19 +493,39 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FormLabel>IPアドレス</FormLabel>
-                            <Input name="ipAddress" value={formData.ipAddress} onChange={handleChange} />
+                            <IpInput
+                                name="ipAddress"
+                                value={formData.ipAddress}
+                                onChange={handleSelectChange} // handleSelectChange accepts (name, value)
+                                error={errorFields.has('ipAddress')}
+                            />
                         </div>
                         <div>
                             <FormLabel>サブネットマスク</FormLabel>
-                            <Input name="subnetMask" value={formData.subnetMask} onChange={handleChange} />
+                            <IpInput
+                                name="subnetMask"
+                                value={formData.subnetMask}
+                                onChange={handleSelectChange}
+                                error={errorFields.has('subnetMask')}
+                            />
                         </div>
                         <div>
                             <FormLabel>開始IP</FormLabel>
-                            <Input name="startIp" value={formData.startIp} onChange={handleChange} />
+                            <IpInput
+                                name="startIp"
+                                value={formData.startIp}
+                                onChange={handleSelectChange}
+                                error={errorFields.has('startIp')}
+                            />
                         </div>
                         <div>
                             <FormLabel>終了IP</FormLabel>
-                            <Input name="endIp" value={formData.endIp} onChange={handleChange} />
+                            <IpInput
+                                name="endIp"
+                                value={formData.endIp}
+                                onChange={handleSelectChange}
+                                error={errorFields.has('endIp')}
+                            />
                         </div>
                     </div>
                 </div>
@@ -487,11 +540,11 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                         </div>
                         <div>
                             <FormLabel>費用</FormLabel>
-                            <Input type="number" name="cost" value={formData.cost} onChange={handleChange} />
+                            <Input type="text" name="cost" value={formData.cost === 0 ? '' : String(formData.cost)} onChange={handleCostChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
                             <FormLabel>費用振替</FormLabel>
-                            <Input name="costTransfer" value={formData.costTransfer} onChange={handleChange} />
+                            <Input name="costTransfer" value={formData.costTransfer} onChange={handleNumberChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
                             <FormLabel>負担先</FormLabel>
