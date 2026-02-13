@@ -119,7 +119,7 @@ export interface Address {
     officeName: string;
     tel: string;
     fax: string;
-    type: string;
+
     zipCode: string;
     address: string;
     notes: string;
@@ -132,6 +132,7 @@ export interface Address {
     labelZip: string;
     labelAddress: string;
     attentionNote: string;
+    accountingCode: string;
 }
 
 export type AnomalyResponseStatus = 'pending' | 'investigating' | 'completed';

@@ -6,7 +6,7 @@ import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
 import { Table } from '../../../../components/ui/Table';
-import type { Address } from '../../../../features/addresses/address.types';
+import type { Address } from '../../../../lib/types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { AddressForm } from '../../../../features/addresses/components/AddressForm';
@@ -60,7 +60,7 @@ function AddressListContent() {
     } = useDataTable<Address>({
         data: addresses,
         initialPageSize: 15,
-        searchKeys: ['addressCode', 'officeName', 'division', 'area', 'tel', 'fax', 'zipCode', 'address', 'type', 'mainPerson', 'branchNumber', 'specialNote', 'labelName', 'labelZip', 'labelAddress', 'notes', 'attentionNote'], // Broad search
+        searchKeys: ['addressCode', 'officeName', 'division', 'area', 'tel', 'fax', 'zipCode', 'address', 'mainPerson', 'branchNumber', 'specialNote', 'labelName', 'labelZip', 'labelAddress', 'notes', 'attentionNote'], // Broad search
         sortConfig: {
             addressCode: (a, b) => {
                 const partsA = (a.addressCode || '').split('-');
@@ -77,12 +77,12 @@ function AddressListContent() {
 
     const { handleExport } = useCSVExport<Address>();
 
-    const headers = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '補足', '〒', '住所', '備考', '事業部', 'エリア', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+    const headers = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '〒', '住所', '備考', '事業部', '経理コード', 'エリア', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, fileHeaders) => {
             // Check for required headers (unique ones)
-            const requiredHeaders = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '補足', '〒', '住所', '備考', '事業部', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+            const requiredHeaders = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '〒', '住所', '備考', '事業部', '経理コード', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
             const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
 
             if (missingHeaders.length > 0) {
@@ -167,6 +167,16 @@ function AddressListContent() {
                     continue;
                 }
 
+                // Accounting Code Validation
+                const rawAccountingCode = String(rowData['経理コード'] || '');
+                const accountingCode = toHalfWidth(rawAccountingCode).trim();
+
+                if (accountingCode && !/^[0-9]+$/.test(accountingCode)) {
+                    errors.push(`${i + 2}行目: 経理コード「${accountingCode}」は半角数字のみ入力可能です`);
+                    errorCount++;
+                    continue;
+                }
+
                 const newAddress: Omit<Address, 'id'> = {
                     area: String(rowData['エリア'] || '').trim(),
                     no: String(rowData['№'] || ''),
@@ -174,11 +184,12 @@ function AddressListContent() {
                     officeName: String(rowData['事業所名'] || ''),
                     tel: formatPhoneNumber(String(rowData['ＴＥＬ'] || '')),
                     fax: formatPhoneNumber(String(rowData['ＦＡＸ'] || '')),
-                    type: String(rowData['補足'] || ''),
+
                     zipCode: formatZipCode(String(rowData['〒'] || '')),
                     address: String(rowData['住所'] || ''),
                     notes: String(rowData['備考'] || ''),
                     division: String(rowData['事業部'] || ''),
+                    accountingCode: accountingCode,
                     mainPerson: String(rowData['主担当'] || ''),
                     branchNumber: String(rowData['枝番'] || ''),
                     specialNote: String(rowData['※'] || ''),
@@ -278,11 +289,12 @@ function AddressListContent() {
                 item.officeName || '',
                 formatPhoneNumber(item.tel || ''),
                 formatPhoneNumber(item.fax || ''),
-                item.type || '',
+
                 item.zipCode || '',
                 item.address || '',
                 item.notes || '',
                 item.division || '',
+                item.accountingCode || '',
                 item.area || '',
                 item.mainPerson || '',
                 item.branchNumber || '',
@@ -311,9 +323,10 @@ function AddressListContent() {
             fgColor: { argb: 'FFE0E0E0' }
         };
 
-        // Format numeric/string columns as text (Column B, C, E, F, H, L, N)
-        // № (B), 事業所コード (C), TEL (E), FAX (F), 〒 (H), 枝番 (N)
-        [2, 3, 5, 6, 8, 14].forEach(colIndex => {
+        // Format numeric/string columns as text (Column B, C, E, F, G, K, N)
+        // № (B), 事業所コード (C), TEL (E), FAX (F), 〒 (G), 経理コード (K), 枝番 (N)
+        // K is 11th column
+        [2, 3, 5, 6, 7, 11, 14].forEach(colIndex => {
             worksheet.getColumn(colIndex).numFmt = '@';
         });
 

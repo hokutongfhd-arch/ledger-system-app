@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Address } from '../address.types';
+import type { Address } from '../../../lib/types';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
@@ -19,16 +19,33 @@ interface AddressFormProps {
 export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit, onCancel }) => {
     const { areas, addresses } = useData();
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
+
+    // Refs
     const codeRef = useRef<HTMLInputElement>(null);
     const officeNameRef = useRef<HTMLInputElement>(null);
     const addressRef = useRef<HTMLInputElement>(null);
+
+    const telPart1Ref = useRef<HTMLInputElement>(null);
+    const telPart2Ref = useRef<HTMLInputElement>(null);
+    const telPart3Ref = useRef<HTMLInputElement>(null);
+
+    const faxPart1Ref = useRef<HTMLInputElement>(null);
+    const faxPart2Ref = useRef<HTMLInputElement>(null);
+    const faxPart3Ref = useRef<HTMLInputElement>(null);
+
+    const zipPart1Ref = useRef<HTMLInputElement>(null);
+    const zipPart2Ref = useRef<HTMLInputElement>(null);
+
+    const labelZipPart1Ref = useRef<HTMLInputElement>(null);
+    const labelZipPart2Ref = useRef<HTMLInputElement>(null);
+
+    // Form Data State
     const [formData, setFormData] = useState<Omit<Address, 'id'>>({
         no: '',
         addressCode: '',
         officeName: '',
         tel: '',
         fax: '',
-        type: '',
         zipCode: '',
         address: '',
         notes: '',
@@ -41,174 +58,144 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         labelZip: '',
         labelAddress: '',
         attentionNote: '',
+        accountingCode: '',
     });
 
-    const telPart1Ref = useRef<HTMLInputElement>(null);
-    const telPart2Ref = useRef<HTMLInputElement>(null);
-    const telPart3Ref = useRef<HTMLInputElement>(null);
-    const faxPart1Ref = useRef<HTMLInputElement>(null);
-    const faxPart2Ref = useRef<HTMLInputElement>(null);
-    const faxPart3Ref = useRef<HTMLInputElement>(null);
-    const zipPart1Ref = useRef<HTMLInputElement>(null);
-    const zipPart2Ref = useRef<HTMLInputElement>(null);
-    const labelZipPart1Ref = useRef<HTMLInputElement>(null);
-    const labelZipPart2Ref = useRef<HTMLInputElement>(null);
-
-    const { handleAutoTab } = useAutoFocus();
-
+    // Split Parts State
     const [telParts, setTelParts] = useState({ part1: '', part2: '', part3: '' });
     const [faxParts, setFaxParts] = useState({ part1: '', part2: '', part3: '' });
     const [zipParts, setZipParts] = useState({ part1: '', part2: '' });
     const [labelZipParts, setLabelZipParts] = useState({ part1: '', part2: '' });
 
-    // Prepare Options for Area
     const areaOptions = useMemo(() => {
-        const options = areas.map(a => ({
-            label: a.areaName,
-            value: a.areaName,
-            subLabel: a.areaCode
+        return areas.map(area => ({
+            value: area.areaName,
+            label: area.areaName,
         }));
+    }, [areas]);
 
-        // If the current area value is not in the master list, add it as a temporary option
-        if (formData.area && !options.some(o => o.value === formData.area)) {
-            options.push({
-                label: formData.area,
-                value: formData.area,
-                subLabel: 'マスタ未登録'
-            });
-        }
+    useAutoFocus(codeRef);
 
-        return options;
-    }, [areas, formData.area]);
-
+    // Initialize from initialData
     useEffect(() => {
         if (initialData) {
-            const { id, ...rest } = initialData;
-            setFormData(rest);
+            setFormData(initialData);
 
-            const processPhone = (phone: string) => {
-                const normalized = normalizePhoneNumber(phone || '');
-                let processed = normalized;
-                if (processed.length > 0 && processed[0] !== '0') {
-                    if (processed.length === 10 || processed.length === 9) {
-                        processed = '0' + processed;
-                    }
-                }
+            // Parse TEL
+            if (initialData.tel) {
+                const parts = initialData.tel.split('-');
+                setTelParts({
+                    part1: parts[0] || '',
+                    part2: parts[1] || '',
+                    part3: parts[2] || '',
+                });
+            }
 
-                if (processed.length === 11) {
-                    return {
-                        part1: processed.slice(0, 3),
-                        part2: processed.slice(3, 7),
-                        part3: processed.slice(7, 11),
-                    };
-                } else if (processed.length === 10) {
-                    if (processed.startsWith('03') || processed.startsWith('06')) {
-                        return {
-                            part1: processed.slice(0, 2),
-                            part2: processed.slice(2, 6),
-                            part3: processed.slice(6, 10),
-                        };
-                    } else {
-                        return {
-                            part1: processed.slice(0, 3),
-                            part2: processed.slice(3, 6),
-                            part3: processed.slice(6, 10),
-                        };
-                    }
-                } else if (phone && phone.includes('-')) {
-                    const parts = phone.split('-');
-                    return {
-                        part1: parts[0] || '',
-                        part2: parts[1] || '',
-                        part3: parts[2] || '',
-                    };
-                }
-                return { part1: normalized, part2: '', part3: '' };
-            };
+            // Parse FAX
+            if (initialData.fax) {
+                const parts = initialData.fax.split('-');
+                setFaxParts({
+                    part1: parts[0] || '',
+                    part2: parts[1] || '',
+                    part3: parts[2] || '',
+                });
+            }
 
-            setTelParts(processPhone(initialData.tel || ''));
-            setFaxParts(processPhone(initialData.fax || ''));
+            // Parse Zip
+            if (initialData.zipCode) {
+                const parts = initialData.zipCode.split('-');
+                setZipParts({
+                    part1: parts[0] || '',
+                    part2: parts[1] || '',
+                });
+            }
 
-            const processZip = (zip: string) => {
-                if (!zip) return { part1: '', part2: '' };
-                const digits = zip.replace(/[^0-9]/g, '');
-                if (digits.length === 7) {
-                    return { part1: digits.slice(0, 3), part2: digits.slice(3) };
-                }
-                if (zip.includes('-')) {
-                    const parts = zip.split('-');
-                    return { part1: parts[0] || '', part2: parts[1] || '' };
-                }
-                return { part1: zip || '', part2: '' };
-            };
-            setZipParts(processZip(initialData.zipCode || ''));
-            setLabelZipParts(processZip(initialData.labelZip || ''));
+            // Parse Label Zip
+            if (initialData.labelZip) {
+                const parts = initialData.labelZip.split('-');
+                setLabelZipParts({
+                    part1: parts[0] || '',
+                    part2: parts[1] || '',
+                });
+            }
         }
     }, [initialData]);
 
+    // Handlers
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
 
         if (errorFields.has(name)) {
-            const next = new Set(errorFields);
-            next.delete(name);
-            setErrorFields(next);
+            const newErrorFields = new Set(errorFields);
+            newErrorFields.delete(name);
+            setErrorFields(newErrorFields);
         }
     };
 
-    const handleSelectChange = (name: string, value: string) => {
-        setFormData(prev => ({ ...prev, [name]: value }));
+    const handleSelectChange = (name: keyof Omit<Address, 'id'>, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        if (errorFields.has(name)) {
+            const newErrorFields = new Set(errorFields);
+            newErrorFields.delete(name);
+            setErrorFields(newErrorFields);
+        }
+    };
+
+    const handleAccountingCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.target;
+        // Allow only numbers
+        if (/^\d*$/.test(value)) {
+            setFormData(prev => ({
+                ...prev,
+                accountingCode: value
+            }));
+        }
     };
 
     const handleTelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        const onlyNums = value.replace(/[^0-9]/g, '');
-        const newParts = { ...telParts, [name]: onlyNums };
+        const newParts = { ...telParts, [name]: value };
         setTelParts(newParts);
 
-        if (name === 'part1') handleAutoTab(e, 3, telPart2Ref);
-        if (name === 'part2') handleAutoTab(e, 4, telPart3Ref);
+        const fullTel = `${newParts.part1}-${newParts.part2}-${newParts.part3}`.replace(/^-+|-+$/g, '');
+        setFormData(prev => ({ ...prev, tel: fullTel }));
 
-        const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
-        setFormData(prev => ({ ...prev, tel: combined }));
+        // Auto focus logic could be added here if needed
     };
 
     const handleFaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        const onlyNums = value.replace(/[^0-9]/g, '');
-        const newParts = { ...faxParts, [name]: onlyNums };
+        const newParts = { ...faxParts, [name]: value };
         setFaxParts(newParts);
 
-        if (name === 'part1') handleAutoTab(e, 3, faxPart2Ref);
-        if (name === 'part2') handleAutoTab(e, 4, faxPart3Ref);
-
-        const combined = `${newParts.part1}-${newParts.part2}-${newParts.part3}`;
-        setFormData(prev => ({ ...prev, fax: combined }));
+        const fullFax = `${newParts.part1}-${newParts.part2}-${newParts.part3}`.replace(/^-+|-+$/g, '');
+        setFormData(prev => ({ ...prev, fax: fullFax }));
     };
 
     const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        const onlyNums = value.replace(/[^0-9]/g, '');
-        const newParts = { ...zipParts, [name]: onlyNums };
+        const newParts = { ...zipParts, [name]: value };
         setZipParts(newParts);
 
-        if (name === 'part1') handleAutoTab(e, 3, zipPart2Ref);
-
-        const combined = `${newParts.part1}-${newParts.part2}`;
-        setFormData(prev => ({ ...prev, zipCode: combined }));
+        const fullZip = `${newParts.part1}-${newParts.part2}`.replace(/^-+|-+$/g, '');
+        setFormData(prev => ({ ...prev, zipCode: fullZip }));
     };
 
     const handleLabelZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        const onlyNums = value.replace(/[^0-9]/g, '');
-        const newParts = { ...labelZipParts, [name]: onlyNums };
+        const newParts = { ...labelZipParts, [name]: value };
         setLabelZipParts(newParts);
 
-        if (name === 'part1') handleAutoTab(e, 3, labelZipPart2Ref);
-
-        const combined = `${newParts.part1}-${newParts.part2}`;
-        setFormData(prev => ({ ...prev, labelZip: combined }));
+        const fullZip = `${newParts.part1}-${newParts.part2}`.replace(/^-+|-+$/g, '');
+        setFormData(prev => ({ ...prev, labelZip: fullZip }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -254,7 +241,14 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         // Final normalization
         const finalTel = formatPhoneNumber(formData.tel);
         const finalFax = formatPhoneNumber(formData.fax);
-        onSubmit({ ...formData, tel: finalTel, fax: finalFax });
+
+        // Ensure empty strings for undefined fields if necessary, though formData initializes them
+        onSubmit({
+            ...formData,
+            tel: finalTel,
+            fax: finalFax,
+            // Ensure zip codes follow format if needed
+        });
     };
 
     return (
@@ -378,10 +372,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             </div>
                         </div>
                         <div>
-                            <FormLabel>補足</FormLabel>
-                            <Input name="type" value={formData.type} onChange={handleChange} />
-                        </div>
-                        <div>
                             <FormLabel>〒</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
@@ -435,6 +425,15 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                         <div>
                             <FormLabel>事業部</FormLabel>
                             <Input name="division" value={formData.division} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <FormLabel>経理コード</FormLabel>
+                            <Input
+                                name="accountingCode"
+                                value={formData.accountingCode}
+                                onChange={handleAccountingCodeChange}
+                                placeholder="半角数字のみ"
+                            />
                         </div>
                         <div>
                             <FormLabel>エリア (確認用)</FormLabel>

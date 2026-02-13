@@ -287,6 +287,7 @@ const mapAddressFromDb = (d: any): Address => ({
     labelZip: s(d.label_zip),
     labelAddress: s(d.label_address),
     attentionNote: s(d.caution),
+    accountingCode: s(d.accounting_code),
 });
 
 const mapAddressToDb = (t: Partial<Address>) => ({
@@ -308,6 +309,7 @@ const mapAddressToDb = (t: Partial<Address>) => ({
     label_zip: t.labelZip,
     label_address: t.labelAddress,
     caution: t.attentionNote,
+    accounting_code: t.accountingCode,
 });
 
 // Local mapLogFromDb removed in favor of logService.mapLogFromDb

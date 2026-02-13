@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient';
-import type { Address } from './address.types';
+import type { Address } from '../../lib/types';
 
 const s = (val: any) => (val === null || val === undefined) ? '' : String(val);
 
@@ -29,7 +29,7 @@ export const addressService = {
         officeName: s(d.office_name),
         tel: s(d.tel),
         fax: s(d.fax),
-        type: s(d.category),
+
         zipCode: s(d.zip),
         address: s(d.address),
         notes: s(d.notes),
@@ -42,6 +42,7 @@ export const addressService = {
         labelZip: s(d.label_zip),
         labelAddress: s(d.label_address),
         attentionNote: s(d.caution),
+        accountingCode: s(d.accounting_code),
     }),
 
     mapAddressToDb: (t: Partial<Address>) => ({
@@ -50,7 +51,7 @@ export const addressService = {
         office_name: t.officeName,
         tel: t.tel,
         fax: t.fax,
-        category: t.type,
+
         zip: t.zipCode,
         address: t.address,
         notes: t.notes,
@@ -63,6 +64,7 @@ export const addressService = {
         label_zip: t.labelZip,
         label_address: t.labelAddress,
         caution: t.attentionNote,
+        accounting_code: t.accountingCode,
     }),
 
     getAddresses: async () => {

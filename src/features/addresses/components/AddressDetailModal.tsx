@@ -64,7 +64,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="TEL" value={formatPhoneNumber(item.tel)} />
                             <DetailRow label="FAX" value={formatPhoneNumber(item.fax)} />
-                            <DetailRow label="補足" value={item.type} />
+
                             <div className="pt-2 border-t border-gray-100">
                                 <p className="text-xs text-gray-400 mb-1">所在地</p>
                                 <p className="text-sm text-gray-700">〒{formatZipCode(item.zipCode)}</p>
@@ -83,6 +83,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                         <SectionHeader icon={<FileText size={18} />} title="詳細情報 (Details)" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="事業部" value={item.division} />
+                            <DetailRow label="経理コード" value={item.accountingCode} />
                             <DetailRow label="エリア" value={areaDisplay} />
                             <DetailRow label="主担当" value={item.mainPerson} />
                             <DetailRow label="枝番" value={item.branchNumber} />
