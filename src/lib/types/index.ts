@@ -120,6 +120,7 @@ export interface Address {
     tel: string;
     fax: string;
 
+    type: string;
     zipCode: string;
     address: string;
     notes: string;

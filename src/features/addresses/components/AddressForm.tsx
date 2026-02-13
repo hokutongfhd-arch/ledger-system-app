@@ -59,6 +59,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         labelAddress: '',
         attentionNote: '',
         accountingCode: '',
+        type: '',
     });
 
     // Split Parts State

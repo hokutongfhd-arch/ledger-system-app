@@ -196,7 +196,8 @@ function AddressListContent() {
                     labelName: String(rowData['宛名ラベル用'] || ''),
                     labelZip: formatZipCode(String(rowData['宛名ラベル用〒'] || '')),
                     labelAddress: String(rowData['宛名ラベル用住所'] || ''),
-                    attentionNote: String(rowData['注意書き'] || '')
+                    attentionNote: String(rowData['注意書き'] || ''),
+                    type: ''
                 };
 
                 try {

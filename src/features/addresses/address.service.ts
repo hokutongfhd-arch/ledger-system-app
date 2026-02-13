@@ -29,7 +29,7 @@ export const addressService = {
         officeName: s(d.office_name),
         tel: s(d.tel),
         fax: s(d.fax),
-
+        type: s(d.category),
         zipCode: s(d.zip),
         address: s(d.address),
         notes: s(d.notes),
@@ -51,7 +51,7 @@ export const addressService = {
         office_name: t.officeName,
         tel: t.tel,
         fax: t.fax,
-
+        category: t.type,
         zip: t.zipCode,
         address: t.address,
         notes: t.notes,
