@@ -33,6 +33,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         history: '',
         employeeCode: '',
         contractYears: '',
+        costBearer: '',
     });
 
     // Prepare Options
@@ -226,6 +227,15 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 onChange={handleChange}
                             />
                         </div>
+                        <div>
+                            <FormLabel>負担先</FormLabel>
+                            <Input
+                                type="text"
+                                name="costBearer"
+                                value={formData.costBearer || ''}
+                                onChange={handleChange}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -245,7 +255,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                             <FormLabel>備考</FormLabel>
                             <TextArea
                                 name="notes"
-                                value={formData.notes}
+                                value={formData.notes || ''}
                                 onChange={handleChange}
                                 rows={3}
                             />

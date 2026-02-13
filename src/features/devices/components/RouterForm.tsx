@@ -536,7 +536,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FormLabel>請求元</FormLabel>
-                            <Input name="biller" value={formData.biller} onChange={handleChange} />
+                            <Input name="biller" value={formData.biller || ''} onChange={handleChange} />
                         </div>
                         <div>
                             <FormLabel>費用</FormLabel>
@@ -544,11 +544,11 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                         </div>
                         <div>
                             <FormLabel>費用振替</FormLabel>
-                            <Input name="costTransfer" value={formData.costTransfer} onChange={handleNumberChange} placeholder="半角数字のみ" />
+                            <Input name="costTransfer" value={formData.costTransfer || ''} onChange={handleNumberChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
                             <FormLabel>負担先</FormLabel>
-                            <Input name="costBearer" value={formData.costBearer} onChange={handleChange} />
+                            <Input name="costBearer" value={formData.costBearer || ''} onChange={handleChange} />
                         </div>
                     </div>
                 </div>

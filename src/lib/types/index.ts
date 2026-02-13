@@ -7,6 +7,7 @@ export interface Tablet {
     modelNumber: string;
     officeCode: string;
     addressCode: string;
+    costBearer: string;
     address: string;
     notes: string;
     history: string;
@@ -23,6 +24,7 @@ export interface IPhone {
     employeeId: string; // Employee Code
 
     addressCode: string;
+    costBearer: string;
     smartAddressId: string;
     smartAddressPw: string;
     lendDate: string;
@@ -43,6 +45,7 @@ export interface FeaturePhone {
 
     addressCode: string;
     costCompany: string;
+    costBearer: string;
     lendDate: string;
     receiptDate: string;
     notes: string; // notes1

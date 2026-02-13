@@ -77,7 +77,7 @@ function FeaturePhoneListContent() {
     const { handleExport } = useCSVExport<FeaturePhone>();
     const headers = [
         'キャリア', '電話番号', '管理番号', '機種名', '契約年数',
-        '社員コード', '事業所コード', '貸与日', '負担先会社', '受領書提出日', '返却日', '備考', '状況'
+        '社員コード', '事業所コード', '貸与日', '負担先会社', '負担先', '受領書提出日', '返却日', '備考', '状況'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
@@ -217,6 +217,7 @@ function FeaturePhoneListContent() {
                     modelName: String(rowData['機種名'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     costCompany: String(rowData['負担先会社'] || ''),
+                    costBearer: String(rowData['負担先'] || ''),
                     status: (statusMap[rowData['状況']] || 'available') as any
                 };
 
@@ -317,6 +318,7 @@ function FeaturePhoneListContent() {
             item.addressCode,
             item.lendDate,
             item.costCompany || '',
+            item.costBearer || '',
             item.receiptDate,
             item.returnDate,
             `"${item.notes}"`,
@@ -351,9 +353,9 @@ function FeaturePhoneListContent() {
             };
         }
 
-        // Data Validation (Status dropdown) - column M (index 13)
+        // Data Validation (Status dropdown) - column N (index 14)
         for (let i = 2; i <= totalRows + 1; i++) {
-            worksheet.getCell(i, 13).dataValidation = {
+            worksheet.getCell(i, 14).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']

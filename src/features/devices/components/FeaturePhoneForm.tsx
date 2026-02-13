@@ -41,6 +41,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         modelName: '',
         notes: '',
         contractYears: '',
+        costBearer: '',
         status: 'available',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
@@ -369,7 +370,16 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             <Input
                                 type="text"
                                 name="costCompany"
-                                value={formData.costCompany}
+                                value={formData.costCompany || ''}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
+                            <FormLabel>負担先</FormLabel>
+                            <Input
+                                type="text"
+                                name="costBearer"
+                                value={formData.costBearer || ''}
                                 onChange={handleChange}
                             />
                         </div>
@@ -402,7 +412,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             <FormLabel>備考1</FormLabel>
                             <TextArea
                                 name="notes"
-                                value={formData.notes}
+                                value={formData.notes || ''}
                                 onChange={handleChange}
                                 rows={3}
                             />

@@ -79,7 +79,7 @@ function IPhoneListContent() {
     const { handleExport } = useCSVExport<IPhone>();
     const headers = [
         'キャリア', '電話番号', '管理番号', '機種名', '契約年数',
-        '社員コード', '事業所コード', '貸与日', '受領書提出日', '返却日',
+        '社員コード', '事業所コード', '負担先', '貸与日', '受領書提出日', '返却日',
         'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考', '状況'
     ];
 
@@ -210,6 +210,7 @@ function IPhoneListContent() {
                     managementNumber: managementNumber,
                     employeeId: String(rowData['社員コード'] || ''),
                     addressCode: formatAddressCode(rowData['事業所コード']),
+                    costBearer: String(rowData['負担先'] || ''),
                     smartAddressId: String(rowData['SMARTアドレス帳ID'] || ''),
                     smartAddressPw: String(rowData['SMARTアドレス帳PW'] || ''),
                     lendDate: formatDate(rowData['貸与日']),
@@ -319,6 +320,7 @@ function IPhoneListContent() {
             normalizeContractYear(item.contractYears || ''),
             item.employeeId,
             item.addressCode,
+            item.costBearer || '',
             item.lendDate,
             item.receiptDate,
             item.returnDate,
@@ -356,9 +358,9 @@ function IPhoneListContent() {
             };
         }
 
-        // Data Validation (Status dropdown) - column N (index 14)
+        // Data Validation (Status dropdown) - column O (index 15)
         for (let i = 2; i <= totalRows + 1; i++) {
-            worksheet.getCell(i, 14).dataValidation = {
+            worksheet.getCell(i, 15).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']

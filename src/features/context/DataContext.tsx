@@ -66,6 +66,7 @@ const mapTabletFromDb = (d: any): Tablet => ({
     modelNumber: s(d.model_number),
     officeCode: s(d.office_code),
     addressCode: s(d.address_code),
+    costBearer: s(d.cost_bearer),
     address: s(d.address),
     notes: s(d.notes),
     history: s(d.lend_history),
@@ -80,6 +81,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     model_number: t.modelNumber,
     office_code: t.officeCode,
     address_code: t.addressCode,
+    cost_bearer: t.costBearer,
     address: t.address,
     notes: t.notes,
     lend_history: t.history,
@@ -96,6 +98,7 @@ const mapIPhoneFromDb = (d: any): IPhone => ({
     employeeId: s(d.employee_code),
 
     addressCode: s(d.address_code),
+    costBearer: s(d.cost_bearer),
     smartAddressId: s(d.smart_address_id),
     smartAddressPw: s(d.smart_address_pw),
     lendDate: s(d.lend_date),
@@ -114,6 +117,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     employee_code: t.employeeId,
 
     address_code: t.addressCode,
+    cost_bearer: t.costBearer,
     smart_address_id: t.smartAddressId,
     smart_address_pw: t.smartAddressPw,
     lend_date: t.lendDate,
@@ -134,6 +138,7 @@ const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
 
     addressCode: s(d.address_code),
     costCompany: s(d.cost_company),
+    costBearer: s(d.cost_bearer),
     lendDate: s(d.lend_date),
     receiptDate: s(d.receipt_date),
     notes: s(d.notes),
@@ -151,6 +156,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
 
     address_code: t.addressCode,
     cost_company: t.costCompany,
+    cost_bearer: t.costBearer,
     lend_date: t.lendDate,
     receipt_date: t.receiptDate,
     notes: t.notes,

@@ -39,6 +39,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     model_name: t.modelName,
     status: t.status,
     contract_years: t.contractYears,
+    cost_bearer: t.costBearer,
 });
 
 // Helper for formatting phone number same as service
@@ -202,6 +203,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     notes: t.notes,
     status: t.status,
     contract_years: t.contractYears,
+    cost_bearer: t.costBearer,
 });
 
 export async function updateFeaturePhoneAction(id: string, data: Partial<FeaturePhone>) {
@@ -306,6 +308,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     lend_history: t.history,
     status: t.status,
     contract_years: t.contractYears,
+    cost_bearer: t.costBearer,
     employee_code: t.employeeCode,
 });
 

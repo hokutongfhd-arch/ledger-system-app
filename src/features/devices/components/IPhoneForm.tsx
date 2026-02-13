@@ -43,6 +43,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         modelName: '',
         notes: '',
         status: 'available',
+        costBearer: '',
         contractYears: '',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
@@ -371,12 +372,23 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                             />
                         </div>
 
+
+                        <div>
+                            <FormLabel>負担先</FormLabel>
+                            <Input
+                                type="text"
+                                name="costBearer"
+                                value={formData.costBearer || ''}
+                                onChange={handleChange}
+                            />
+                        </div>
+
                         <div>
                             <FormLabel>受領書提出日</FormLabel>
                             <Input
                                 type="text"
                                 name="receiptDate"
-                                value={formData.receiptDate}
+                                value={formData.receiptDate || ''}
                                 onChange={handleChange}
                                 placeholder="日付またはテキスト"
                             />
@@ -403,7 +415,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                             <Input
                                 type="text"
                                 name="smartAddressId"
-                                value={formData.smartAddressId}
+                                value={formData.smartAddressId || ''}
                                 onChange={handleChange}
                             />
                         </div>
@@ -412,7 +424,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                             <Input
                                 type="text"
                                 name="smartAddressPw"
-                                value={formData.smartAddressPw}
+                                value={formData.smartAddressPw || ''}
                                 onChange={handleChange}
                             />
                         </div>

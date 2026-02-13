@@ -184,6 +184,7 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                             <SectionHeader icon={<Building size={18} />} title="管理情報 (Management)" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <DetailRow label="負担先会社" value={item.costCompany} />
+                                <DetailRow label="負担先" value={item.costBearer} />
                             </div>
                         </div>
 

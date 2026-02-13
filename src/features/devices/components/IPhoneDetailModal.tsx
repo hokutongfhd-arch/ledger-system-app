@@ -177,6 +177,7 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <DetailRow label="社員名" value={employeeName} subValue={item.employeeId} />
                                 <DetailRow label="設置場所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
+                                <DetailRow label="負担先" value={item.costBearer} />
                             </div>
 
                             <SectionHeader icon={<Shield size={18} />} title="アカウント情報 (Account)" />
