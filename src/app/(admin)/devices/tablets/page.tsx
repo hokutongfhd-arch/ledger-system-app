@@ -82,7 +82,7 @@ function TabletListContent() {
         isAllSelected
     } = useDataTable<Tablet>({
         data: tablets,
-        searchKeys: ['terminalCode', 'maker', 'modelNumber', 'status', 'officeCode', 'notes'],
+        searchKeys: ['terminalCode', 'maker', 'modelNumber', 'status', 'addressCode', 'notes'],
         sortConfig: {
             employeeCode: (a, b) => { // User Name Sort
                 const nameA = employees.find(e => e.code === a.employeeCode)?.name || '';
@@ -105,8 +105,7 @@ function TabletListContent() {
     const { handleExport } = useCSVExport<Tablet>();
     const headers = [
         'メーカー', '型番', '端末CD', '契約年数',
-        'メーカー', '型番', '端末CD', '契約年数',
-        '社員コード', '事業所コード', '事業所CD', '負担先', '過去貸与履歴', '備考', '状況'
+        '社員コード', '事業所コード', '負担先', '過去貸与履歴', '備考', '状況'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
@@ -201,7 +200,6 @@ function TabletListContent() {
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     employeeCode: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['事業所コード'] || ''),
-                    officeCode: String(rowData['事業所CD'] || ''),
                     costBearer: String(rowData['負担先'] || ''),
                     history: String(rowData['過去貸与履歴'] || ''),
                     notes: String(rowData['備考'] || ''),
@@ -291,8 +289,6 @@ function TabletListContent() {
             normalizeContractYear(item.contractYears || ''),
             item.employeeCode || '',
             item.addressCode || '',
-            item.addressCode || '',
-            item.officeCode || '',
             item.costBearer || '',
             `"${item.history || ''}"`,
             `"${item.notes || ''}"`,
@@ -318,9 +314,9 @@ function TabletListContent() {
 
         const totalRows = 1000;
 
-        // Data Validation (Status dropdown) - column K (index 11)
+        // Data Validation (Status dropdown) - column J (index 10)
         for (let i = 2; i <= totalRows + 1; i++) {
-            worksheet.getCell(i, 11).dataValidation = {
+            worksheet.getCell(i, 10).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
@@ -391,7 +387,7 @@ function TabletListContent() {
                         className: "w-10 px-4"
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('officeCode')}>事業所CD{getSortIcon('officeCode')}</div>, accessor: 'officeCode' },
+
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: (item) => normalizeContractYear(item.contractYears || '') },
                     {

@@ -25,7 +25,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         terminalCode: '',
         maker: '富士通',
         modelNumber: '',
-        officeCode: '',
         addressCode: '',
         address: '',
         status: 'available',
@@ -219,15 +218,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 value={formData.addressCode}
                                 onChange={(val) => handleSelectChange('addressCode', val)}
                                 placeholder="事業所を検索..."
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>事業所CD</FormLabel>
-                            <Input
-                                type="text"
-                                name="officeCode"
-                                value={formData.officeCode}
-                                onChange={handleChange}
                             />
                         </div>
                         <div>

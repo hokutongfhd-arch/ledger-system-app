@@ -301,7 +301,6 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     terminal_code: t.terminalCode,
     maker: t.maker,
     model_number: t.modelNumber,
-    office_code: t.officeCode,
     address_code: t.addressCode,
     notes: t.notes,
     lend_history: t.history,

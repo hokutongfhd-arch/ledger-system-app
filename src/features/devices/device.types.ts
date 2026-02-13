@@ -5,7 +5,6 @@ export interface Tablet {
     terminalCode: string;
     maker: string;
     modelNumber: string;
-    officeCode: string;
     addressCode: string;
     costBearer: string;
     address: string;
