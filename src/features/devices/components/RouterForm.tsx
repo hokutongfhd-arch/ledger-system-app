@@ -265,11 +265,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         let firstErrorField: HTMLElement | null = null;
 
         // Required Field Check
-        if (!formData.terminalCode) {
-            newErrorFields.add('terminalCode');
-            if (!firstErrorField) firstErrorField = terminalCodeRef.current;
-        }
-
         const hasSim = is14Digit ? formData.simNumber : (phoneParts.part1 || phoneParts.part2 || phoneParts.part3);
 
         if (!hasSim) {
@@ -277,7 +272,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             if (!firstErrorField) firstErrorField = simNumberRef.current;
         }
 
-        if (isTerminalCodeDuplicate) {
+        if (!formData.terminalCode) {
             newErrorFields.add('terminalCode');
             if (!firstErrorField) firstErrorField = terminalCodeRef.current;
         }
@@ -285,6 +280,11 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         if (isSimNumberDuplicate) {
             newErrorFields.add('simNumber');
             if (!firstErrorField) firstErrorField = simNumberRef.current;
+        }
+
+        if (isTerminalCodeDuplicate) {
+            newErrorFields.add('terminalCode');
+            if (!firstErrorField) firstErrorField = terminalCodeRef.current;
         }
 
         if (newErrorFields.size > 0) {
