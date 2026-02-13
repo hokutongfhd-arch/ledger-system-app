@@ -294,6 +294,16 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             />
                         </div>
                         <div>
+                            <FormLabel>契約年数</FormLabel>
+                            <Input
+                                type="text"
+                                name="contractYears"
+                                value={formData.contractYears || ''}
+                                onChange={handleChange}
+                                placeholder="例: 2年"
+                            />
+                        </div>
+                        <div>
                             <FormLabel>キャリア</FormLabel>
                             <Select
                                 name="carrier"
@@ -323,16 +333,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 <option value="discarded">廃棄</option>
                             </Select>
                         </div>
-                        <div>
-                            <FormLabel>契約年数</FormLabel>
-                            <Input
-                                type="text"
-                                name="contractYears"
-                                value={formData.contractYears || ''}
-                                onChange={handleChange}
-                                placeholder="例: 2年"
-                            />
-                        </div>
                     </div>
                 </div>
 
@@ -358,15 +358,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             />
                         </div>
                         <div>
-                            <FormLabel>貸与日</FormLabel>
-                            <Input
-                                type="date"
-                                name="lendDate"
-                                value={formData.lendDate}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div>
                             <FormLabel>負担先会社</FormLabel>
                             <Input
                                 type="text"
@@ -383,6 +374,15 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 value={formData.receiptDate}
                                 onChange={handleChange}
                                 placeholder="日付またはテキスト"
+                            />
+                        </div>
+                        <div>
+                            <FormLabel>貸与日</FormLabel>
+                            <Input
+                                type="date"
+                                name="lendDate"
+                                value={formData.lendDate}
+                                onChange={handleChange}
                             />
                         </div>
                         <div>
