@@ -40,6 +40,19 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
         }
     };
 
+    const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (/^\d*$/.test(value)) {
+            setFormData(prev => ({ ...prev, [name]: value }));
+
+            if (errorFields.has(name)) {
+                const next = new Set(errorFields);
+                next.delete(name);
+                setErrorFields(next);
+            }
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -92,14 +105,8 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
                                 type="text"
                                 name="areaCode"
                                 value={formData.areaCode}
-                                onChange={(e) => {
-                                    handleChange(e);
-                                    if (errorFields.has('areaCode')) {
-                                        const next = new Set(errorFields);
-                                        next.delete('areaCode');
-                                        setErrorFields(next);
-                                    }
-                                }}
+                                onChange={handleNumberChange}
+                                placeholder="半角数字のみ"
                                 error={errorFields.has('areaCode')}
                             />
                             {errorFields.has('areaCode') && !areas.some(a => a.areaCode === formData.areaCode && (!initialData || a.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
