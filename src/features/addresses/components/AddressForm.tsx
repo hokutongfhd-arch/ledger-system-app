@@ -75,7 +75,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         }));
     }, [areas]);
 
-    useAutoFocus(codeRef);
+    const { handleAutoTab } = useAutoFocus(codeRef);
 
     // Initialize from initialData
     useEffect(() => {
@@ -183,6 +183,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         const newParts = { ...telParts, [name]: value };
         setTelParts(newParts);
 
+        if (name === 'part1') handleAutoTab(e, 3, telPart2Ref);
+        if (name === 'part2') handleAutoTab(e, 4, telPart3Ref);
+
         const fullTel = `${newParts.part1}-${newParts.part2}-${newParts.part3}`.replace(/^-+|-+$/g, '');
         setFormData(prev => ({ ...prev, tel: fullTel }));
     };
@@ -193,6 +196,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
         const newParts = { ...faxParts, [name]: value };
         setFaxParts(newParts);
+
+        if (name === 'part1') handleAutoTab(e, 3, faxPart2Ref);
+        if (name === 'part2') handleAutoTab(e, 4, faxPart3Ref);
 
         const fullFax = `${newParts.part1}-${newParts.part2}-${newParts.part3}`.replace(/^-+|-+$/g, '');
         setFormData(prev => ({ ...prev, fax: fullFax }));
@@ -205,6 +211,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         const newParts = { ...zipParts, [name]: value };
         setZipParts(newParts);
 
+        if (name === 'part1') handleAutoTab(e, 3, zipPart2Ref);
+
         const fullZip = `${newParts.part1}-${newParts.part2}`.replace(/^-+|-+$/g, '');
         setFormData(prev => ({ ...prev, zipCode: fullZip }));
     };
@@ -215,6 +223,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
         const newParts = { ...labelZipParts, [name]: value };
         setLabelZipParts(newParts);
+
+        if (name === 'part1') handleAutoTab(e, 3, labelZipPart2Ref);
 
         const fullZip = `${newParts.part1}-${newParts.part2}`.replace(/^-+|-+$/g, '');
         setFormData(prev => ({ ...prev, labelZip: fullZip }));
@@ -243,6 +253,10 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         if (!formData.officeName) {
             newErrorFields.add('officeName');
             if (!firstErrorField) firstErrorField = officeNameRef.current;
+        }
+        if (!formData.zipCode || formData.zipCode.length < 8) { // 3 digits + '-' + 4 digits = 8 chars
+            newErrorFields.add('zipCode');
+            if (!firstErrorField) firstErrorField = zipPart1Ref.current;
         }
         if (!formData.address) {
             newErrorFields.add('address');
@@ -284,19 +298,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                     <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <FormLabel>エリア</FormLabel>
-                            <SearchableSelect
-                                options={areaOptions}
-                                value={formData.area}
-                                onChange={(val) => handleSelectChange('area', val)}
-                                placeholder="エリアを検索..."
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>No.</FormLabel>
-                            <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
-                        </div>
-                        <div>
                             <FormLabel required>事業所コード</FormLabel>
                             <Input
                                 ref={codeRef}
@@ -322,6 +323,19 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             />
                             {errorFields.has('officeName') && <FormError>この項目は必須です</FormError>}
                         </div>
+                        <div>
+                            <FormLabel>エリア</FormLabel>
+                            <SearchableSelect
+                                options={areaOptions}
+                                value={formData.area}
+                                onChange={(val) => handleSelectChange('area', val)}
+                                placeholder="エリアを検索..."
+                            />
+                        </div>
+                        <div>
+                            <FormLabel>No.</FormLabel>
+                            <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
+                        </div>
                     </div>
                 </div>
 
@@ -329,6 +343,44 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                 <div className="space-y-4">
                     <SectionHeader>連絡先情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <FormLabel required>〒</FormLabel>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    ref={zipPart1Ref}
+                                    name="part1"
+                                    value={zipParts.part1}
+                                    onChange={handleZipChange}
+                                    maxLength={3}
+                                    className="w-16 text-center"
+                                    placeholder="123"
+                                    error={errorFields.has('zipCode')}
+                                />
+                                <span className="text-gray-500">-</span>
+                                <Input
+                                    ref={zipPart2Ref}
+                                    name="part2"
+                                    value={zipParts.part2}
+                                    onChange={handleZipChange}
+                                    maxLength={4}
+                                    className="w-20 text-center"
+                                    placeholder="4567"
+                                    error={errorFields.has('zipCode')}
+                                />
+                            </div>
+                            {errorFields.has('zipCode') && <FormError>この項目は必須です（ハイフン込み7桁）</FormError>}
+                        </div>
+                        <div className="md:col-span-2">
+                            <FormLabel required>住所</FormLabel>
+                            <Input
+                                ref={addressRef}
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                error={errorFields.has('address')}
+                            />
+                            {errorFields.has('address') && <FormError>この項目は必須です</FormError>}
+                        </div>
                         <div>
                             <FormLabel>ＴＥＬ</FormLabel>
                             <div className="flex items-center gap-2">
@@ -397,41 +449,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                             </div>
                         </div>
-                        <div>
-                            <FormLabel>〒</FormLabel>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    ref={zipPart1Ref}
-                                    name="part1"
-                                    value={zipParts.part1}
-                                    onChange={handleZipChange}
-                                    maxLength={3}
-                                    className="w-16 text-center"
-                                    placeholder="123"
-                                />
-                                <span className="text-gray-500">-</span>
-                                <Input
-                                    ref={zipPart2Ref}
-                                    name="part2"
-                                    value={zipParts.part2}
-                                    onChange={handleZipChange}
-                                    maxLength={4}
-                                    className="w-20 text-center"
-                                    placeholder="4567"
-                                />
-                            </div>
-                        </div>
-                        <div className="md:col-span-2">
-                            <FormLabel required>住所</FormLabel>
-                            <Input
-                                ref={addressRef}
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                error={errorFields.has('address')}
-                            />
-                            {errorFields.has('address') && <FormError>この項目は必須です</FormError>}
-                        </div>
                     </div>
                 </div>
 
@@ -439,15 +456,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                 <div className="space-y-4">
                     <SectionHeader>詳細情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="md:col-span-2">
-                            <FormLabel>備考</FormLabel>
-                            <TextArea
-                                name="notes"
-                                value={formData.notes}
-                                onChange={handleChange}
-                                rows={2}
-                            />
-                        </div>
                         <div>
                             <FormLabel>事業部</FormLabel>
                             <Input name="division" value={formData.division} onChange={handleChange} />
@@ -481,6 +489,15 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                         <div>
                             <FormLabel>※</FormLabel>
                             <Input name="specialNote" value={formData.specialNote} onChange={handleChange} />
+                        </div>
+                        <div className="md:col-span-2">
+                            <FormLabel>備考</FormLabel>
+                            <TextArea
+                                name="notes"
+                                value={formData.notes}
+                                onChange={handleChange}
+                                rows={2}
+                            />
                         </div>
                     </div>
                 </div>
