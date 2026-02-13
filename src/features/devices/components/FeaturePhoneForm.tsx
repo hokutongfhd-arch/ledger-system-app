@@ -241,15 +241,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             )}
                         </div>
                         <div>
-                            <FormLabel>機種名</FormLabel>
-                            <Input
-                                type="text"
-                                name="modelName"
-                                value={formData.modelName}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div>
                             <FormLabel required>電話番号</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
@@ -294,6 +285,15 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             )}
                         </div>
                         <div>
+                            <FormLabel>機種名</FormLabel>
+                            <Input
+                                type="text"
+                                name="modelName"
+                                value={formData.modelName}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
                             <FormLabel>キャリア</FormLabel>
                             <Select
                                 name="carrier"
@@ -302,7 +302,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 placeholder="選択してください"
                             >
                                 <option value="KDDI">KDDI</option>
-
                                 <option value="SoftBank">SoftBank</option>
                                 <option value="Docomo">Docomo</option>
                                 <option value="Rakuten">Rakuten</option>
@@ -340,7 +339,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                 <div className="space-y-4">
                     <SectionHeader>使用者情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                         <div>
                             <FormLabel>社員名 (社員コード)</FormLabel>
                             <SearchableSelect
@@ -368,12 +366,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 onChange={handleChange}
                             />
                         </div>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <SectionHeader>管理情報</SectionHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FormLabel>負担先会社</FormLabel>
                             <Input
@@ -383,7 +375,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 onChange={handleChange}
                             />
                         </div>
-
                         <div>
                             <FormLabel>受領書提出日</FormLabel>
                             <Input
@@ -410,7 +401,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                     <SectionHeader>その他</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="col-span-1 md:col-span-2">
-                            <FormLabel>備考1</FormLabel>
+                            <FormLabel>備考</FormLabel>
                             <TextArea
                                 name="notes"
                                 value={formData.notes || ''}
