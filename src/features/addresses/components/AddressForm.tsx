@@ -220,6 +220,15 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         setFormData(prev => ({ ...prev, labelZip: fullZip }));
     };
 
+    // Uniqueness Check
+    const isDuplicate = useMemo(() => {
+        if (!formData.addressCode) return false;
+        return addresses.some(addr =>
+            addr.addressCode === formData.addressCode &&
+            (!initialData || String(addr.id) !== String(initialData.id))
+        );
+    }, [addresses, formData.addressCode, initialData]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -239,12 +248,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
             newErrorFields.add('address');
             if (!firstErrorField) firstErrorField = addressRef.current;
         }
-
-        // Uniqueness Check
-        const isDuplicate = addresses.some(addr =>
-            addr.addressCode === formData.addressCode &&
-            (!initialData || addr.id !== initialData.id)
-        );
 
         if (isDuplicate) {
             newErrorFields.add('addressCode');

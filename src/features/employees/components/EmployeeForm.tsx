@@ -177,6 +177,16 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+
+    // Uniqueness Check
+    const isDuplicate = useMemo(() => {
+        if (!formData.code) return false;
+        return employees.some(emp =>
+            emp.code === formData.code &&
+            (!initialData || String(emp.id) !== String(initialData.id))
+        );
+    }, [employees, formData.code, initialData]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -201,17 +211,12 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
             if (!firstErrorField) firstErrorField = emailRef.current;
         }
 
+
         // Password Required Check (New Registration only)
         if (isAdmin && !initialData && !formData.password) {
             newErrorFields.add('password');
             if (!firstErrorField) firstErrorField = passwordRef.current;
         }
-
-        // Uniqueness Check
-        const isDuplicate = employees.some(emp =>
-            emp.code === formData.code &&
-            (!initialData || emp.id !== initialData.id)
-        );
 
         if (isDuplicate) {
             newErrorFields.add('code');

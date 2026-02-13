@@ -237,6 +237,27 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         }
     };
 
+
+    // Validation Logic
+    const isTerminalCodeDuplicate = useMemo(() => {
+        if (!formData.terminalCode) return false;
+        return routers.some(item =>
+            item.terminalCode === formData.terminalCode &&
+            (!initialData || String(item.id) !== String(initialData.id))
+        );
+    }, [routers, formData.terminalCode, initialData]);
+
+    const isSimNumberDuplicate = useMemo(() => {
+        const currentSim = is14Digit ? formData.simNumber : `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
+        const normalized = normalizePhoneNumber(currentSim);
+        if (!normalized) return false;
+
+        return routers.some(item =>
+            normalizePhoneNumber(item.simNumber) === normalized &&
+            (!initialData || String(item.id) !== String(initialData.id))
+        );
+    }, [routers, formData.simNumber, phoneParts, is14Digit, initialData]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -249,7 +270,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             if (!firstErrorField) firstErrorField = terminalCodeRef.current;
         }
 
-        const currentSim = is14Digit ? formData.simNumber : `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
         const hasSim = is14Digit ? formData.simNumber : (phoneParts.part1 || phoneParts.part2 || phoneParts.part3);
 
         if (!hasSim) {
@@ -257,27 +277,13 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             if (!firstErrorField) firstErrorField = simNumberRef.current;
         }
 
-        // Check Terminal Code Uniqueness
-        const isTerminalCodeDuplicate = routers.some(item =>
-            item.terminalCode === formData.terminalCode &&
-            (!initialData || item.id !== initialData.id)
-        );
-
         if (isTerminalCodeDuplicate) {
             newErrorFields.add('terminalCode');
             if (!firstErrorField) firstErrorField = terminalCodeRef.current;
         }
 
-        // Check SIM Number Uniqueness (normalize for comparison)
-        const isSimNumberDuplicate = hasSim && routers.some(item =>
-            normalizePhoneNumber(item.simNumber) === normalizePhoneNumber(currentSim) &&
-            (!initialData || item.id !== initialData.id)
-        );
-
         if (isSimNumberDuplicate) {
             newErrorFields.add('simNumber');
-            // Focus handling might be tricky with multiple inputs, defaulting to container or first input ref if we can attach it.
-            // We will attach ref to the first input part or the main input.
             if (!firstErrorField) firstErrorField = simNumberRef.current;
         }
 
@@ -427,7 +433,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 </div>
                             )}
                             {errorFields.has('simNumber') && !hasSim && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('simNumber') && hasSim && <FormError>既に登録されているSIM電番です</FormError>}
+                            {errorFields.has('simNumber') && isSimNumberDuplicate && <FormError>既に登録されているSIM電番です</FormError>}
                         </div>
                         <div>
                             <FormLabel>通信容量</FormLabel>
@@ -445,7 +451,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 error={errorFields.has('terminalCode')}
                             />
                             {errorFields.has('terminalCode') && !formData.terminalCode && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('terminalCode') && formData.terminalCode && <FormError>既に登録されている端末CDです</FormError>}
+                            {errorFields.has('terminalCode') && isTerminalCodeDuplicate && <FormError>既に登録されている端末CDです</FormError>}
                         </div>
                     </div>
                 </div>

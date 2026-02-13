@@ -84,6 +84,16 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         });
     };
 
+
+    // Validation Logic
+    const isTerminalCodeDuplicate = useMemo(() => {
+        if (!formData.terminalCode) return false;
+        return tablets.some(item =>
+            item.terminalCode === formData.terminalCode &&
+            (!initialData || String(item.id) !== String(initialData.id))
+        );
+    }, [tablets, formData.terminalCode, initialData]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -99,12 +109,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
             newErrorFields.add('modelNumber');
             if (!firstErrorField) firstErrorField = modelNumberRef.current;
         }
-
-        // Check Terminal Code Uniqueness
-        const isTerminalCodeDuplicate = tablets.some(item =>
-            item.terminalCode === formData.terminalCode &&
-            (!initialData || item.id !== initialData.id)
-        );
 
         if (isTerminalCodeDuplicate) {
             newErrorFields.add('terminalCode');
@@ -142,10 +146,9 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('terminalCode')}
                             />
-                            {errorFields.has('terminalCode') && !tablets.some(item => item.terminalCode === formData.terminalCode && (!initialData || item.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('terminalCode') && (
-                                tablets.some(item => item.terminalCode === formData.terminalCode && (!initialData || item.id !== initialData.id)) ?
-                                    <FormError>既に登録されている端末CDです</FormError> : null
+                            {errorFields.has('terminalCode') && !formData.terminalCode && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('terminalCode') && isTerminalCodeDuplicate && (
+                                <FormError>既に登録されている端末CDです</FormError>
                             )}
                         </div>
                         <div>

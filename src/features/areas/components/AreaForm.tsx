@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Area } from '../area.types';
 import { useData } from '../../context/DataContext';
 import { Input } from '../../../components/ui/Input';
@@ -53,6 +53,15 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
         }
     };
 
+    // Uniqueness Check
+    const isDuplicate = useMemo(() => {
+        if (!formData.areaCode) return false;
+        return areas.some(area =>
+            area.areaCode === formData.areaCode &&
+            (!initialData || String(area.id) !== String(initialData.id))
+        );
+    }, [areas, formData.areaCode, initialData]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -68,12 +77,6 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
             newErrorFields.add('areaName');
             if (!firstErrorField) firstErrorField = areaNameRef.current;
         }
-
-        // Uniqueness Check
-        const isDuplicate = areas.some(area =>
-            area.areaCode === formData.areaCode &&
-            (!initialData || area.id !== initialData.id)
-        );
 
         if (isDuplicate) {
             newErrorFields.add('areaCode');

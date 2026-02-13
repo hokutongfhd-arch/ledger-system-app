@@ -41,7 +41,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         modelName: '',
         notes: '',
         contractYears: '',
-        costBearer: '',
         status: 'available',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
@@ -154,6 +153,26 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         setFormData(prev => ({ ...prev, phoneNumber: combined }));
     };
 
+
+    // Validation Logic
+    const isManagementNumberDuplicate = useMemo(() => {
+        if (!formData.managementNumber) return false;
+        return featurePhones.some(item =>
+            item.managementNumber === formData.managementNumber &&
+            (!initialData || String(item.id) !== String(initialData.id))
+        );
+    }, [featurePhones, formData.managementNumber, initialData]);
+
+    const isPhoneNumberDuplicate = useMemo(() => {
+        const currentPhone = normalizePhoneNumber(`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`);
+        if (!currentPhone) return false;
+
+        return featurePhones.some(item =>
+            normalizePhoneNumber(item.phoneNumber) === currentPhone &&
+            (!initialData || String(item.id) !== String(initialData.id))
+        );
+    }, [featurePhones, phoneParts, initialData]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -166,7 +185,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
             if (!firstErrorField) firstErrorField = managementNumberRef.current;
         }
 
-        const currentPhone = `${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`;
         const hasPhone = phoneParts.part1 || phoneParts.part2 || phoneParts.part3;
 
         if (!hasPhone) {
@@ -174,19 +192,11 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
             if (!firstErrorField) firstErrorField = phonePart1Ref.current;
         }
 
-        const isManagementNumberDuplicate = featurePhones.some(item =>
-            item.managementNumber === formData.managementNumber &&
-            (!initialData || item.id !== initialData.id)
-        );
         if (isManagementNumberDuplicate) {
             newErrorFields.add('managementNumber');
             if (!firstErrorField) firstErrorField = managementNumberRef.current;
         }
 
-        const isPhoneNumberDuplicate = hasPhone && featurePhones.some(item =>
-            normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(currentPhone) &&
-            (!initialData || item.id !== initialData.id)
-        );
         if (isPhoneNumberDuplicate) {
             newErrorFields.add('phoneNumber');
             if (!firstErrorField) firstErrorField = phonePart1Ref.current;
@@ -202,7 +212,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
             return;
         }
 
-        const finalPhone = formatPhoneNumber(formData.phoneNumber);
+        const finalPhone = formatPhoneNumber(`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`);
         const finalContractYears = normalizeContractYear(formData.contractYears || '');
         onSubmit({ ...formData, phoneNumber: finalPhone, contractYears: finalContractYears });
     };
@@ -225,10 +235,9 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 className={!!initialData?.id ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 error={errorFields.has('managementNumber')}
                             />
-                            {errorFields.has('managementNumber') && !featurePhones.some(item => item.managementNumber === formData.managementNumber && (!initialData || item.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('managementNumber') && (
-                                featurePhones.some(item => item.managementNumber === formData.managementNumber && (!initialData || item.id !== initialData.id)) ?
-                                    <FormError>既に登録されている管理番号です</FormError> : null
+                            {errorFields.has('managementNumber') && !formData.managementNumber && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('managementNumber') && isManagementNumberDuplicate && (
+                                <FormError>既に登録されている管理番号です</FormError>
                             )}
                         </div>
                         <div>
@@ -279,8 +288,8 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                     error={errorFields.has('phoneNumber')}
                                 />
                             </div>
-                            {errorFields.has('phoneNumber') && !featurePhones.some(item => normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`) && (!initialData || item.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('phoneNumber') && featurePhones.some(item => normalizePhoneNumber(item.phoneNumber) === normalizePhoneNumber(`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`) && (!initialData || item.id !== initialData.id)) && (
+                            {errorFields.has('phoneNumber') && !(phoneParts.part1 || phoneParts.part2 || phoneParts.part3) && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('phoneNumber') && isPhoneNumberDuplicate && (
                                 <FormError>既に登録されている電話番号です</FormError>
                             )}
                         </div>
@@ -374,15 +383,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 onChange={handleChange}
                             />
                         </div>
-                        <div>
-                            <FormLabel>負担先</FormLabel>
-                            <Input
-                                type="text"
-                                name="costBearer"
-                                value={formData.costBearer || ''}
-                                onChange={handleChange}
-                            />
-                        </div>
+
                         <div>
                             <FormLabel>受領書提出日</FormLabel>
                             <Input

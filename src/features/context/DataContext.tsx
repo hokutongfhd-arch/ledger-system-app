@@ -138,7 +138,6 @@ const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
 
     addressCode: s(d.address_code),
     costCompany: s(d.cost_company),
-    costBearer: s(d.cost_bearer),
     lendDate: s(d.lend_date),
     receiptDate: s(d.receipt_date),
     notes: s(d.notes),
@@ -156,7 +155,6 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
 
     address_code: t.addressCode,
     cost_company: t.costCompany,
-    cost_bearer: t.costBearer,
     lend_date: t.lendDate,
     receipt_date: t.receiptDate,
     notes: t.notes,

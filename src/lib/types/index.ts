@@ -45,7 +45,6 @@ export interface FeaturePhone {
 
     addressCode: string;
     costCompany: string;
-    costBearer: string;
     lendDate: string;
     receiptDate: string;
     notes: string; // notes1

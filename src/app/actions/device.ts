@@ -203,7 +203,6 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     notes: t.notes,
     status: t.status,
     contract_years: t.contractYears,
-    cost_bearer: t.costBearer,
 });
 
 export async function updateFeaturePhoneAction(id: string, data: Partial<FeaturePhone>) {
