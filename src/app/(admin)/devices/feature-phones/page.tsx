@@ -153,7 +153,11 @@ function FeaturePhoneListContent() {
                     errors.push(`${i + 2}行目: 管理番号が空です`);
                     rowHasError = true;
                 } else {
-                    if (existingManagementNumbers.has(managementNumber)) {
+                    // Check for full-width characters in the original input
+                    if (/[^\x20-\x7E]/.test(rawManagementNumber)) {
+                        errors.push(`${i + 2}行目: 管理番号「${rawManagementNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                        rowHasError = true;
+                    } else if (existingManagementNumbers.has(managementNumber)) {
                         errors.push(`${i + 2}行目: 管理番号「${managementNumber}」は既に存在します`);
                         rowHasError = true;
                     } else if (processedManagementNumbers.has(managementNumber)) {
