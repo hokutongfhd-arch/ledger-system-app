@@ -63,7 +63,14 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        let newValue = value;
+
+        if (name === 'terminalCode' || name === 'modelNumber') {
+            // Remove full-width characters and any non-ASCII characters
+            newValue = value.replace(/[^\x20-\x7E]/g, '');
+        }
+
+        setFormData(prev => ({ ...prev, [name]: newValue }));
 
         if (errorFields.has(name)) {
             const next = new Set(errorFields);

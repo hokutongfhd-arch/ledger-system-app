@@ -170,11 +170,21 @@ function TabletListContent() {
                 const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
                 const terminalCode = toHalfWidth(rawTerminalCode).trim();
 
+                const rawModelNumber = String(rowData['型番(必須)'] || '');
+                if (/[^\x20-\x7E]/.test(rawModelNumber)) {
+                    errors.push(`${i + 2}行目: 型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                    rowHasError = true;
+                }
+
                 if (!terminalCode) {
                     errors.push(`${i + 2}行目: 端末CDが空です`);
                     rowHasError = true;
                 } else {
-                    if (existingTerminalCodes.has(terminalCode)) {
+                    // Check for full-width characters in the original input
+                    if (/[^\x20-\x7E]/.test(rawTerminalCode)) {
+                        errors.push(`${i + 2}行目: 端末CD「${rawTerminalCode}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                        rowHasError = true;
+                    } else if (existingTerminalCodes.has(terminalCode)) {
                         errors.push(`${i + 2}行目: 端末CD「${terminalCode}」は既に存在します`);
                         rowHasError = true;
                     } else if (processedTerminalCodes.has(terminalCode)) {
