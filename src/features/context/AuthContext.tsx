@@ -82,6 +82,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     React.useEffect(() => {
         const initSession = async () => {
             try {
+                // Check if this tab has an active session flag (cleared on tab close)
+                const isTabSessionActive = typeof window !== 'undefined' && sessionStorage.getItem('ledger_session_active') === 'true';
+
                 const { data: { session }, error } = await supabase.auth.getSession();
 
                 if (error) {
@@ -95,6 +98,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
 
                 if (session) {
+                    // If we have a cookie session but NO tab session flag, it means the browser/tab was likely closed and reopened (fresh start).
+                    // Enforce logout to require fresh login.
+                    if (!isTabSessionActive) {
+                        console.warn('Session cookie found but no active tab session. Forcing logout to enforce login on app open.');
+                        await supabase.auth.signOut();
+                        setUser(null);
+                        // Ensure we are redirecting to login if not already there/handled by middleware?
+                        // Middleware might let us through if cookie is valid, so we must kill the cookie.
+                        // After signOut, state change should trigger re-render or middleware check on next nav.
+                        return;
+                    }
+
                     await refreshUser();
                 } else {
                     // Check for setup account session
@@ -203,6 +218,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 targetType: 'auth',
                 actor: { authId: authData.session.user.id, employeeCode: employee.code, name: employee.name }
             });
+            // Mark session as active for this tab
+            if (typeof window !== 'undefined') sessionStorage.setItem('ledger_session_active', 'true');
             return employee;
 
         } catch (error: any) {
@@ -231,6 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             await supabase.auth.signOut().catch(err => console.warn('SignOut failed:', err));
             await logoutSetupAccount().catch(err => console.warn('Logout setup account failed:', err));
+            if (typeof window !== 'undefined') sessionStorage.removeItem('ledger_session_active');
             setUser(null);
         } catch (error) {
             console.error('Logout process error:', error);
