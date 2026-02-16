@@ -111,6 +111,8 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
                                 onChange={handleNumberChange}
                                 placeholder="半角数字のみ"
                                 error={errorFields.has('areaCode')}
+                                readOnly={!!initialData}
+                                className={!!initialData ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                             />
                             {errorFields.has('areaCode') && !areas.some(a => a.areaCode === formData.areaCode && (!initialData || a.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
                             {errorFields.has('areaCode') && (

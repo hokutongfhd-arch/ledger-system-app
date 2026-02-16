@@ -337,6 +337,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 }}
                                 error={errorFields.has('code')}
                                 disabled={isSelfEdit}
+                                readOnly={!!initialData}
+                                className={!!initialData ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                                 inputMode="numeric"
                             />
                             {errorFields.has('code') && !numericError && !employees.some(e => e.code === formData.code && (!initialData || e.id !== initialData.id)) && (

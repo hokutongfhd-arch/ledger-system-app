@@ -306,6 +306,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 onChange={handleNumberChange}
                                 placeholder="半角数字のみ"
                                 error={errorFields.has('addressCode')}
+                                readOnly={!!initialData}
+                                className={!!initialData ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
                             />
                             {errorFields.has('addressCode') && !addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
                             {errorFields.has('addressCode') && addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && (
