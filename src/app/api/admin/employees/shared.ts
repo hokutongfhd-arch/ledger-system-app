@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { fixAuditLogActor } from './audit_helper';
+import { fixAuditLogActor, fixOperationLogActor } from './audit_helper';
 
 export type UpsertResult = {
     success: boolean;
@@ -158,8 +158,13 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
         if (actorUser && upsertResult) {
             // We fire this asynchronously to not block the response too much, 
             // or await it if we want to be sure. Await is safer for "one by one" logic.
-            // But fixAuditLogActor swallows errors so it won't crash the loop.
-            await fixAuditLogActor(supabaseAdmin, upsertResult.id, 'employee', actorUser);
+            // 1. Fix Audit Log (System Events)
+            // Determine operation type for audit log
+            const operation = existingEmployee ? 'UPDATE' : 'CREATE';
+            await fixAuditLogActor(supabaseAdmin, upsertResult.id, 'employee', actorUser, operation);
+
+            // 2. Fix Operation Log (Data Changes)
+            await fixOperationLogActor(supabaseAdmin, upsertResult.id, 'employees', actorUser, existingEmployee ? 'UPDATE' : 'INSERT');
         }
 
         return {

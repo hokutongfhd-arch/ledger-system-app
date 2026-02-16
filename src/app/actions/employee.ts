@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { fixAuditLogActor } from '../api/admin/employees/audit_helper';
+import { fixAuditLogActor, fixOperationLogActor } from '../api/admin/employees/audit_helper';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const getSupabaseAdmin = () => {
@@ -238,6 +238,7 @@ export async function deleteEmployeeAction(id: string) {
         // Run async without awaiting to not block UI response
         console.log(`[DeleteAction] Patching audit log for ${id} by ${user.email}`);
         await fixAuditLogActor(supabaseAdmin, id, 'employee', user, 'DELETE');
+        await fixOperationLogActor(supabaseAdmin, id, 'employees', user, 'DELETE');
     }
 
     return { success: true };
@@ -315,6 +316,7 @@ export async function deleteManyEmployeesAction(ids: string[]) {
     if (user) {
         for (const id of ids) {
             await fixAuditLogActor(supabaseAdmin, id, 'employee', user, 'DELETE');
+            await fixOperationLogActor(supabaseAdmin, id, 'employees', user, 'DELETE');
         }
     }
 
