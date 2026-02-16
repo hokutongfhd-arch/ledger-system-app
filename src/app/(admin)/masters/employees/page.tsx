@@ -173,6 +173,22 @@ function EmployeeListContent() {
                 const firstName = String(rowData['名前(必須)'] || '').trim();
                 const lastNameKana = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
                 const firstNameKana = String(rowData['名前カナ'] || '').trim();
+
+                // Validate Name Fields (Block numbers and symbols)
+                const nameRegex = /[0-9０-９!-/:-@[-`{-~！-／：-＠［-｀｛-～、。,.?？!！]/;
+                const nameFields = [
+                    { label: '苗字', value: lastName },
+                    { label: '名前', value: firstName },
+                    { label: '苗字カナ', value: lastNameKana },
+                    { label: '名前カナ', value: firstNameKana }
+                ];
+
+                for (const field of nameFields) {
+                    if (field.value && nameRegex.test(field.value)) {
+                        validationErrors.push(`${i + 2}行目: ${field.label}「${field.value}」に数字または記号が含まれています`);
+                    }
+                }
+
                 const email = String(rowData['メールアドレス(必須)'] || '').trim();
                 if (email) {
                     if (!/^[\x20-\x7E]+$/.test(email)) {

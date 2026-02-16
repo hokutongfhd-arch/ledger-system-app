@@ -99,6 +99,13 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
 
     const handleNamePartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+
+        // Block numbers and symbols (Half-width and Full-width)
+        // Regex includes: 0-9, ０-９, ASCII symbols, Full-width symbols/punctuation
+        if (/[0-9０-９!-/:-@[-`{-~！-／：-＠［-｀｛-～、。,.?？!！]/.test(value)) {
+            return;
+        }
+
         // Remove ANY spaces (half-width, full-width, ideographic)
         const sanitized = value.replace(/[\s　]+/g, '');
         setNameParts(prev => ({ ...prev, [name]: sanitized }));

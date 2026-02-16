@@ -140,6 +140,14 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+
+        // Block full-width characters for specific fields
+        if (name === 'terminalCode' || name === 'modelNumber') {
+            if (/[^\x20-\x7E]/.test(value)) {
+                return; // Ignore input if it contains non-half-width characters (Japanese, full-width alphanumerics etc.)
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: name === 'cost' ? parseInt(value) || 0 : value
@@ -321,10 +329,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                     <SectionHeader>基本情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <FormLabel>No.</FormLabel>
-                            <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
-                        </div>
-                        <div>
                             <FormLabel required>端末CD</FormLabel>
                             <Input
                                 ref={terminalCodeRef}
@@ -337,6 +341,10 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             />
                             {errorFields.has('terminalCode') && !formData.terminalCode && <FormError>この項目は必須です</FormError>}
                             {errorFields.has('terminalCode') && isTerminalCodeDuplicate && <FormError>既に登録されている端末CDです</FormError>}
+                        </div>
+                        <div>
+                            <FormLabel>No.</FormLabel>
+                            <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
                         </div>
                         <div>
                             <div className="flex justify-between items-end mb-1">

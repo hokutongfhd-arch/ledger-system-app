@@ -149,8 +149,14 @@ function RouterListContent() {
                 };
 
                 const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
-                const terminalCode = toHalfWidth(rawTerminalCode).trim();
                 let rowHasError = false;
+
+                // Check for full-width characters in Terminal Code
+                if (/[^\x20-\x7E]/.test(rawTerminalCode)) {
+                    errors.push(`${i + 2}行目: 端末CD「${rawTerminalCode}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                    rowHasError = true;
+                }
+                const terminalCode = rawTerminalCode.trim();
 
                 if (!terminalCode) {
                     errors.push(`${i + 2}行目: 端末CDが空です`);
@@ -164,6 +170,14 @@ function RouterListContent() {
                         rowHasError = true;
                     }
                 }
+
+                // Check for full-width characters in Model Number
+                const rawModelNumber = String(rowData['機種型番'] || '');
+                if (/[^\x20-\x7E]/.test(rawModelNumber)) {
+                    errors.push(`${i + 2}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                    rowHasError = true;
+                }
+                const modelNumber = rawModelNumber.trim();
 
                 const rawSimNumber = String(rowData['SIM電番(必須)'] || '');
                 const simNumberNormalized = normalizePhoneNumber(rawSimNumber);
@@ -190,7 +204,7 @@ function RouterListContent() {
                     contractStatus: normalizeContractYear(String(rowData['契約状況'] || '')),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['通信キャリア'] || ''),
-                    modelNumber: String(rowData['機種型番'] || ''),
+                    modelNumber: modelNumber,
                     simNumber: formatPhoneNumber(simNumberNormalized),
                     dataCapacity: String(rowData['通信容量'] || ''),
                     terminalCode: terminalCode,
