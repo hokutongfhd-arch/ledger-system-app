@@ -154,7 +154,7 @@ export default function AuditDashboardPage() {
                                         <thead>
                                             <tr className="border-b border-[#0A0E27]/10 text-xs font-display font-bold uppercase tracking-tighter opacity-50">
                                                 <th className="py-2">発生日時</th>
-                                                <th className="py-2">実行ユーザー</th>
+                                                <th className="py-2">実行者</th>
                                                 <th className="py-2">アクション</th>
                                                 <th className="py-2">重要度</th>
                                                 <th className="py-2 text-right px-4">操作</th>

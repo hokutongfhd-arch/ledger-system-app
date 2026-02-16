@@ -440,7 +440,7 @@ function OperationLogContent() {
                             accessor: (item) => <div className="font-mono text-sm">{new Date(item.timestamp).toLocaleString('ja-JP')}</div>
                         },
                         {
-                            header: <div className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => handleSort('actor_name')}>実行ユーザー{getSortIcon('actor_name')}</div>,
+                            header: <div className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => handleSort('actor_name')}>実行者{getSortIcon('actor_name')}</div>,
                             accessor: (item) => (
                                 <div>
                                     <div className="font-medium text-gray-900">{item.actorName}</div>
