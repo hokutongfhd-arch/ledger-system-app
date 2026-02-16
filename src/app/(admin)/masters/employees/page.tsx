@@ -287,12 +287,28 @@ function EmployeeListContent() {
 
                 if (result.failureCount === 0) {
                     showToast(`インポート成功: ${result.successCount}件`, 'success');
+                } else if (result.successCount === 0) {
+                    // All failed
+                    await confirm({
+                        title: 'インポートエラー',
+                        description: (
+                            <div className="max-h-60 overflow-y-auto">
+                                <p className="mb-2 text-red-600 font-bold">全件のインポートに失敗しました ({result.failureCount}件)</p>
+                                <ul className="list-disc pl-5 text-sm text-red-600">
+                                    {result.errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                </ul>
+                            </div>
+                        ),
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
                 } else {
+                    // Partial success
                     await confirm({
                         title: 'インポート完了 (一部エラー)',
                         description: (
                             <div className="max-h-60 overflow-y-auto">
-                                <p className="mb-2">{result.successCount}件成功, {result.failureCount}件失敗</p>
+                                <p className="mb-2">{result.successCount}件成功, <span className="text-red-600">{result.failureCount}件失敗</span></p>
                                 <ul className="list-disc pl-5 text-sm text-red-600">
                                     {result.errors.map((err, idx) => <li key={idx}>{err}</li>)}
                                 </ul>

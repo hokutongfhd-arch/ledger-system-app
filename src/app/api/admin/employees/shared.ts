@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { fixAuditLogActor } from './audit_helper';
 
 export type UpsertResult = {
     success: boolean;
@@ -9,7 +10,7 @@ export type UpsertResult = {
     code?: string;
 };
 
-export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: any): Promise<UpsertResult> {
+export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: any, actorUser?: any): Promise<UpsertResult> {
     const {
         employee_code,
         email,
@@ -121,6 +122,7 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             authority: authority === 'admin' ? 'admin' : 'user',
         };
 
+        // Use supabaseAdmin (Service Role) to bypass RLS and avoid infinite recursion
         const { data: upsertResult, error: upsertError } = await supabaseAdmin
             .from('employees')
             .upsert(employeeData, { onConflict: 'employee_code' })
@@ -137,7 +139,27 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
                     console.error('Failed to cleanup orphaned Auth User:', cleanupError);
                 }
             }
-            throw new Error(`Employee upsert failed: ${upsertError.message}`);
+
+            let jpErrorMessage = `DB登録エラー: ${upsertError.message}`;
+            if (upsertError.message.includes('infinite recursion')) {
+                jpErrorMessage = 'システムエラー: 権限設定の無限ループが発生しました。データベースの修正(is_admin関数の更新)が必要です。';
+            } else if (upsertError.message.includes('row-level security policy')) {
+                jpErrorMessage = '権限エラー: データの書き込み権限がありません。';
+            } else if (upsertError.message.includes('duplicate key')) {
+                jpErrorMessage = '登録エラー: 既に登録されているデータと重複しています。';
+            }
+
+            throw new Error(jpErrorMessage);
+        }
+
+        // --- Step 4: Fix Audit Log Actor ---
+        // Since we used Service Role, the Trigger created a log with 'System' or unknown actor.
+        // We manually patch it to the actual user who requested the import.
+        if (actorUser && upsertResult) {
+            // We fire this asynchronously to not block the response too much, 
+            // or await it if we want to be sure. Await is safer for "one by one" logic.
+            // But fixAuditLogActor swallows errors so it won't crash the loop.
+            await fixAuditLogActor(supabaseAdmin, upsertResult.id, 'employee', actorUser);
         }
 
         return {

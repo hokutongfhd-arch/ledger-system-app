@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { upsertEmployeeLogic } from '../shared';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 const getSupabaseAdmin = () => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,13 +24,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid input: employees must be an array' }, { status: 400 });
         }
 
+        const cookieStore = await cookies();
+        // @ts-expect-error: cookieStore type mismatch
+        const supabaseUser = createRouteHandlerClient({ cookies: () => cookieStore });
+        // Retrieve session user to use as "Actor" for audit logs
+        const { data: { session } } = await supabaseUser.auth.getSession();
+        const actorUser = session?.user;
+
         const supabaseAdmin = getSupabaseAdmin();
         const results = [];
 
         // Process sequentially to be safe (or Promise.all with concurrency limit if needed)
         // Sequential is safer for auth rate limits.
         for (const emp of employees) {
-            const res = await upsertEmployeeLogic(supabaseAdmin, emp);
+            // We pass 'actorUser' so that shared logic can patch the audit log after upsert
+            const res = await upsertEmployeeLogic(supabaseAdmin, emp, actorUser);
             results.push(res);
         }
 
