@@ -104,7 +104,7 @@ function TabletListContent() {
 
     const { handleExport } = useCSVExport<Tablet>();
     const headers = [
-        'メーカー', '型番', '端末CD', '契約年数',
+        'メーカー', '型番(必須)', '端末CD(必須)', '契約年数',
         '社員コード', '事業所コード', '負担先', '過去貸与履歴', '備考', '状況'
     ];
 
@@ -167,7 +167,7 @@ function TabletListContent() {
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
                 let rowHasError = false;
-                const rawTerminalCode = String(rowData['端末CD'] || '');
+                const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
                 const terminalCode = toHalfWidth(rawTerminalCode).trim();
 
                 if (!terminalCode) {
@@ -195,7 +195,7 @@ function TabletListContent() {
                 const newTablet: Omit<Tablet, 'id'> = {
                     terminalCode: terminalCode,
                     maker: String(rowData['メーカー'] || ''),
-                    modelNumber: String(rowData['型番'] || ''),
+                    modelNumber: String(rowData['型番(必須)'] || ''),
                     status: status as any,
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     employeeCode: String(rowData['社員コード'] || ''),
@@ -305,7 +305,7 @@ function TabletListContent() {
 
         // Styling headers
         const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true };
+        headerRow.font = { name: 'Yu Gothic', bold: true };
         headerRow.fill = {
             type: 'pattern',
             pattern: 'solid',

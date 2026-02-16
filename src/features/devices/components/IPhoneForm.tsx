@@ -112,7 +112,14 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        let newValue = value;
+
+        // Restrict full-width characters for specific fields
+        if (['managementNumber', 'smartAddressId', 'smartAddressPw'].includes(name)) {
+            newValue = value.replace(/[^\x20-\x7E]/g, '');
+        }
+
+        setFormData(prev => ({ ...prev, [name]: newValue }));
 
         if (errorFields.has(name)) {
             const next = new Set(errorFields);

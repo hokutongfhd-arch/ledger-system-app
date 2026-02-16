@@ -76,8 +76,8 @@ function RouterListContent() {
 
     const { handleExport } = useCSVExport<Router>();
     const headers = [
-        'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番',
-        '通信容量', '端末CD', '社員コード', '事業所コード', '実貸与先',
+        'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番(必須)',
+        '通信容量', '端末CD(必須)', '社員コード', '事業所コード', '実貸与先',
         '実貸与先名', '会社', 'IPアドレス', 'サブネットマスク', '開始IP',
         '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)', '状況'
     ];
@@ -146,7 +146,7 @@ function RouterListContent() {
                     '廃棄': 'discarded'
                 };
 
-                const rawTerminalCode = String(rowData['端末CD'] || '');
+                const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
                 const terminalCode = toHalfWidth(rawTerminalCode).trim();
                 let rowHasError = false;
 
@@ -163,7 +163,7 @@ function RouterListContent() {
                     }
                 }
 
-                const rawSimNumber = String(rowData['SIM電番'] || '');
+                const rawSimNumber = String(rowData['SIM電番(必須)'] || '');
                 const simNumberNormalized = normalizePhoneNumber(rawSimNumber);
 
                 if (simNumberNormalized) {
@@ -336,7 +336,7 @@ function RouterListContent() {
 
         // Styling headers
         const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true };
+        headerRow.font = { name: 'Yu Gothic', bold: true };
         headerRow.fill = {
             type: 'pattern',
             pattern: 'solid',

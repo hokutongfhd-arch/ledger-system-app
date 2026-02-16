@@ -78,7 +78,7 @@ function IPhoneListContent() {
 
     const { handleExport } = useCSVExport<IPhone>();
     const headers = [
-        'キャリア', '電話番号', '管理番号', '機種名', '契約年数',
+        'キャリア', '電話番号(必須)', '管理番号(必須)', '機種名', '契約年数',
         '社員コード', '事業所コード', '負担先', '貸与日', '受領書提出日', '返却日',
         'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考', '状況'
     ];
@@ -118,6 +118,50 @@ function IPhoneListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            const validationErrors: string[] = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
+                if (isRowEmpty) continue;
+
+                const rowData: any = {};
+                fileHeaders.forEach((header, index) => {
+                    rowData[header] = row[index];
+                });
+
+                const rawManagementNumber = String(rowData['管理番号(必須)'] || '');
+                const rawSmartId = String(rowData['SMARTアドレス帳ID'] || '');
+                const rawSmartPw = String(rowData['SMARTアドレス帳PW'] || '');
+
+                if (/[^\x20-\x7E]/.test(rawManagementNumber)) {
+                    validationErrors.push(`${i + 2}行目: 管理番号に全角文字が含まれています`);
+                }
+                if (/[^\x20-\x7E]/.test(rawSmartId)) {
+                    validationErrors.push(`${i + 2}行目: SMARTアドレス帳IDに全角文字が含まれています`);
+                }
+                if (/[^\x20-\x7E]/.test(rawSmartPw)) {
+                    validationErrors.push(`${i + 2}行目: SMARTアドレス帳PWに全角文字が含まれています`);
+                }
+            }
+
+            if (validationErrors.length > 0) {
+                await confirm({
+                    title: 'インポートエラー',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <ul className="list-disc pl-5">
+                                {validationErrors.map((err, idx) => <li key={idx} className="text-red-600">{err}</li>)}
+                            </ul>
+                            <p className="mt-2 text-sm text-gray-500">全角文字が含まれているためインポートを中止しました。</p>
+                        </div>
+                    ),
+                    confirmText: '閉じる',
+                    cancelText: ''
+                });
+                return;
+            }
+
             let successCount = 0;
             let errorCount = 0;
             const existingManagementNumbers = new Set(iPhones.map(d => d.managementNumber));
@@ -149,7 +193,7 @@ function IPhoneListContent() {
                 };
 
                 let rowHasError = false;
-                const rawManagementNumber = String(rowData['管理番号'] || '');
+                const rawManagementNumber = String(rowData['管理番号(必須)'] || '');
                 const managementNumber = toHalfWidth(rawManagementNumber).trim();
 
                 if (!managementNumber) {
@@ -165,7 +209,7 @@ function IPhoneListContent() {
                     }
                 }
 
-                const rawPhoneNumber = String(rowData['電話番号'] || '');
+                const rawPhoneNumber = String(rowData['電話番号(必須)'] || '');
                 const phoneNumber = formatPhoneNumber(toHalfWidth(rawPhoneNumber).trim());
                 const normalizedPhone = normalizePhone(phoneNumber);
 
@@ -340,7 +384,7 @@ function IPhoneListContent() {
 
         // Styling headers
         const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true };
+        headerRow.font = { name: 'Yu Gothic', bold: true };
         headerRow.fill = {
             type: 'pattern',
             pattern: 'solid',

@@ -76,7 +76,7 @@ function FeaturePhoneListContent() {
 
     const { handleExport } = useCSVExport<FeaturePhone>();
     const headers = [
-        'キャリア', '電話番号', '管理番号', '機種名', '契約年数',
+        'キャリア', '電話番号(必須)', '管理番号(必須)', '機種名', '契約年数',
         '社員コード', '事業所コード', '貸与日', '負担先会社', '受領書提出日', '返却日', '備考', '状況'
     ];
 
@@ -146,7 +146,7 @@ function FeaturePhoneListContent() {
                 };
 
                 let rowHasError = false;
-                const rawManagementNumber = String(rowData['管理番号'] || '');
+                const rawManagementNumber = String(rowData['管理番号(必須)'] || '');
                 const managementNumber = toHalfWidth(rawManagementNumber).trim();
 
                 if (!managementNumber) {
@@ -162,7 +162,7 @@ function FeaturePhoneListContent() {
                     }
                 }
 
-                const rawPhoneNumber = String(rowData['電話番号'] || '');
+                const rawPhoneNumber = String(rowData['電話番号(必須)'] || '');
                 const phoneNumber = formatPhoneNumber(toHalfWidth(rawPhoneNumber).trim());
                 const normalizedPhone = normalizePhone(phoneNumber);
 
@@ -333,7 +333,7 @@ function FeaturePhoneListContent() {
 
         // Styling headers
         const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true };
+        headerRow.font = { name: 'Yu Gothic', bold: true };
         headerRow.fill = {
             type: 'pattern',
             pattern: 'solid',

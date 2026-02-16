@@ -78,9 +78,9 @@ function EmployeeListContent() {
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, headers) => {
             const requiredHeaders = [
-                '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
+                '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
                 'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
-                '権限', 'パスワード'
+                '権限(必須)', 'パスワード(必須)'
             ];
 
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
@@ -137,7 +137,7 @@ function EmployeeListContent() {
                     return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
                 };
 
-                const rawCode = String(rowData['社員コード'] || '');
+                const rawCode = String(rowData['社員コード(必須)'] || '');
                 const code = toHalfWidth(rawCode).trim();
 
                 // Duplicate check within file only
@@ -169,11 +169,11 @@ function EmployeeListContent() {
                     continue;
                 }
 
-                const lastName = String(rowData['苗字'] || rowData['氏名'] || '').trim();
-                const firstName = String(rowData['名前'] || '').trim();
+                const lastName = String(rowData['苗字(必須)'] || rowData['氏名'] || '').trim();
+                const firstName = String(rowData['名前(必須)'] || '').trim();
                 const lastNameKana = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
                 const firstNameKana = String(rowData['名前カナ'] || '').trim();
-                const email = String(rowData['メールアドレス'] || '').trim();
+                const email = String(rowData['メールアドレス(必須)'] || '').trim();
                 if (email) {
                     if (!/^[\x20-\x7E]+$/.test(email)) {
                         validationErrors.push(`${i + 2}行目: メールアドレスに全角文字が含まれています`);
@@ -186,7 +186,7 @@ function EmployeeListContent() {
                     }
                 }
 
-                const rawPassword = String(rowData['パスワード'] || '').trim();
+                const rawPassword = String(rowData['パスワード(必須)'] || '').trim();
                 const password = toHalfWidth(rawPassword);
 
                 // Password Validation (8-16 digits, numeric only)
@@ -224,7 +224,7 @@ function EmployeeListContent() {
                     joinDate: joinDateValue,
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
-                    role: String(rowData['権限'] || '').trim() === '管理者' ? 'admin' : 'user',
+                    role: String(rowData['権限(必須)'] || '').trim() === '管理者' ? 'admin' : 'user',
                     password: password,
                     companyNo: '',
                     departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),
@@ -373,9 +373,9 @@ function EmployeeListContent() {
         });
 
         const headers = [
-            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
+            '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
             'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
-            '権限', 'パスワード'
+            '権限(必須)', 'パスワード(必須)'
         ];
 
         handleExport(filteredData, headers, `employee_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => {
@@ -406,9 +406,9 @@ function EmployeeListContent() {
 
     const handleDownloadTemplate = async () => {
         const headers = [
-            '社員コード', '性別', '苗字', '名前', '苗字カナ', '名前カナ', 'メールアドレス', '生年月日', '年齢',
+            '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
             'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
-            '権限', 'パスワード'
+            '権限(必須)', 'パスワード(必須)'
         ];
 
         const workbook = new ExcelJS.Workbook();
@@ -419,7 +419,7 @@ function EmployeeListContent() {
 
         // Styling headers
         const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true };
+        headerRow.font = { name: 'Yu Gothic', bold: true };
         headerRow.fill = {
             type: 'pattern',
             pattern: 'solid',

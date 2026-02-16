@@ -67,7 +67,7 @@ function AreaListContent() {
     });
 
     const { handleExport } = useCSVExport<Area>();
-    const headers = ['エリアコード', 'エリア名'];
+    const headers = ['エリアコード(必須)', 'エリア名(必須)'];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, fileHeaders) => {
@@ -121,7 +121,7 @@ function AreaListContent() {
                 });
 
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-                const code = toHalfWidth(String(rowData['エリアコード'] || '')).trim();
+                const code = toHalfWidth(String(rowData['エリアコード(必須)'] || '')).trim();
 
                 if (existingCodes.has(code)) {
                     errors.push(`${i + 2}行目: エリアコード「${code}」は既に存在します`);
@@ -136,7 +136,7 @@ function AreaListContent() {
 
                 const newArea: Omit<Area, 'id'> = {
                     areaCode: code,
-                    areaName: String(rowData['エリア名'] || '')
+                    areaName: String(rowData['エリア名(必須)'] || '')
                 };
 
                 try {
@@ -234,7 +234,7 @@ function AreaListContent() {
 
         // Styling headers
         const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true };
+        headerRow.font = { name: 'Yu Gothic', bold: true };
         headerRow.fill = {
             type: 'pattern',
             pattern: 'solid',

@@ -77,12 +77,12 @@ function AddressListContent() {
 
     const { handleExport } = useCSVExport<Address>();
 
-    const headers = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '〒', '住所', '備考', '事業部', '経理コード', 'エリア', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+    const headers = ['エリア', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', 'エリア', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, fileHeaders) => {
             // Check for required headers (unique ones)
-            const requiredHeaders = ['エリア', '№', '事業所コード', '事業所名', 'ＴＥＬ', 'ＦＡＸ', '〒', '住所', '備考', '事業部', '経理コード', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+            const requiredHeaders = ['エリア', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
             const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
 
             if (missingHeaders.length > 0) {
@@ -148,7 +148,7 @@ function AddressListContent() {
                 };
 
                 // Address Code Check
-                const rawCode = String(rowData['事業所コード'] || '');
+                const rawCode = String(rowData['事業所コード(必須)'] || '');
                 const code = toHalfWidth(rawCode).trim();
 
                 if (!code) {
@@ -181,12 +181,12 @@ function AddressListContent() {
                     area: String(rowData['エリア'] || '').trim(),
                     no: String(rowData['№'] || ''),
                     addressCode: code,
-                    officeName: String(rowData['事業所名'] || ''),
+                    officeName: String(rowData['事業所名(必須)'] || ''),
                     tel: formatPhoneNumber(String(rowData['ＴＥＬ'] || '')),
                     fax: formatPhoneNumber(String(rowData['ＦＡＸ'] || '')),
 
-                    zipCode: formatZipCode(String(rowData['〒'] || '')),
-                    address: String(rowData['住所'] || ''),
+                    zipCode: formatZipCode(String(rowData['〒(必須)'] || '')),
+                    address: String(rowData['住所(必須)'] || ''),
                     notes: String(rowData['備考'] || ''),
                     division: String(rowData['事業部'] || ''),
                     accountingCode: accountingCode,
@@ -317,7 +317,7 @@ function AddressListContent() {
 
         // Styling headers
         const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true };
+        headerRow.font = { name: 'Yu Gothic', bold: true };
         headerRow.fill = {
             type: 'pattern',
             pattern: 'solid',
