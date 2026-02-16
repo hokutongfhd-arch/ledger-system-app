@@ -123,6 +123,8 @@ function FeaturePhoneListContent() {
             const processedPhoneNumbers = new Set<string>();
             const errors: string[] = [];
 
+            const importData: any[] = [];
+
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -184,8 +186,7 @@ function FeaturePhoneListContent() {
                 }
 
                 if (rowHasError) {
-                    errorCount++;
-                    continue;
+                    continue; // Continue to find more errors in other rows
                 }
 
                 const formatDate = (val: any) => {
@@ -226,11 +227,32 @@ function FeaturePhoneListContent() {
 
                 if (newFeaturePhone.employeeId) newFeaturePhone.status = 'in-use';
 
+                importData.push(newFeaturePhone);
+            }
+
+            // All-or-Nothing check
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポートエラー',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
+                            <ul>{errors.map((err, idx) => <li key={idx} className="text-red-600">{err}</li>)}</ul>
+                        </div>
+                    ),
+                    confirmText: '閉じる',
+                    cancelText: ''
+                });
+                return;
+            }
+
+            // Execution Phase
+            for (const data of importData) {
                 try {
-                    await addFeaturePhone(newFeaturePhone, true, true);
+                    await addFeaturePhone(data as Omit<FeaturePhone, 'id'>, true, true);
                     successCount++;
                 } catch (error: any) {
-                    errors.push(`${i + 2}行目: 登録エラー - ${error.message || '不明なエラー'}`);
+                    errors.push(`登録エラー: ${data.managementNumber} - ${error.message || '不明なエラー'}`);
                     errorCount++;
                 }
             }

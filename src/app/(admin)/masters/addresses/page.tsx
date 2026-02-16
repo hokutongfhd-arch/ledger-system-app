@@ -124,6 +124,8 @@ function AddressListContent() {
             const processedCodes = new Set<string>();
             const errors: string[] = [];
 
+            const importData: any[] = [];
+
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -150,21 +152,27 @@ function AddressListContent() {
                 // Address Code Check
                 const rawCode = String(rowData['事業所コード(必須)'] || '');
                 const code = toHalfWidth(rawCode).trim();
+                let rowHasError = false;
 
                 if (!code) {
-                    errorCount++;
-                    continue;
-                }
-
-                if (existingCodes.has(code)) {
-                    errors.push(`${i + 2}行目: 事業所コード「${code}」は既に存在します`);
-                    errorCount++;
-                    continue;
-                }
-                if (processedCodes.has(code)) {
-                    errors.push(`${i + 2}行目: 事業所コード「${code}」がファイル内で重複しています`);
-                    errorCount++;
-                    continue;
+                    errorCount++; // Although current logic doesn't add to error list, keeping old behavior of just counting?
+                    // Wait, if it's empty, we should probably skip it or error it.
+                    // Implementation Plan says "Collect all errors".
+                    // The old code did `continue;` which just skipped it without explicit error message in `errors` list.
+                    // But if we want "All or Nothing", we should probably report it if it's considered an error.
+                    // However, `errorCount` was incremented.
+                    // Let's assume skipping empty code is fine but if it counts as error, it should block import.
+                    // I will add it to errors list to be safe and explicit.
+                    errors.push(`${i + 2}行目: 事業所コードが空です`);
+                    rowHasError = true;
+                } else {
+                    if (existingCodes.has(code)) {
+                        errors.push(`${i + 2}行目: 事業所コード「${code}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedCodes.has(code)) {
+                        errors.push(`${i + 2}行目: 事業所コード「${code}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
                 }
 
                 // Accounting Code Validation
@@ -173,9 +181,14 @@ function AddressListContent() {
 
                 if (accountingCode && !/^[0-9]+$/.test(accountingCode)) {
                     errors.push(`${i + 2}行目: 経理コード「${accountingCode}」は半角数字のみ入力可能です`);
-                    errorCount++;
+                    rowHasError = true;
+                }
+
+                if (rowHasError) {
                     continue;
                 }
+
+                processedCodes.add(code);
 
                 const newAddress: Omit<Address, 'id'> = {
                     area: String(rowData['エリア'] || '').trim(),
@@ -200,12 +213,32 @@ function AddressListContent() {
                     type: ''
                 };
 
+                importData.push(newAddress);
+            }
+
+            // All-or-Nothing check
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポートエラー',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
+                            <ul>{errors.map((err, idx) => <li key={idx} className="text-red-600">{err}</li>)}</ul>
+                        </div>
+                    ),
+                    confirmText: '閉じる',
+                    cancelText: ''
+                });
+                return;
+            }
+
+            // Execution Phase
+            for (const data of importData) {
                 try {
-                    await addAddress(newAddress, true, true);
-                    processedCodes.add(code);
+                    await addAddress(data as Omit<Address, 'id'>, true, true);
                     successCount++;
                 } catch (error: any) {
-                    errors.push(`${i + 2}行目: 登録エラー - ${error.message || '不明なエラー'}`);
+                    errors.push(`登録エラー: ${data.addressCode} - ${error.message || '不明なエラー'}`);
                     errorCount++;
                 }
             }

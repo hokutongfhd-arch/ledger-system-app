@@ -109,6 +109,8 @@ function AreaListContent() {
             let successCount = 0;
             let errorCount = 0;
 
+            const importData: any[] = [];
+
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -122,29 +124,53 @@ function AreaListContent() {
 
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
                 const code = toHalfWidth(String(rowData['エリアコード(必須)'] || '')).trim();
+                let rowHasError = false;
 
                 if (existingCodes.has(code)) {
                     errors.push(`${i + 2}行目: エリアコード「${code}」は既に存在します`);
-                    errorCount++;
-                    continue;
-                }
-                if (processedCodes.has(code)) {
+                    rowHasError = true;
+                } else if (processedCodes.has(code)) {
                     errors.push(`${i + 2}行目: エリアコード「${code}」がファイル内で重複しています`);
-                    errorCount++;
+                    rowHasError = true;
+                }
+
+                if (rowHasError) {
                     continue;
                 }
+
+                processedCodes.add(code);
 
                 const newArea: Omit<Area, 'id'> = {
                     areaCode: code,
                     areaName: String(rowData['エリア名(必須)'] || '')
                 };
 
+                importData.push(newArea);
+            }
+
+            // All-or-Nothing check
+            if (errors.length > 0) {
+                await confirm({
+                    title: 'インポートエラー',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
+                            <ul>{errors.map((err, idx) => <li key={idx} className="text-red-600">{err}</li>)}</ul>
+                        </div>
+                    ),
+                    confirmText: '閉じる',
+                    cancelText: ''
+                });
+                return;
+            }
+
+            // Execution Phase
+            for (const data of importData) {
                 try {
-                    await addArea(newArea, true, true);
-                    processedCodes.add(code);
+                    await addArea(data as Omit<Area, 'id'>, true, true);
                     successCount++;
                 } catch (error: any) {
-                    errors.push(`${i + 2}行目: 登録エラー - ${error.message || '不明なエラー'}`);
+                    errors.push(`登録エラー: ${data.areaCode} - ${error.message || '不明なエラー'}`);
                     errorCount++;
                 }
             }
