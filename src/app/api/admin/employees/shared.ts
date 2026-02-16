@@ -69,7 +69,8 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
                     email: authEmail,
                     password: password || '12345678',
                     email_confirm: true,
-                    user_metadata: { name, employee_code, email: authEmail } // Store email in metadata too
+                    user_metadata: { name, employee_code, email: authEmail }, // Store email in metadata too
+                    app_metadata: { role: authority === 'admin' ? 'admin' : 'user' }
                 });
 
                 if (createError) throw new Error(`Auth create failed: ${createError.message}`);
@@ -80,8 +81,10 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
 
         // --- Step 2: Update Auth User Metadata/Email ---
         if (authAction !== 'created' && targetAuthId) {
+            console.log(`[Upsert] Updating Auth User ${targetAuthId} with Role: ${authority}`);
             const updates: any = {
                 user_metadata: { name, employee_code },
+                app_metadata: { role: authority === 'admin' ? 'admin' : 'user' },
                 email: authEmail,
                 email_confirm: true
             };
@@ -92,7 +95,12 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
                 targetAuthId,
                 updates
             );
-            if (updateError) throw new Error(`Auth update failed: ${updateError.message}`);
+            if (updateError) {
+                console.error(`[Upsert] Auth update failed: ${updateError.message}`);
+                throw new Error(`Auth update failed: ${updateError.message}`);
+            } else {
+                console.log(`[Upsert] Auth update success for ${targetAuthId}`);
+            }
         }
 
         // --- Step 3: Upsert Employee Record ---

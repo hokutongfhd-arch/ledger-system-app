@@ -228,6 +228,10 @@ function EmployeeListContent() {
                 const cleanName = `${lastName.replace(/[\s　]+/g, '')} ${firstName.replace(/[\s　]+/g, '')}`.trim();
                 const cleanNameKana = `${lastNameKana.replace(/[\s　]+/g, '')} ${firstNameKana.replace(/[\s　]+/g, '')}`.trim();
 
+                const rawRole = String(rowData['権限(必須)'] || '').trim();
+                const role = (rawRole === '管理者' || rawRole.toLowerCase() === 'admin') ? 'admin' : 'user';
+                console.log(`[Import] Code: ${code}, RawRole: "${rawRole}" -> Role: ${role}`);
+
                 const emp: Omit<Employee, 'id'> & { id?: string } = {
                     code: code,
                     gender: String(rowData['性別'] || ''),
@@ -240,7 +244,7 @@ function EmployeeListContent() {
                     joinDate: joinDateValue,
                     yearsOfService: parseNumber(rowData['勤続年数']),
                     monthsHasuu: parseNumber(rowData['勤続端数月数']),
-                    role: String(rowData['権限(必須)'] || '').trim() === '管理者' ? 'admin' : 'user',
+                    role: role,
                     password: password,
                     companyNo: '',
                     departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),

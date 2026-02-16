@@ -11,6 +11,7 @@ import { logService } from '../logs/log.service';
 import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
 import { createEmployeeAction, fetchEmployeesAction, deleteEmployeeAction, deleteManyEmployeesAction, updateEmployeeAction } from '@/app/actions/employee';
 import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction } from '@/app/actions/device';
+import { fetchIPhonesAction, fetchTabletsAction, fetchFeaturePhonesAction, fetchRoutersAction, fetchAreasAction, fetchAddressesAction } from '@/app/actions/device_fetch';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -341,17 +342,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchData = useCallback(async () => {
         try {
-            const [t, i, f, r, employeeData, a, ad] = await Promise.all([
-                supabase.from('tablets').select('*'),
-                supabase.from('iphones').select('*'),
-                supabase.from('featurephones').select('*'),
-                supabase.from('routers').select('*'),
+            // Use Server Actions to fetch data (bypassing RLS issues for imported users)
+            const [
+                iPhoneData,
+                tabletData,
+                featurePhoneData,
+                routerData,
+                employeeData,
+                areaData,
+                addressData
+            ] = await Promise.all([
+                fetchIPhonesAction(),
+                fetchTabletsAction(),
+                fetchFeaturePhonesAction(),
+                fetchRoutersAction(),
                 fetchEmployeesAction(),
-                supabase.from('areas').select('*'),
-                supabase.from('addresses').select('*'),
+                fetchAreasAction(),
+                fetchAddressesAction(),
             ]);
 
             // Default fetch: Current week's logs from audit_logs
+            // Logs are still fetched via Client for now (User ID based RLS should be fine, or verify later)
+            // But if logs are empty too, we might need an action for logs.
+            // For now, let's assume Logs RLS is "Auth User can read logs".
             const { start, end } = getWeekRange(new Date());
             const { data: logData } = await supabase.from('audit_logs')
                 .select('*')
@@ -359,17 +372,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .lte('occurred_at', end.toISOString())
                 .order('occurred_at', { ascending: false });
 
-            if (t.data) setTablets(t.data.map(mapTabletFromDb));
-            if (i.data) setIPhones(i.data.map(mapIPhoneFromDb));
-            if (f.data) setFeaturePhones(f.data.map(mapFeaturePhoneFromDb));
-            if (r.data) setRouters(r.data.map(mapRouterFromDb));
+            if (tabletData) setTablets(tabletData.map(mapTabletFromDb));
+            if (iPhoneData) setIPhones(iPhoneData.map(mapIPhoneFromDb));
+            if (featurePhoneData) setFeaturePhones(featurePhoneData.map(mapFeaturePhoneFromDb));
+            if (routerData) setRouters(routerData.map(mapRouterFromDb));
             if (employeeData) setEmployees(employeeData.map(mapEmployeeFromDb));
-            if (a.data) setAreas(a.data.map(mapAreaFromDb));
-            if (ad.data) setAddresses(ad.data.map(mapAddressFromDb));
+            if (areaData) setAreas(areaData.map(mapAreaFromDb));
+            if (addressData) setAddresses(addressData.map(mapAddressFromDb));
             if (logData) setLogs(logData.map(logService.mapLogFromDb));
 
         } catch (error) {
-            console.error('Failed to fetch data from Supabase:', error);
+            console.error('Failed to fetch data:', error);
         }
     }, [supabase]);
 
