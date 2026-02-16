@@ -41,11 +41,8 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         subnetMask: '',
         startIp: '',
         endIp: '',
-        company: '',
         addressCode: '',
-        actualLender: '',
         costBearer: '',
-        actualLenderName: '',
         lendingHistory: '',
         notes: '',
         contractStatus: '',
@@ -485,18 +482,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 onChange={(val) => handleSelectChange('addressCode', val)}
                                 placeholder="事業所を検索..."
                             />
-                        </div>
-                        <div>
-                            <FormLabel>実貸与先</FormLabel>
-                            <Input name="actualLender" value={formData.actualLender} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <FormLabel>実貸与先名</FormLabel>
-                            <Input name="actualLenderName" value={formData.actualLenderName} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <FormLabel>会社</FormLabel>
-                            <Input name="company" value={formData.company} onChange={handleChange} />
                         </div>
                     </div>
                 </div>

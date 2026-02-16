@@ -59,7 +59,7 @@ function RouterListContent() {
         isAllSelected
     } = useDataTable<Router>({
         data: routers,
-        searchKeys: ['terminalCode', 'carrier', 'simNumber', 'actualLenderName', 'notes'],
+        searchKeys: ['terminalCode', 'carrier', 'simNumber', 'notes'],
         sortConfig: {
             employeeCode: (a, b) => { // User Name Sort
                 const nameA = employees.find(e => e.code === a.employeeCode)?.name || '';
@@ -77,8 +77,7 @@ function RouterListContent() {
     const { handleExport } = useCSVExport<Router>();
     const headers = [
         'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番(必須)',
-        '通信容量', '端末CD(必須)', '社員コード', '事業所コード', '実貸与先',
-        '実貸与先名', '会社', 'IPアドレス', 'サブネットマスク', '開始IP',
+        '通信容量', '端末CD(必須)', '社員コード', '事業所コード', 'IPアドレス', 'サブネットマスク', '開始IP',
         '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)', '状況'
     ];
 
@@ -210,9 +209,6 @@ function RouterListContent() {
                     terminalCode: terminalCode,
                     employeeCode: String(rowData['社員コード'] || ''),
                     addressCode: String(rowData['事業所コード'] || ''),
-                    actualLender: String(rowData['実貸与先'] || ''),
-                    actualLenderName: String(rowData['実貸与先名'] || ''),
-                    company: String(rowData['会社'] || ''),
                     ipAddress: String(rowData['IPアドレス'] || ''),
                     subnetMask: String(rowData['サブネットマスク'] || ''),
                     startIp: String(rowData['開始IP'] || ''),
@@ -251,7 +247,7 @@ function RouterListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addRouter(data as Omit<Router, 'id'>, true, true);
+                    await addRouter(data as any, true, true);
                     successCount++;
                 } catch (error: any) {
                     errors.push(`登録エラー: ${data.terminalCode} - ${error.message || '不明なエラー'}`);
@@ -346,9 +342,6 @@ function RouterListContent() {
             item.terminalCode,
             item.employeeCode || '',
             item.addressCode || '',
-            item.actualLender || '',
-            item.actualLenderName || '',
-            item.company || '',
             item.ipAddress || '',
             item.subnetMask || '',
             item.startIp || '',
@@ -491,7 +484,6 @@ function RouterListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('carrier')}>通信キャリア{getSortIcon('carrier')}</div>, accessor: 'carrier' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('simNumber')}>SIM電番{getSortIcon('simNumber')}</div>, accessor: (item) => formatPhoneNumber(item.simNumber || '') },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('actualLenderName')}>実貸与先名{getSortIcon('actualLenderName')}</div>, accessor: 'actualLenderName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('contractYears')}>契約年数{getSortIcon('contractYears')}</div>, accessor: (item) => normalizeContractYear(item.contractYears || '') },
                     {
@@ -525,7 +517,7 @@ function RouterListContent() {
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ルーター 編集' : 'ルーター 新規登録'}>
                 <RouterForm initialData={editingItem} onSubmit={async (data) => {
                     if (editingItem) {
-                        await updateRouter({ ...data, id: editingItem.id } as Router);
+                        await updateRouter({ ...data, id: editingItem.id } as any);
                         if (editingItem.id === highlightId) {
                             const params = new URLSearchParams(searchParams.toString());
                             params.delete('highlight');
@@ -533,7 +525,7 @@ function RouterListContent() {
                             router.replace(`${pathname}?${params.toString()}`);
                         }
                     } else {
-                        await addRouter(data as Omit<Router, 'id'>);
+                        await addRouter(data as any);
                     }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />

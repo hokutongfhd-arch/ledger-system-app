@@ -111,11 +111,8 @@ export interface Router {
     subnetMask: string;
     startIp: string;
     endIp: string;
-    company: string;
     addressCode: string;
-    actualLender: string;
     costBearer: string;
-    actualLenderName: string;
     lendingHistory: string;
     notes: string;
     returnDate: string;

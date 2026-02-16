@@ -187,8 +187,6 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <DetailRow label="社員名" value={employeeName} subValue={item.employeeCode} />
                                 <DetailRow label="設置場所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
-                                <DetailRow label="実貸与先" value={item.actualLenderName} subValue={item.actualLender} />
-                                <DetailRow label="会社" value={item.company} />
                             </div>
 
                             <SectionHeader icon={<Server size={18} />} title="ネットワーク情報 (Network)" />
@@ -208,11 +206,11 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
 
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractStatus || '')} />
                                     <DetailRow label="請求元" value={item.biller} />
                                     <DetailRow label="負担先" value={item.costBearer} />
                                     <DetailRow label="費用" value={item.cost ? `¥${item.cost.toLocaleString()}` : '-'} isSensitive />
                                     <DetailRow label="費用振替" value={item.costTransfer} />
+                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                                 </div>
                             </div>
 
