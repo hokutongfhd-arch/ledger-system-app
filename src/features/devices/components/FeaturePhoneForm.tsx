@@ -365,7 +365,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             />
                         </div>
                         <div>
-                            <FormLabel>負担先会社</FormLabel>
+                            <FormLabel>負担先</FormLabel>
                             <Input
                                 type="text"
                                 name="costCompany"
