@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { fixAuditLogActor, fixOperationLogActor } from '../api/admin/employees/audit_helper';
+import { fixOperationLogActor } from '../api/admin/employees/audit_helper';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const getSupabaseAdmin = () => {
@@ -233,11 +233,11 @@ export async function deleteEmployeeAction(id: string) {
         throw new Error(`DB Delete failed: ${deleteError.message}`);
     }
 
-    // 5. Fix Audit Log Actor (Patch the system log to show the actual user)
+    // 5. Fix Audit Log Actor -> REMOVED.
+    // User requested to separate Audit/Operation logs.
     if (user) {
         // Run async without awaiting to not block UI response
-        console.log(`[DeleteAction] Patching audit log for ${id} by ${user.email}`);
-        await fixAuditLogActor(supabaseAdmin, id, 'employee', user, 'DELETE');
+        console.log(`[DeleteAction] Patching operation log for ${id} by ${user.email}`);
         await fixOperationLogActor(supabaseAdmin, id, 'employees', user, 'DELETE');
     }
 
@@ -312,10 +312,9 @@ export async function deleteManyEmployeesAction(ids: string[]) {
         throw new Error(`DB Bulk Delete failed: ${deleteError.message}`);
     }
 
-    // 5. Fix Audit Log Actor (Patch logs for each deleted item)
+    // 5. Fix Audit Log Actor -> REMOVED.
     if (user) {
         for (const id of ids) {
-            await fixAuditLogActor(supabaseAdmin, id, 'employee', user, 'DELETE');
             await fixOperationLogActor(supabaseAdmin, id, 'employees', user, 'DELETE');
         }
     }

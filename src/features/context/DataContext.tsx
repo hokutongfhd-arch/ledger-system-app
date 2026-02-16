@@ -458,6 +458,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setState(prev => prev.filter(p => p.id !== id));
 
+            // Removed to separate Audit/Operation logs. DB Triggers handle 'logs' (Operation Log).
+            /*
             if (!skipLog) {
                 const targetType = TARGET_MAP[table] || 'unknown';
                 await logger.info({
@@ -468,6 +470,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
                 });
             }
+            */
 
             if (!skipToast) {
                 showToast('削除しました', 'success');
@@ -499,6 +502,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setState(prev => prev.filter(p => !ids.includes(p.id)));
 
+            // Removed to separate Audit/Operation logs. DB Triggers handle 'logs' (Operation Log).
+            /*
             if (!skipLog) {
                 const targetType = TARGET_MAP[table] || 'unknown';
                 await logger.info({
@@ -509,6 +514,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
                 });
             }
+            */
 
             showToast(`${ids.length}件、削除しました`, 'success');
         } catch (error: any) {
@@ -755,6 +761,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!skipToast) showToast('更新しました', 'success');
 
             // 3. Logging (Explicitly for Employee Update)
+            // Removed to separate Audit/Operation logs. DB Triggers handle 'logs' (Operation Log).
+            /*
             if (!skipLog) {
                 let message = `社員情報を更新しました: ${item.name}`;
                 if (isEmailChanged) {
@@ -774,6 +782,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 });
             }
+            */
 
         } catch (error: any) {
             console.error('Update Employee Failed:', error);

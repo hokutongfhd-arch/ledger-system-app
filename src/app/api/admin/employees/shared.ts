@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { fixAuditLogActor, fixOperationLogActor } from './audit_helper';
+import { fixOperationLogActor } from './audit_helper';
 
 export type UpsertResult = {
     success: boolean;
@@ -158,10 +158,11 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
         if (actorUser && upsertResult) {
             // We fire this asynchronously to not block the response too much, 
             // or await it if we want to be sure. Await is safer for "one by one" logic.
-            // 1. Fix Audit Log (System Events)
-            // Determine operation type for audit log
-            const operation = existingEmployee ? 'UPDATE' : 'CREATE';
-            await fixAuditLogActor(supabaseAdmin, upsertResult.id, 'employee', actorUser, operation);
+            // 1. Fix Audit Log (System Events) -> REMOVED.
+            // User requested to separate Audit/Operation logs. 
+            // Audit Log should NOT record data manipulation. 
+            // If a Trigger creates it, we cannot stop it from here easily, but we shouldn't "fix" it (embellish it) either.
+            // Ideally, we drop the trigger.
 
             // 2. Fix Operation Log (Data Changes)
             await fixOperationLogActor(supabaseAdmin, upsertResult.id, 'employees', actorUser, existingEmployee ? 'UPDATE' : 'INSERT');
