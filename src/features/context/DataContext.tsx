@@ -451,7 +451,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     action: 'DELETE',
                     targetType,
                     targetId: id,
-                    message: `${table} から ID: ${id} を削除しました`
+                    message: `${table} から ID: ${id} を削除しました`,
+                    actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
                 });
             }
 
@@ -465,7 +466,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             throw error;
         }
-    }, [showToast]);
+    }, [showToast, user, supabase]); // Added user and supabase to dependencies
 
     const deleteItems = useCallback(async <T extends { id: string }>(table: string, ids: string[], setState: React.Dispatch<React.SetStateAction<T[]>>, isArea: boolean = false, skipLog: boolean = false) => {
         try {
@@ -491,7 +492,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     action: 'DELETE',
                     targetType,
                     message: `${table} から ${ids.length} 件を一括削除しました`,
-                    metadata: { deletedIds: ids }
+                    metadata: { deletedIds: ids },
+                    actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
                 });
             }
 
@@ -501,7 +503,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             showToast('削除に失敗しました', 'error', error.message);
             throw error;
         }
-    }, [showToast]);
+    }, [showToast, user, supabase]); // Added user and supabase to dependencies
 
     // Specific implementations
     const addTablet = (item: Omit<Tablet, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('tablets', item, mapTabletToDb, mapTabletFromDb, setTablets, skipLog, skipToast);
@@ -791,7 +793,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         action: 'DELETE',
                         targetType: 'employee',
                         targetId: id,
-                        message: `employees から ID: ${id} を削除しました (Auth User含む)`
+                        message: `employees から ID: ${id} を削除しました (Auth User含む)`,
+                        actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
                     });
                 }
 
