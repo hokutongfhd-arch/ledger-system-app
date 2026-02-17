@@ -4,9 +4,10 @@ import * as XLSX from 'xlsx';
 interface UseFileImportProps {
     onImport: (data: any[], headers: string[]) => Promise<void>;
     onValidate?: (data: any[], headers: string[]) => Promise<string[] | boolean>;
+    headerRowIndex?: number;
 }
 
-export const useFileImport = ({ onImport, onValidate }: UseFileImportProps) => {
+export const useFileImport = ({ onImport, onValidate, headerRowIndex = 0 }: UseFileImportProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImportClick = () => {
@@ -35,8 +36,8 @@ export const useFileImport = ({ onImport, onValidate }: UseFileImportProps) => {
                 return;
             }
 
-            const headers = jsonData[0] as string[];
-            const rows = jsonData.slice(1);
+            const headers = jsonData[headerRowIndex] as string[];
+            const rows = jsonData.slice(headerRowIndex + 1);
 
             // Preliminary custom validation
             if (onValidate) {
