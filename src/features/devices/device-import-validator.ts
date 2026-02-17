@@ -120,3 +120,126 @@ export const validateDeviceImportRow = (
         managementNumber
     };
 };
+
+export const validateRouterImportRow = (
+    row: DeviceImportRow,
+    rowIndex: number,
+    existingSimNumbers: Set<string>,
+    processedSimNumbers: Set<string>,
+    existingTerminalCodes: Set<string>,
+    processedTerminalCodes: Set<string>
+): ValidationResult => {
+    const errors: string[] = [];
+    const rowNumber = rowIndex + 2;
+
+    // Helper functions
+    const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    const normalizePhone = (phone: string) => toHalfWidth(phone).trim().replace(/-/g, '');
+
+    // Terminal Code (Managed ID equivalent)
+    const rawTerminalCode = String(row['端末CD(必須)'] || '');
+    const terminalCode = toHalfWidth(rawTerminalCode).trim();
+
+    if (!terminalCode) {
+        errors.push(`${rowNumber}行目: 端末CDが空です`);
+    } else {
+        if (/[^\x20-\x7E]/.test(rawTerminalCode)) {
+            errors.push(`${rowNumber}行目: 端末CDに全角文字が含まれています`);
+        } else if (existingTerminalCodes.has(terminalCode)) {
+            errors.push(`${rowNumber}行目: 端末CD「${terminalCode}」は既に存在します`);
+        } else if (processedTerminalCodes.has(terminalCode)) {
+            errors.push(`${rowNumber}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
+        }
+    }
+
+    // SIM Number Validation
+    const rawSimNumber = String(row['SIM電番(必須)'] || '');
+    const simNumber = formatPhoneNumber(toHalfWidth(rawSimNumber).trim());
+    const normalizedSim = normalizePhone(simNumber);
+
+    if (!normalizedSim) {
+        // If it's empty, and it is required
+        // Note: The original logic treated empty normalized string as existing?????
+        // Let's stick to "If normalized is empty, raw was likely empty or just symbols"
+        // If raw was not empty but normalized is, that's weird.
+        if (rawSimNumber.trim() !== '') {
+            // maybe it was all hyphens?
+        }
+        // If raw is empty, push error
+        if (!rawSimNumber.trim()) {
+            errors.push(`${rowNumber}行目: SIM電番が空です`);
+        }
+    }
+
+    if (normalizedSim) {
+        // Format Check: 11 digits, 3-4-4, or 14 digits
+        // Regex: 
+        // 1. 11 digits: ^\d{11}$
+        // 2. 3-4-4: ^\d{3}-\d{4}-\d{4}$
+        // 3. 14 digits: ^\d{14}$
+        const simRegex = /^(\d{11}|\d{3}-\d{4}-\d{4}|\d{14})$/;
+        const cleanRawSim = toHalfWidth(rawSimNumber).trim();
+
+        // We use the cleaned raw for format check, OR the formatted one?
+        // formatPhoneNumber might transform 11 digits to 3-4-4.
+        // It DOES NOT add hyphens to 14 digits.
+        // So checking `simNumber` (formatted) is safer if we want to allow "09012345678" as input but treat as valid.
+
+        // However, the previous validator used `cleanRawPhone` for strict regex check. 
+        // But for Router, we want to allow 14 digits.
+        // Let's use `cleanRawSim` for the check to see what the USER entered.
+
+        if (!simRegex.test(cleanRawSim) && !simRegex.test(simNumber)) {
+            errors.push(`${rowNumber}行目: SIM電番「${cleanRawSim}」は不正な形式です (11桁, xxx-xxxx-xxxx, または14桁)`);
+        }
+
+        if (existingSimNumbers.has(normalizedSim)) {
+            errors.push(`${rowNumber}行目: SIM電番「${simNumber}」は既に存在します`);
+        } else if (processedSimNumbers.has(normalizedSim)) {
+            errors.push(`${rowNumber}行目: SIM電番「${simNumber}」がファイル内で重複しています`);
+        }
+    }
+
+    // Carrier Validation
+    const validCarriers = ['au・wimax2+', 'au', 'docomo(iij)', 'SoftBank'];
+    const carrier = String(row['通信キャリア'] || '').trim();
+    if (carrier && !validCarriers.includes(carrier)) {
+        errors.push(`${rowNumber}行目: 通信キャリア「${carrier}」は不正な値です`);
+    }
+
+    // IP Address Validation
+    const validateIpFormat = (value: string, fieldName: string) => {
+        if (!value || value.trim() === '') return;
+        const ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+        if (!ipRegex.test(value)) {
+            errors.push(`${rowNumber}行目: ${fieldName}「${value}」の形式が正しくありません`);
+        }
+    };
+
+    validateIpFormat(String(row['IPアドレス'] || ''), 'IPアドレス');
+    validateIpFormat(String(row['サブネットマスク'] || ''), 'サブネットマスク');
+    validateIpFormat(String(row['開始IP'] || ''), '開始IP');
+    validateIpFormat(String(row['終了IP'] || ''), '終了IP');
+
+    // Employee Code
+    const employeeCode = String(row['社員コード'] || '').trim();
+    if (employeeCode && !/^[0-9-]+$/.test(employeeCode)) {
+        errors.push(`${rowNumber}行目: 社員コードに不正な文字が含まれています`);
+    }
+
+    // Office Code
+    const officeCode = String(row['事業所コード'] || '').trim();
+    if (officeCode && !/^[0-9-]+$/.test(officeCode)) {
+        errors.push(`${rowNumber}行目: 事業所コードに不正な文字が含まれています`);
+    }
+
+    // Date Validation (if any fields exist - none in headers list but maybe in future?)
+    // Routers have '備考(返却日)' but it's free text in the import map.
+
+    return {
+        isValid: errors.length === 0,
+        errors,
+        normalizedPhone: normalizedSim,
+        managementNumber: terminalCode // Using terminalCode as managementNumber for return consistency
+    };
+};

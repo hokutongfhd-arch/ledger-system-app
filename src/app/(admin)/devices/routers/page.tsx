@@ -118,6 +118,8 @@ function RouterListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            const { validateRouterImportRow } = await import('../../../../features/devices/device-import-validator');
+
             let successCount = 0;
             let errorCount = 0;
             const existingTerminalCodes = new Set(routers.map(r => r.terminalCode));
@@ -139,7 +141,52 @@ function RouterListContent() {
                     rowData[header] = row[index];
                 });
 
+                const validation = validateRouterImportRow(
+                    rowData,
+                    i,
+                    existingSimNumbers,
+                    processedSimNumbers,
+                    existingTerminalCodes,
+                    processedTerminalCodes
+                );
+
+                if (!validation.isValid) {
+                    errors.push(...validation.errors);
+                    continue;
+                }
+
+                // If valid, prepare data for import
+                // Note: The validator already normalized phone/terminal code, but we need to reconstruct the object.
+                // Or we can just reuse the logic if it's simple enough or extract it too.
+                // Let's reuse the extraction logic but use the validated values.
+
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+
+                const rawModelNumber = String(rowData['機種型番'] || '');
+                const modelNumber = rawModelNumber.trim(); // Validator checked for full-width but here we just trim. Wait, validator didn't check model number?
+                // The original code checked model number for full-width.
+                // My new validator didn't include Model Number check? 
+                // Let me check my validator code in previous turn...
+                // I missed Model Number check in validateRouterImportRow!
+                // I should add it or keep it here. For consistency, strict validation should be in validator.
+                // But for now, to avoid breaking logic, I will add it here or update validator.
+                // Updating validator is better. I will do it in a separate step if needed. 
+                // Actually I can just add the check here for now or trust the user wants SIM validation primarily.
+                // The original code:
+                /*
+                const rawModelNumber = String(rowData['機種型番'] || '');
+                if (/[^\x20-\x7E]/.test(rawModelNumber)) {
+                    errors.push(`${i + 3}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                    rowHasError = true;
+                }
+                */
+                // I should probably add this to validator. But let's finish the replacement first.
+                // Wait, if I don't check it, it might pass invalid data.
+                // Let's add the check here for now, or assume validator handles it.
+                // My validator implementation did NOT have Model Number check.
+                // I should update the validator first? Or just proceed.
+                // Let's simple check it here to be safe and consistent with previous behavior.
+
                 const statusMap: Record<string, string> = {
                     '使用中': 'in-use',
                     '予備機': 'backup',
@@ -149,93 +196,16 @@ function RouterListContent() {
                     '廃棄': 'discarded'
                 };
 
-                const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
-                let rowHasError = false;
-
-                // Check for full-width characters in Terminal Code
-                if (/[^\x20-\x7E]/.test(rawTerminalCode)) {
-                    errors.push(`${i + 3}行目: 端末CD「${rawTerminalCode}」に全角文字が含まれています。半角文字のみ使用可能です。`);
-                    rowHasError = true;
-                }
-                const terminalCode = rawTerminalCode.trim();
-
-                if (!terminalCode) {
-                    errors.push(`${i + 3}行目: 端末CDが空です`);
-                    rowHasError = true;
-                } else {
-                    if (existingTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 3}行目: 端末CD「${terminalCode}」は既に存在します`);
-                        rowHasError = true;
-                    } else if (processedTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 3}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
-                        rowHasError = true;
-                    }
-                }
-
-                // Check for full-width characters in Model Number
-                const rawModelNumber = String(rowData['機種型番'] || '');
                 if (/[^\x20-\x7E]/.test(rawModelNumber)) {
                     errors.push(`${i + 3}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
-                    rowHasError = true;
+                    continue;
                 }
-                const modelNumber = rawModelNumber.trim();
+
+                const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
+                const terminalCode = toHalfWidth(rawTerminalCode).trim();
 
                 const rawSimNumber = String(rowData['SIM電番(必須)'] || '');
                 const simNumberNormalized = normalizePhoneNumber(rawSimNumber);
-
-                if (simNumberNormalized) {
-                    if (existingSimNumbers.has(simNumberNormalized)) {
-                        errors.push(`${i + 3}行目: SIM電番「${rawSimNumber}」は既に存在します`);
-                        rowHasError = true;
-                    } else if (processedSimNumbers.has(simNumberNormalized)) {
-                        errors.push(`${i + 3}行目: SIM電番「${rawSimNumber}」がファイル内で重複しています`);
-                        rowHasError = true;
-                    }
-                }
-
-                // Network IP Validation
-                const validateIpFormat = (value: string, fieldName: string) => {
-                    if (!value || value.trim() === '') return;
-                    // Regex checks for 4 groups of 1-3 digits separated by dots
-                    const ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-                    if (!ipRegex.test(value)) {
-                        errors.push(`${i + 3}行目: ${fieldName}「${value}」の形式が正しくありません (xxx.xxx.xxx.xxx形式、各1-3桁で入力してください)`);
-                        rowHasError = true;
-                    }
-                };
-
-                validateIpFormat(String(rowData['IPアドレス'] || ''), 'IPアドレス');
-                validateIpFormat(String(rowData['サブネットマスク'] || ''), 'サブネットマスク');
-                validateIpFormat(String(rowData['開始IP'] || ''), '開始IP');
-                validateIpFormat(String(rowData['終了IP'] || ''), '終了IP');
-
-                validateIpFormat(String(rowData['終了IP'] || ''), '終了IP');
-
-                // Carrier Validation
-                const validCarriers = ['au・wimax2+', 'au', 'docomo(iij)', 'SoftBank'];
-                const carrier = String(rowData['通信キャリア'] || '').trim();
-                if (carrier && !validCarriers.includes(carrier)) {
-                    errors.push(`${i + 3}行目: 通信キャリア「${carrier}」は不正です。プルダウンから選択するか、正しい値を入力してください。(${validCarriers.join(', ')})`);
-                    rowHasError = true;
-                }
-
-                // Employee Code Validation
-                const employeeCode = String(rowData['社員コード'] || '').trim();
-                if (employeeCode && !/^[0-9-]+$/.test(employeeCode)) {
-                    errors.push(`${i + 3}行目: 社員コード「${employeeCode}」に不正な文字が含まれています。半角数字とハイフンのみ使用可能です。`);
-                    rowHasError = true;
-                }
-
-                // Office Code Validation
-                const officeCode = String(rowData['事業所コード'] || '').trim();
-                if (officeCode && !/^[0-9-]+$/.test(officeCode)) {
-                    errors.push(`${i + 3}行目: 事業所コード「${officeCode}」に不正な文字が含まれています。半角数字とハイフンのみ使用可能です。`);
-                    rowHasError = true;
-                }
-
-                if (rowHasError) {
-                    continue;
-                }
 
                 processedTerminalCodes.add(terminalCode);
                 if (simNumberNormalized) processedSimNumbers.add(simNumberNormalized);
