@@ -166,43 +166,54 @@ export const TabletDetailModal: React.FC<TabletDetailModalProps> = ({
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column: User & Location */}
-                        <div className="space-y-6">
-                            <SectionHeader icon={<User size={18} />} title="使用者情報 (User Info)" />
-
+                    <div className="space-y-8 font-sans">
+                        {/* Section 1: Basic Info */}
+                        <div>
+                            <SectionHeader icon={<TabletIcon size={18} />} title="基本情報" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                                <DetailRow label="社員名" value={employeeName} subValue={item.employeeCode} />
-                                <DetailRow label="設置場所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
-                            </div>
-
-                            <SectionHeader icon={<Building size={18} />} title="管理情報 (Management)" />
-                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-
-                                <DetailRow label="負担先" value={item.costBearer} />
-                                <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="端末CD" value={item.terminalCode} icon={<TabletIcon size={14} className="text-gray-400" />} />
+                                    <DetailRow label="メーカー" value={item.maker} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="型番" value={item.modelNumber} />
+                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
+                                </div>
+                                <div className="group">
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>
+                                    <span className={`px-2 py-1 text-xs font-bold rounded border ${getStatusColor(item.status)}`}>
+                                        {getStatusLabel(item.status)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Right Column: History & Notes */}
-                        <div className="space-y-6">
-                            <SectionHeader icon={<History size={18} />} title="履歴・備考 (History & Notes)" />
+                        {/* Section 2: User/Place */}
+                        <div>
+                            <SectionHeader icon={<User size={18} />} title="使用者・場所" />
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="社員名" value={employeeName} subValue={item.employeeCode} icon={<User size={14} className="text-gray-400" />} />
+                                    <DetailRow label="事業所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
+                                </div>
+                                <DetailRow label="負担先" value={item.costBearer} />
+                            </div>
+                        </div>
 
+                        {/* Section 3: Others */}
+                        <div>
+                            <SectionHeader icon={<FileText size={18} />} title="その他" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <div className="group">
                                     <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">過去貸与履歴</label>
                                     <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.history || '-'}</p>
                                 </div>
-                            </div>
-
-                            <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100 min-h-[100px]">
-                                <div className="flex gap-2 items-center mb-2">
-                                    <FileText size={14} className="text-yellow-600" />
-                                    <span className="text-xs font-bold text-yellow-700 uppercase">備考</span>
+                                <div className="group">
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">備考</label>
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                        {item.notes || <span className="text-gray-400 italic">備考なし</span>}
+                                    </p>
                                 </div>
-                                <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
-                                    {item.notes || <span className="text-gray-400 italic">備考なし</span>}
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -216,5 +227,3 @@ export const TabletDetailModal: React.FC<TabletDetailModalProps> = ({
         </Modal>
     );
 };
-
-

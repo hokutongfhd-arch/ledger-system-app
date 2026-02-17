@@ -49,57 +49,77 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column: Basic & Contact */}
-                    <div className="space-y-6">
-                        <SectionHeader icon={<Building size={18} />} title="基本情報 (General Info)" />
+                <div className="space-y-8">
+                    {/* Section 1: Basic Info */}
+                    <div>
+                        <SectionHeader icon={<Building size={18} />} title="基本情報" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="エリア" value={areaDisplay} />
-                            <DetailRow label="No." value={item.no} />
-                            <DetailRow label="事業所コード" value={item.addressCode} />
-                            <DetailRow label="事業所名" value={item.officeName} />
-                        </div>
-
-                        <SectionHeader icon={<Phone size={18} />} title="連絡先 (Contact)" />
-                        <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="TEL" value={formatPhoneNumber(item.tel)} />
-                            <DetailRow label="FAX" value={formatPhoneNumber(item.fax)} />
-
-                            <div className="pt-2 border-t border-gray-100">
-                                <p className="text-xs text-gray-400 mb-1">所在地</p>
-                                <p className="text-sm text-gray-700">〒{formatZipCode(item.zipCode)}</p>
-                                <p className="text-sm text-gray-700 mt-0.5">{item.address}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="事業所コード" value={item.addressCode} />
+                                <DetailRow label="事業所名" value={item.officeName} />
                             </div>
-                        </div>
-
-                        <SectionHeader icon={<FileText size={18} />} title="備考 (Notes)" />
-                        <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100">
-                            <DetailRow label="備考" value={item.notes} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="エリア" value={areaDisplay} />
+                                <DetailRow label="No." value={item.no} />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Right Column: Details & Label */}
-                    <div className="space-y-6">
-                        <SectionHeader icon={<FileText size={18} />} title="詳細情報 (Details)" />
+                    {/* Section 2: Contact Info */}
+                    <div>
+                        <SectionHeader icon={<Phone size={18} />} title="連絡先情報" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="事業部" value={item.division} />
-                            <DetailRow label="経理コード" value={item.accountingCode} />
-                            <DetailRow label="エリア" value={areaDisplay} />
-                            <DetailRow label="主担当" value={item.mainPerson} />
-                            <DetailRow label="枝番" value={item.branchNumber} />
-                            <DetailRow label="※" value={item.specialNote} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="〒" value={formatZipCode(item.zipCode)} />
+                                <DetailRow label="住所" value={item.address} icon={<MapPin size={14} className="text-gray-400" />} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="TEL" value={formatPhoneNumber(item.tel)} />
+                                <DetailRow label="FAX" value={formatPhoneNumber(item.fax)} />
+                            </div>
                         </div>
+                    </div>
 
-                        <SectionHeader icon={<Tag size={18} />} title="宛名ラベル (Mailing Label)" />
+                    {/* Section 3: Additional Info */}
+                    <div>
+                        <SectionHeader icon={<FileText size={18} />} title="詳細情報" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="宛名" value={item.labelName} />
-                            <DetailRow label="郵便番号" value={item.labelZip} />
-                            <DetailRow label="住所" value={item.labelAddress} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="事業部" value={item.division} />
+                                <DetailRow label="経理コード" value={item.accountingCode} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="エリア (確認用)" value={areaDisplay} />
+                                <DetailRow label="主担当" value={item.mainPerson} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="枝番" value={item.branchNumber} />
+                                <DetailRow label="※" value={item.specialNote} />
+                            </div>
+                            <div className="pt-4 border-t border-gray-200">
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">備考</label>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                    {item.notes || <span className="text-gray-400 italic">備考なし</span>}
+                                </p>
+                            </div>
                         </div>
+                    </div>
 
-                        <SectionHeader icon={<FileText size={18} />} title="注意書き (Cautions)" />
-                        <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100">
-                            <DetailRow label="注意書き" value={item.attentionNote} />
+                    {/* Section 4: Label Info */}
+                    <div>
+                        <SectionHeader icon={<Tag size={18} />} title="宛名ラベル情報" />
+                        <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="宛名ラベル用" value={item.labelName} />
+                                <DetailRow label="宛名ラベル用〒" value={formatZipCode(item.labelZip)} />
+                            </div>
+                            <DetailRow label="宛名ラベル用住所" value={item.labelAddress} />
+                            <div className="pt-4 border-t border-gray-200">
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">注意書き</label>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                    {item.attentionNote || <span className="text-gray-400 italic">注意書きなし</span>}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

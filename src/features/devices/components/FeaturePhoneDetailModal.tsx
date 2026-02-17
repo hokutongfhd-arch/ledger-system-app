@@ -171,41 +171,58 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column: User & Location */}
-                        <div className="space-y-6">
-                            <SectionHeader icon={<User size={18} />} title="使用者情報 (User Info)" />
-
+                    <div className="space-y-8 font-sans">
+                        {/* Section 1: Basic Info */}
+                        <div>
+                            <SectionHeader icon={<Phone size={18} />} title="基本情報" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                                <DetailRow label="社員名" value={employeeName} subValue={item.employeeId} />
-                                <DetailRow label="設置場所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
-                            </div>
-
-                            <SectionHeader icon={<Building size={18} />} title="管理情報 (Management)" />
-                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                                <DetailRow label="負担先" value={item.costCompany} />
-
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="管理番号" value={item.managementNumber} icon={<Phone size={14} className="text-gray-400" />} />
+                                    <DetailRow label="電話番号" value={formatPhoneNumber(item.phoneNumber)} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="機種名" value={item.modelName} />
+                                    <DetailRow label="キャリア" value={item.carrier} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
+                                    <div className="group">
+                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>
+                                        <span className={`px-2 py-1 text-xs font-bold rounded border ${getStatusColor(item.status)}`}>
+                                            {getStatusLabel(item.status)}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Right Column: Contract & Dates */}
-                        <div className="space-y-6">
-                            <SectionHeader icon={<Calendar size={18} />} title="契約・日付 (Contract & Dates)" />
-
+                        {/* Section 2: User Info */}
+                        <div>
+                            <SectionHeader icon={<User size={18} />} title="使用者情報" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="社員名" value={employeeName} subValue={item.employeeId} icon={<User size={14} className="text-gray-400" />} />
+                                    <DetailRow label="事業所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
+                                </div>
+                                <DetailRow label="負担先" value={item.costCompany} />
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-200 pt-4 mt-2">
+                                    <DetailRow label="受領提出日" value={item.receiptDate} />
                                     <DetailRow label="貸与日" value={item.lendDate} />
                                     <DetailRow label="返却日" value={item.returnDate} />
-                                    <DetailRow label="受領提出日" value={item.receiptDate} />
-                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                                 </div>
                             </div>
+                        </div>
 
-                            <SectionHeader icon={<FileText size={18} />} title="備考 (Notes)" />
-                            <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100 min-h-[100px]">
-                                <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
-                                    {item.notes || <span className="text-gray-400 italic">備考なし</span>}
-                                </p>
+                        {/* Section 3: Others */}
+                        <div>
+                            <SectionHeader icon={<FileText size={18} />} title="その他" />
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                                <div className="group">
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">備考</label>
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                        {item.notes || <span className="text-gray-400 italic">備考なし</span>}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

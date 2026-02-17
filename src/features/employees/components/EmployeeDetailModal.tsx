@@ -47,38 +47,43 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
 
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column: Personal & Location */}
-                    <div className="space-y-6">
-                        <SectionHeader icon={<User size={18} />} title="基本情報 (Personal Profile)" />
+                <div className="space-y-8">
+                    {/* Section 1: Basic Info */}
+                    <div>
+                        <SectionHeader icon={<User size={18} />} title="基本情報" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="社員コード" value={item.code} />
-                            <DetailRow label="性別" value={item.gender} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="社員コード" value={item.code} />
+                                <DetailRow label="性別" value={item.gender} />
+                            </div>
                             <DetailRow label="メールアドレス" value={item.email} />
-                            <DetailRow label="生年月日" value={item.birthDate} subValue={`${item.age}歳`} />
-                        </div>
-
-                        <SectionHeader icon={<MapPin size={18} />} title="所属情報 (Location)" />
-                        <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <DetailRow label="エリア" value={areaName} subValue={item.areaCode} />
-                            <DetailRow label="事業所" value={addressName} subValue={item.addressCode} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="生年月日" value={item.birthDate} />
+                                <DetailRow label="年齢" value={`${item.age}歳`} />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Right Column: Work & System */}
-                    <div className="space-y-6">
-                        <SectionHeader icon={<Briefcase size={18} />} title="勤務情報 (Employment)" />
+                    {/* Section 2: Work Info */}
+                    <div>
+                        <SectionHeader icon={<Briefcase size={18} />} title="所属・勤務情報" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <DetailRow label="入社日" value={item.joinDate} />
-                                <DetailRow label="勤続" value={`${item.yearsOfService}年`} subValue={`${item.monthsHasuu}ヶ月`} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="エリア" value={areaName} subValue={item.areaCode} />
+                                <DetailRow label="事業所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DetailRow label="入社年月日" value={item.joinDate} />
+                                <DetailRow label="勤続年数" value={`${item.yearsOfService}年`} subValue={`${item.monthsHasuu}ヶ月`} />
                             </div>
                         </div>
+                    </div>
 
-                        <SectionHeader icon={<Shield size={18} />} title="システム情報 (System)" />
+                    {/* Section 3: System Info */}
+                    <div>
+                        <SectionHeader icon={<Shield size={18} />} title="システム情報" />
                         <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                             <DetailRow label="権限" value={item.role === 'admin' ? '管理者' : 'ユーザー'} />
-
                         </div>
                     </div>
                 </div>

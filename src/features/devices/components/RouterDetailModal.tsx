@@ -179,51 +179,85 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column: User & Location */}
-                        <div className="space-y-6">
-                            <SectionHeader icon={<User size={18} />} title="使用者・場所 (User & Location)" />
-
+                    <div className="space-y-8 font-sans">
+                        {/* Section 1: Basic Info */}
+                        <div>
+                            <SectionHeader icon={<Wifi size={18} />} title="基本情報" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                                <DetailRow label="社員名" value={employeeName} subValue={item.employeeCode} />
-                                <DetailRow label="設置場所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
-                            </div>
-
-                            <SectionHeader icon={<Server size={18} />} title="ネットワーク情報 (Network)" />
-                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <DetailRow label="IP Address" value={item.ipAddress} isSensitive />
-                                    <DetailRow label="Subnet" value={item.subnetMask} isSensitive />
-                                    <DetailRow label="Start IP" value={item.startIp} isSensitive />
-                                    <DetailRow label="End IP" value={item.endIp} isSensitive />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="端末CD" value={item.terminalCode} icon={<Wifi size={14} className="text-gray-400" />} />
+                                    <DetailRow label="No." value={item.no} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="機種型番" value={item.modelNumber} />
+                                    <DetailRow label="通信キャリア" value={item.carrier} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="SIM電番" value={formatPhoneNumber(item.simNumber || '')} icon={<Phone size={14} className="text-gray-400" />} />
+                                    <DetailRow label="通信容量" value={item.dataCapacity} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="契約状況" value={item.contractStatus} />
+                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
+                                </div>
+                                <div className="group">
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>
+                                    <span className={`px-2 py-1 text-xs font-bold rounded border ${getStatusColor(item.status)}`}>
+                                        {getStatusLabel(item.status)}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Right Column: Contract & Cost */}
-                        <div className="space-y-6">
-                            <SectionHeader icon={<DollarSign size={18} />} title="契約・費用 (Contract & Cost)" />
-
+                        {/* Section 2: User Info */}
+                        <div>
+                            <SectionHeader icon={<User size={18} />} title="使用者情報" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="社員名" value={employeeName} subValue={item.employeeCode} icon={<User size={14} className="text-gray-400" />} />
+                                    <DetailRow label="事業所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 3: Network Info */}
+                        <div>
+                            <SectionHeader icon={<Server size={18} />} title="ネットワーク情報" />
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="IPアドレス" value={item.ipAddress} isSensitive />
+                                    <DetailRow label="サブネットマスク" value={item.subnetMask} isSensitive />
+                                    <DetailRow label="開始IP" value={item.startIp} isSensitive />
+                                    <DetailRow label="終了IP" value={item.endIp} isSensitive />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 4: Cost & Management Info */}
+                        <div>
+                            <SectionHeader icon={<DollarSign size={18} />} title="費用・管理情報" />
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <DetailRow label="請求元" value={item.biller} />
                                     <DetailRow label="負担先" value={item.costBearer} />
                                     <DetailRow label="費用" value={item.cost ? `¥${item.cost.toLocaleString()}` : '-'} isSensitive />
                                     <DetailRow label="費用振替" value={item.costTransfer} />
-                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                                 </div>
                             </div>
+                        </div>
 
-                            <SectionHeader icon={<History size={18} />} title="履歴・備考 (History & Notes)" />
-                            <div className="bg-yellow-50/50 p-5 rounded-xl border border-yellow-100 min-h-[100px]">
+                        {/* Section 5: Others */}
+                        <div>
+                            <SectionHeader icon={<FileText size={18} />} title="その他" />
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="text-xs font-semibold text-yellow-700 uppercase tracking-wider mb-1 block">貸与履歴</label>
+                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">貸与履歴</label>
                                         <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.lendingHistory || '-'}</p>
                                     </div>
-                                    <div className="border-t border-yellow-200 pt-2">
-                                        <label className="text-xs font-semibold text-yellow-700 uppercase tracking-wider mb-1 block">備考</label>
-                                        <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                                    <div className="border-t border-gray-200 pt-4">
+                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">備考 (返却日含む)</label>
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                                             {item.notes || <span className="text-gray-400 italic">備考なし</span>}
                                         </p>
                                     </div>
