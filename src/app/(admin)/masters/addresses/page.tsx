@@ -20,6 +20,7 @@ import { useDataTable } from '../../../../hooks/useDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
 import { logger } from '../../../../lib/logger';
+import { validateAddressImportRow } from '../../../../features/addresses/logic/address-import-validator';
 
 export default function AddressListPage() {
     const { user } = useAuth();
@@ -77,12 +78,21 @@ function AddressListContent() {
 
     const { handleExport } = useCSVExport<Address>();
 
-    const headers = ['エリアコード', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', 'エリアコード(確認用)', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+    // New Header Order
+    const headers = [
+        '事業所コード(必須)', '事業所名(必須)', 'エリアコード', 'No.',
+        '〒(必須)', '住所(必須)', 'TEL', 'FAX',
+        '事業部', '経理コード', 'エリアコード(確認用)', '主担当', '枝番', '※', '備考',
+        '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'
+    ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        headerRowIndex: 1, // Header is on 2nd row (index 1)
         onValidate: async (rows, fileHeaders) => {
-            // Check for required headers (unique ones)
-            const requiredHeaders = ['エリアコード', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+            // Check for required headers
+            const requiredHeaders = [
+                '事業所コード(必須)', '事業所名(必須)', '〒(必須)', '住所(必須)'
+            ];
             const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
 
             if (missingHeaders.length > 0) {
@@ -129,85 +139,21 @@ function AddressListContent() {
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
+                // Check if row is empty
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
-                const rowData: any = {};
-                fileHeaders.forEach((header, index) => {
-                    rowData[header] = row[index];
-                });
+                const { errors: rowErrors, data: newAddress } = validateAddressImportRow(row, fileHeaders, i, existingCodes, processedCodes);
 
-                const toHalfWidth = (str: string) => {
-                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-                        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-                    });
-                };
-
-                // Address Code Check
-                const rawCode = String(rowData['事業所コード(必須)'] || '');
-                const code = toHalfWidth(rawCode).trim();
-                let rowHasError = false;
-
-                if (!code) {
-                    errorCount++; // Although current logic doesn't add to error list, keeping old behavior of just counting?
-                    // Wait, if it's empty, we should probably skip it or error it.
-                    // Implementation Plan says "Collect all errors".
-                    // The old code did `continue;` which just skipped it without explicit error message in `errors` list.
-                    // But if we want "All or Nothing", we should probably report it if it's considered an error.
-                    // However, `errorCount` was incremented.
-                    // Let's assume skipping empty code is fine but if it counts as error, it should block import.
-                    // I will add it to errors list to be safe and explicit.
-                    errors.push(`${i + 2}行目: 事業所コードが空です`);
-                    rowHasError = true;
-                } else {
-                    if (existingCodes.has(code)) {
-                        errors.push(`${i + 2}行目: 事業所コード「${code}」は既に存在します`);
-                        rowHasError = true;
-                    } else if (processedCodes.has(code)) {
-                        errors.push(`${i + 2}行目: 事業所コード「${code}」がファイル内で重複しています`);
-                        rowHasError = true;
-                    }
-                }
-
-                // Accounting Code Validation
-                const rawAccountingCode = String(rowData['経理コード'] || '');
-                const accountingCode = toHalfWidth(rawAccountingCode).trim();
-
-                if (accountingCode && !/^[0-9]+$/.test(accountingCode)) {
-                    errors.push(`${i + 2}行目: 経理コード「${accountingCode}」は半角数字のみ入力可能です`);
-                    rowHasError = true;
-                }
-
-                if (rowHasError) {
+                if (rowErrors.length > 0) {
+                    errors.push(...rowErrors);
                     continue;
                 }
 
-                processedCodes.add(code);
-
-                const newAddress: Omit<Address, 'id'> = {
-                    area: String(rowData['エリアコード'] || '').trim(),
-                    no: String(rowData['№'] || ''),
-                    addressCode: code,
-                    officeName: String(rowData['事業所名(必須)'] || ''),
-                    tel: formatPhoneNumber(String(rowData['ＴＥＬ'] || '')),
-                    fax: formatPhoneNumber(String(rowData['ＦＡＸ'] || '')),
-
-                    zipCode: formatZipCode(String(rowData['〒(必須)'] || '')),
-                    address: String(rowData['住所(必須)'] || ''),
-                    notes: String(rowData['備考'] || ''),
-                    division: String(rowData['事業部'] || ''),
-                    accountingCode: accountingCode,
-                    mainPerson: String(rowData['主担当'] || ''),
-                    branchNumber: String(rowData['枝番'] || ''),
-                    specialNote: String(rowData['※'] || ''),
-                    labelName: String(rowData['宛名ラベル用'] || ''),
-                    labelZip: formatZipCode(String(rowData['宛名ラベル用〒'] || '')),
-                    labelAddress: String(rowData['宛名ラベル用住所'] || ''),
-                    attentionNote: String(rowData['注意書き'] || ''),
-                    type: ''
-                };
-
-                importData.push(newAddress);
+                if (newAddress) {
+                    processedCodes.add(newAddress.addressCode);
+                    importData.push(newAddress);
+                }
             }
 
             // All-or-Nothing check
@@ -231,8 +177,9 @@ function AddressListContent() {
                 try {
                     await addAddress(data as Omit<Address, 'id'>, true, true);
                     successCount++;
-                } catch (error: any) {
-                    errors.push(`登録エラー: ${data.addressCode} - ${error.message || '不明なエラー'}`);
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : '不明なエラー';
+                    errors.push(`登録エラー: ${data.addressCode} - ${message}`);
                     errorCount++;
                 }
             }
@@ -244,6 +191,7 @@ function AddressListContent() {
                         <div className="max-h-60 overflow-y-auto">
                             <p className="mb-2">以下のデータは登録されませんでした：</p>
                             <ul className="list-disc pl-5 text-sm text-red-600">
+                            // Since we did All or nothing for validation, this is only for runtime errors
                                 {errors.map((err, idx) => <li key={idx}>{err}</li>)}
                             </ul>
                         </div>
@@ -311,22 +259,21 @@ function AddressListContent() {
 
         handleExport(filteredData, headers, `address_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => {
             return [
-                item.area || '',
-                item.no || '',
                 item.addressCode || '',
                 item.officeName || '',
-                formatPhoneNumber(item.tel || ''),
-                formatPhoneNumber(item.fax || ''),
-
+                item.area || '',
+                item.no || '',
                 item.zipCode || '',
                 item.address || '',
-                item.notes || '',
+                formatPhoneNumber(item.tel || ''),
+                formatPhoneNumber(item.fax || ''),
                 item.division || '',
                 item.accountingCode || '',
                 item.area || '', // エリアコード(確認用)
                 item.mainPerson || '',
                 item.branchNumber || '',
                 item.specialNote || '',
+                item.notes || '',
                 item.labelName || '',
                 item.labelZip || '',
                 item.labelAddress || '',
@@ -339,34 +286,99 @@ function AddressListContent() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Template');
 
-        // Add headers
+        // Headers
+        const topHeader = [
+            '基本情報', '', '', '', // A-D
+            '連絡先情報', '', '', '', // E-H
+            '詳細情報', '', '', '', '', '', '', // I-O
+            '宛名ラベル情報', '', '', '' // P-S
+        ];
+
+        // Add rows
+        worksheet.addRow(topHeader);
         worksheet.addRow(headers);
 
-        // Styling headers
-        const headerRow = worksheet.getRow(1);
-        headerRow.font = { name: 'Yu Gothic', bold: true };
-        headerRow.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
-        };
+        // Merge cells
+        worksheet.mergeCells('A1:D1'); // Basic Info
+        worksheet.mergeCells('E1:H1'); // Contact Info
+        worksheet.mergeCells('I1:O1'); // Detail Info
+        worksheet.mergeCells('P1:S1'); // Label Info
 
-        // Format numeric/string columns as text (Column B, C, E, F, G, K, N)
-        // № (B), 事業所コード (C), TEL (E), FAX (F), 〒 (G), 経理コード (K), 枝番 (N)
-        // K is 11th column
-        [2, 3, 5, 6, 7, 11, 14].forEach(colIndex => {
+        // Styling Top Header (Row 1)
+        const topRow = worksheet.getRow(1);
+        topRow.height = 30; // 16px font fits well in 30
+        topRow.font = { name: 'Yu Gothic', bold: true, size: 16 };
+        topRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Colors for Top Header
+        // Orange, Accent 6, White + 60%: FFFCE4D6
+        // Olive, Accent 3, White + 60%: FFE2EFDA
+        // Aqua, Accent 5, White + 60%: FFDDEBF7
+        // Purple, Accent 4, White + 60%: FFE4DFEC
+
+        // Basic Info (A1-D1)
+        ['A1', 'B1', 'C1', 'D1'].forEach(cellRef => {
+            const cell = worksheet.getCell(cellRef);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE4D6' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        // Contact Info (E1-H1)
+        ['E1', 'F1', 'G1', 'H1'].forEach(cellRef => {
+            const cell = worksheet.getCell(cellRef);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        // Detail Info (I1-O1)
+        ['I1', 'J1', 'K1', 'L1', 'M1', 'N1', 'O1'].forEach(cellRef => {
+            const cell = worksheet.getCell(cellRef);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        // Label Info (P1-S1)
+        ['P1', 'Q1', 'R1', 'S1'].forEach(cellRef => {
+            const cell = worksheet.getCell(cellRef);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE4DFEC' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        // Styling Main Headers (Row 2)
+        const headerRow = worksheet.getRow(2);
+        headerRow.font = { name: 'Yu Gothic', bold: true, size: 11 };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Background: White, Background 1, Darker 15% -> D9D9D9
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD9D9D9' }
+            };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        // Format numeric/string columns as text to prevent scientific notation etc.
+        // A: Code, B: Name, C: AreaCode, D: No, E: Zip, F: Address, G: Tel, H: Fax
+        // I: Division, J: AccCode, K: AreaCheck, L: MainPerson, M: Branch, N: Special
+        // O: Notes, P: LabelName, Q: LabelZip, R: LabelAddress, S: Attention
+
+        // Columns needing Text format (Code-like):
+        // A(1), C(3), D(4), E(5), G(7), H(8), J(10), K(11), M(13), Q(17)
+        [1, 3, 4, 5, 7, 8, 10, 11, 13, 17].forEach(colIndex => {
             worksheet.getColumn(colIndex).numFmt = '@';
         });
 
         // Set column widths
         worksheet.columns.forEach(col => {
-            col.width = 20;
+            col.width = 18;
         });
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement('a') as HTMLAnchorElement;
         a.href = url;
         a.download = '事業所マスタエクセルフォーマット.xlsx';
         a.click();

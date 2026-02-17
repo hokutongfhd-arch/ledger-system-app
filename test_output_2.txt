@@ -1,0 +1,28 @@
+Running Address Import Validation Tests...
+
+Test 1: Valid Data
+  Description: All fields are valid.
+  Result: PASSED
+---
+Test 2: Invalid Text Format (Alphabet in Code)
+  Description: Office Code contains alphabet.
+  Result: PASSED
+---
+Test 3: Invalid Phone Format (10 digits)
+  Description: TEL is 10 digits.
+  Result: PASSED
+---
+Test 4: Invalid Zip Format (Wrong hyphen)
+  Description: Zip is 3-3-1.
+  Result: PASSED
+---
+Test 5: Duplicate Code in DB
+  Description: Code already exists.
+  Result: PASSED
+---
+Test 6: Duplicate Code in File
+  Description: Code duplicated in processed list.
+  Result: PASSED
+---
+
+Summary: 6 Passed, 0 Failed

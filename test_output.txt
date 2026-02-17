@@ -1,0 +1,53 @@
+Running Address Import Validation Tests...
+
+Test 1: Valid Data
+  Description: All fields are valid.
+  Result: FAILED
+  Expected: []
+  Actual: [
+  '3行目: TEL「03-1234-5678」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です',
+  '3行目: FAX「03-1234-5678」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です'
+]
+---
+Test 2: Invalid Text Format (Alphabet in Code)
+  Description: Office Code contains alphabet.
+  Result: FAILED
+  Expected: [ '3行目: 事業所コード(必須)「A01」は半角数字とハイフンのみ入力可能です' ]
+  Actual: [
+  '3行目: 事業所コード(必須)「A01」は半角数字とハイフンのみ入力可能です',
+  '3行目: TEL「03-1234-5678」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です'
+]
+---
+Test 3: Invalid Phone Format (10 digits)
+  Description: TEL is 10 digits.
+  Result: PASSED
+---
+Test 4: Invalid Zip Format (Wrong hyphen)
+  Description: Zip is 3-3-1.
+  Result: FAILED
+  Expected: [ '3行目: 〒(必須)「123-456-7」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です' ]
+  Actual: [
+  '3行目: TEL「03-1234-5678」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です',
+  '3行目: 〒(必須)「123-456-7」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です'
+]
+---
+Test 5: Duplicate Code in DB
+  Description: Code already exists.
+  Result: FAILED
+  Expected: [ '3行目: 事業所コード「999」は既に存在します' ]
+  Actual: [
+  '3行目: TEL「03-1234-5678」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です',
+  '3行目: 事業所コード「999」は既に存在します'
+]
+---
+Test 6: Duplicate Code in File
+  Description: Code duplicated in processed list.
+  Result: FAILED
+  Expected: [ '3行目: 事業所コード「888」がファイル内で重複しています' ]
+  Actual: [
+  '3行目: TEL「03-1234-5678」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です',
+  '3行目: 事業所コード「888」がファイル内で重複しています'
+]
+---
+
+Summary: 1 Passed, 5 Failed

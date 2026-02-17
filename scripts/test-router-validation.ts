@@ -271,4 +271,6 @@ testCases.forEach((test, index) => {
     }
 });
 
-console.log(`\\nTests Completed: ${passed} Passed, ${failed} Failed.`);
+console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed.`);
+
+export { };
