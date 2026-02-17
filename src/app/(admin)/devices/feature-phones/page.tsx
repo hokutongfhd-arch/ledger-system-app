@@ -75,12 +75,14 @@ function FeaturePhoneListContent() {
     });
 
     const { handleExport } = useCSVExport<FeaturePhone>();
+    // Updated headers order
     const headers = [
-        'キャリア', '電話番号(必須)', '管理番号(必須)', '機種名', '契約年数',
-        '社員コード', '事業所コード', '貸与日', '負担先', '受領書提出日', '返却日', '備考', '状況'
+        '管理番号(必須)', '電話番号(必須)', '機種名', '契約年数', 'キャリア', '状況',
+        '社員コード', '事業所コード', '負担先', '受領書提出日', '貸与日', '返却日', '備考'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        headerRowIndex: 1, // New format has headers in the 2nd row (index 1)
         onValidate: async (rows, fileHeaders) => {
             const requiredHeaders = headers;
             const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
@@ -124,6 +126,9 @@ function FeaturePhoneListContent() {
             const errors: string[] = [];
 
             const importData: any[] = [];
+
+            const validCarriers = ['KDDI', 'SoftBank', 'Docomo', 'Rakuten', 'その他'];
+            const validStatuses = ['使用中', '予備機', '在庫', '故障', '修理中', '廃棄'];
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
@@ -184,6 +189,65 @@ function FeaturePhoneListContent() {
                         rowHasError = true;
                     }
                 }
+
+                // --- Additional Validation ---
+
+                // Carrier
+                const carrier = String(rowData['キャリア'] || '').trim();
+                if (carrier && !validCarriers.includes(carrier)) {
+                    errors.push(`${i + 2}行目: キャリア「${carrier}」は不正な値です`);
+                    rowHasError = true;
+                }
+
+                // Status
+                const statusRaw = String(rowData['状況'] || '').trim();
+                if (statusRaw && !validStatuses.includes(statusRaw)) {
+                    errors.push(`${i + 2}行目: 状況「${statusRaw}」は不正な値です`);
+                    rowHasError = true;
+                }
+
+                // Employee Code (Half-width numbers only)
+                const employeeCode = String(rowData['社員コード'] || '').trim();
+                if (employeeCode && !/^\d+$/.test(employeeCode)) {
+                    errors.push(`${i + 2}行目: 社員コード「${employeeCode}」は半角数字で入力してください`);
+                    rowHasError = true;
+                }
+
+                // Office Code (Half-width numbers only)
+                const officeCode = String(rowData['事業所コード'] || '').trim();
+                if (officeCode && !/^\d+$/.test(officeCode)) {
+                    errors.push(`${i + 2}行目: 事業所コード「${officeCode}」は半角数字で入力してください`);
+                    rowHasError = true;
+                }
+
+                // Date Validation Helper
+                const isValidDate = (val: any) => {
+                    if (!val) return true; // Empty is valid (checked later if required)
+                    if (typeof val === 'number') return true; // Excel serial date
+                    const str = String(val).trim();
+                    if (!str) return true;
+                    return /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(str);
+                };
+
+                // Receipt Date
+                if (!isValidDate(rowData['受領書提出日'])) {
+                    errors.push(`${i + 2}行目: 受領書提出日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
+                    rowHasError = true;
+                }
+
+                // Lend Date
+                if (!isValidDate(rowData['貸与日'])) {
+                    errors.push(`${i + 2}行目: 貸与日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
+                    rowHasError = true;
+                }
+
+                // Return Date
+                if (!isValidDate(rowData['返却日'])) {
+                    errors.push(`${i + 2}行目: 返却日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
+                    rowHasError = true;
+                }
+
+                // --- End Additional Validation ---
 
                 if (rowHasError) {
                     continue; // Continue to find more errors in other rows
@@ -334,19 +398,19 @@ function FeaturePhoneListContent() {
         };
 
         handleExport(filteredData, headers, `feature_phone_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
-            item.carrier,
-            formatPhoneNumber(item.phoneNumber),
             item.managementNumber,
+            formatPhoneNumber(item.phoneNumber),
             item.modelName,
             normalizeContractYear(item.contractYears || ''),
+            item.carrier,
+            statusLabelMap[item.status] || item.status,
             item.employeeId,
             item.addressCode,
-            item.lendDate,
             item.costCompany || '',
             item.receiptDate,
+            item.lendDate,
             item.returnDate,
-            `"${item.notes}"`,
-            statusLabelMap[item.status] || item.status
+            `"${item.notes}"`
         ]);
     };
 
@@ -354,47 +418,124 @@ function FeaturePhoneListContent() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Template');
 
-        // Add headers
-        worksheet.addRow(headers);
+        // Styles
+        const fontStyle = { name: 'Yu Gothic' };
+        const headerFont1 = { name: 'Yu Gothic', bold: true, size: 16 };
+        const headerFont2 = { name: 'Yu Gothic', bold: true, size: 11 };
 
-        // Styling headers
-        const headerRow = worksheet.getRow(1);
-        headerRow.font = { name: 'Yu Gothic', bold: true };
-        headerRow.fill = {
+        // Set column widths and default font FIRST
+        worksheet.columns = headers.map(() => ({ width: 20, style: { font: fontStyle } }));
+
+        // --- Row 1: Merged Headers ---
+        // Basic Info: A-F
+        worksheet.mergeCells('A1:F1');
+        const cellA1 = worksheet.getCell('A1');
+        cellA1.value = '基本情報';
+        cellA1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA1.font = headerFont1;
+        cellA1.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
+            fgColor: { argb: 'FFFBE5D6' } // Light Orange
         };
+
+        // User Info: G-L
+        worksheet.mergeCells('G1:L1');
+        const cellG1 = worksheet.getCell('G1');
+        cellG1.value = '使用者情報';
+        cellG1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellG1.font = headerFont1;
+        cellG1.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE2EFDA' } // Light Olive
+        };
+
+        // Others: M only (Previously M-O)
+        const cellM1 = worksheet.getCell('M1');
+        cellM1.value = 'その他';
+        cellM1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellM1.font = headerFont1;
+        cellM1.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFDDEBF7' } // Light Aqua
+        };
+
+        // --- Row 2: Column Headers ---
+        worksheet.addRow(headers);
+        const headerRow = worksheet.getRow(2);
+
+        // Style Row 2
+        for (let i = 1; i <= headers.length; i++) {
+            const cell = headerRow.getCell(i);
+            cell.font = headerFont2;
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD9D9D9' } // Grey 15%
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+
+        // Removed validation/styling for N, O columns as requested.
+        // N column onwards should be default style, and input will catch error in import.
+
+        // Adjust Row Heights
+        worksheet.getRow(1).height = 30;
+        worksheet.getRow(2).height = 25;
 
         const totalRows = 1000;
 
-        // Data Validation (Carrier dropdown) - column A (index 1)
-        for (let i = 2; i <= totalRows + 1; i++) {
-            worksheet.getCell(i, 1).dataValidation = {
+        // Apply Data Validation and Formats
+        // Columns Indices:
+        // 1: Management No (Text)
+        // 2: Phone No (Text)
+        // 3: Model
+        // 4: Contract Years
+        // 5: Carrier (Dropdown)
+        // 6: Status (Dropdown)
+        // 7: Emp Code (Text)
+        // 8: Office Code (Text)
+        // 9: Cost Bearer
+        // 10: Receipt Date (Date)
+        // 11: Lend Date (Date)
+        // 12: Return Date (Date)
+        // 13: Notes
+
+        // Text Formats: A(1), B(2), G(7), H(8)
+        worksheet.getColumn(1).numFmt = '@';
+        worksheet.getColumn(2).numFmt = '@';
+        worksheet.getColumn(7).numFmt = '@';
+        worksheet.getColumn(8).numFmt = '@';
+
+        // Date Formats: J(10), K(11), L(12)
+        worksheet.getColumn(10).numFmt = 'yyyy/mm/dd';
+        worksheet.getColumn(11).numFmt = 'yyyy/mm/dd';
+        worksheet.getColumn(12).numFmt = 'yyyy/mm/dd';
+
+        // Data Validation Loop
+        for (let i = 3; i <= totalRows + 2; i++) {
+            // Carrier (Column 5)
+            worksheet.getCell(i, 5).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"KDDI,SoftBank,Docomo,Rakuten,その他"']
             };
-        }
 
-        // Data Validation (Status dropdown) - column M (index 13)
-        for (let i = 2; i <= totalRows + 1; i++) {
-            worksheet.getCell(i, 13).dataValidation = {
+            // Status (Column 6)
+            worksheet.getCell(i, 6).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
             };
         }
-
-        // Format phone number column as text to prevent dropping leading zero
-        worksheet.getColumn(2).numFmt = '@';
-        // Format address code column as text
-        worksheet.getColumn(7).numFmt = '@';
-
-        // Set column widths
-        worksheet.columns.forEach(col => {
-            col.width = 20;
-        });
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
