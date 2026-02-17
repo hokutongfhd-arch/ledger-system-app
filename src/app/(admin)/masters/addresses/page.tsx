@@ -77,12 +77,12 @@ function AddressListContent() {
 
     const { handleExport } = useCSVExport<Address>();
 
-    const headers = ['エリア', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', 'エリア', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+    const headers = ['エリアコード', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', 'エリアコード(確認用)', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
         onValidate: async (rows, fileHeaders) => {
             // Check for required headers (unique ones)
-            const requiredHeaders = ['エリア', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
+            const requiredHeaders = ['エリアコード', '№', '事業所コード(必須)', '事業所名(必須)', 'ＴＥＬ', 'ＦＡＸ', '〒(必須)', '住所(必須)', '備考', '事業部', '経理コード', '主担当', '枝番', '※', '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'];
             const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
 
             if (missingHeaders.length > 0) {
@@ -132,15 +132,9 @@ function AddressListContent() {
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
-                // Handle duplicate header names (エリア is mapped twice)
                 const rowData: any = {};
                 fileHeaders.forEach((header, index) => {
-                    const val = row[index];
-                    // If area is already set and current val is empty, don't overwrite
-                    if (header === 'エリア' && rowData[header] && (!val || String(val).trim() === '')) {
-                        return;
-                    }
-                    rowData[header] = val;
+                    rowData[header] = row[index];
                 });
 
                 const toHalfWidth = (str: string) => {
@@ -191,7 +185,7 @@ function AddressListContent() {
                 processedCodes.add(code);
 
                 const newAddress: Omit<Address, 'id'> = {
-                    area: String(rowData['エリア'] || '').trim(),
+                    area: String(rowData['エリアコード'] || '').trim(),
                     no: String(rowData['№'] || ''),
                     addressCode: code,
                     officeName: String(rowData['事業所名(必須)'] || ''),
@@ -329,7 +323,7 @@ function AddressListContent() {
                 item.notes || '',
                 item.division || '',
                 item.accountingCode || '',
-                item.area || '',
+                item.area || '', // エリアコード(確認用)
                 item.mainPerson || '',
                 item.branchNumber || '',
                 item.specialNote || '',

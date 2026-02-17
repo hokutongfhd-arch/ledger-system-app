@@ -23,8 +23,8 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
 }) => {
     if (!item) return null;
 
-    const matchedArea = areas.find(a => a.areaName === item.area);
-    const areaDisplay = item.area ? `${item.area}${matchedArea ? ` (${matchedArea.areaCode})` : ''}` : '-';
+    const matchedArea = areas.find(a => a.areaName === item.area || a.areaCode === item.area);
+    const areaDisplay = matchedArea ? `${matchedArea.areaCode} (${matchedArea.areaName})` : (item.area || '-');
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="事業所 詳細">
@@ -59,7 +59,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                                 <DetailRow label="事業所名" value={item.officeName} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <DetailRow label="エリア" value={areaDisplay} />
+                                <DetailRow label="エリアコード" value={areaDisplay} />
                                 <DetailRow label="No." value={item.no} />
                             </div>
                         </div>
@@ -89,7 +89,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                                 <DetailRow label="経理コード" value={item.accountingCode} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <DetailRow label="エリア (確認用)" value={areaDisplay} />
+                                <DetailRow label="エリアコード(確認用)" value={areaDisplay} />
                                 <DetailRow label="主担当" value={item.mainPerson} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
