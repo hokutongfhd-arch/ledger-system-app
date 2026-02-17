@@ -67,7 +67,7 @@ const verify = async () => {
 
     if (!sheet) { console.error("Sheet not found"); return; }
 
-    const rows: any[][] = [];
+    const rows: { rowNumber: number; data: any[] }[] = [];
     const headerRowValues: string[] = [];
 
     // Simulate reading headers from Row 2 (headerRowIndex = 1)
