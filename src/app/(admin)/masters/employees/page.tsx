@@ -19,6 +19,7 @@ import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
 import { logger } from '../../../../lib/logger';
 import { deleteOrphanedAuthUserAction, diagnoseEmployeeStateAction, forceDeleteEmployeeByCodeAction } from '@/app/actions/admin_maintenance';
+import { parseAndValidateEmployees } from '../../../../features/employees/logic/employee-import-validator';
 
 export default function EmployeeListPage() {
     const { user } = useAuth();
@@ -76,10 +77,11 @@ function EmployeeListContent() {
     const { handleExport } = useCSVExport<Employee>();
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        headerRowIndex: 1, // Header is on the second row
         onValidate: async (rows, headers) => {
             const requiredHeaders = [
                 '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
-                'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
+                'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
                 '権限(必須)', 'パスワード(必須)'
             ];
 
@@ -117,143 +119,33 @@ function EmployeeListContent() {
             return true;
         },
         onImport: async (rows, headers) => {
-            const processedCodes = new Set<string>();
-            const importData: Employee[] = [];
-            const validationErrors: string[] = [];
+            const { validEmployees: importData, errors: validationErrors } = parseAndValidateEmployees(rows, headers);
 
-            // 1. Parse all rows into Employee objects first
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.length === 0) continue;
-                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
-                if (isRowEmpty) continue;
-
-                const rowData: any = {};
-                headers.forEach((header, index) => {
-                    rowData[header] = row[index];
+            // If there are validation errors from parsing, show them and stop.
+            if (validationErrors.length > 0) {
+                await confirm({
+                    title: 'インポートエラー',
+                    description: (
+                        <div className="max-h-60 overflow-y-auto">
+                            <p className="mb-2">以下のデータは処理されませんでした：</p>
+                            <ul className="list-disc pl-5 text-sm text-red-600">
+                                {validationErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
+                        </div>
+                    ),
+                    confirmText: 'OK',
+                    cancelText: ''
                 });
-
-                const toHalfWidth = (str: string) => {
-                    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-                };
-
-                const rawCode = String(rowData['社員コード(必須)'] || '');
-                const code = toHalfWidth(rawCode).trim();
-
-                // Duplicate check within file only
-                if (processedCodes.has(code)) {
-                    // We skip duplicates in file to prevent double-processing same ID twice in one batch
-                    validationErrors.push(`${i + 2}行目: 社員コード「${code}」がファイル内で重複しています`);
-                    continue;
-                }
-
-                const formatDate = (val: any) => {
-                    if (!val) return '';
-                    if (typeof val === 'number') {
-                        const date = new Date((val - 25569) * 86400 * 1000);
-                        return date.toISOString().split('T')[0];
-                    }
-                    return String(val).trim().replace(/\//g, '-');
-                };
-
-                const parseNumber = (val: any) => {
-                    const parsed = parseInt(String(val || ''));
-                    return isNaN(parsed) ? 0 : Math.max(0, parsed);
-                };
-
-                const birthDateValue = formatDate(rowData['生年月日']);
-                const joinDateValue = formatDate(rowData['入社年月日']);
-
-                if (birthDateValue && joinDateValue && new Date(birthDateValue) > new Date(joinDateValue)) {
-                    validationErrors.push(`${i + 2}行目: 入社年月日（${joinDateValue}）は生年月日（${birthDateValue}）以降である必要があります`);
-                    continue;
-                }
-
-                const lastName = String(rowData['苗字(必須)'] || rowData['氏名'] || '').trim();
-                const firstName = String(rowData['名前(必須)'] || '').trim();
-                const lastNameKana = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
-                const firstNameKana = String(rowData['名前カナ'] || '').trim();
-
-                // Validate Name Fields (Block numbers and symbols)
-                const nameRegex = /[0-9０-９!-/:-@[-`{-~！-／：-＠［-｀｛-～、。,.?？!！]/;
-                const nameFields = [
-                    { label: '苗字', value: lastName },
-                    { label: '名前', value: firstName },
-                    { label: '苗字カナ', value: lastNameKana },
-                    { label: '名前カナ', value: firstNameKana }
-                ];
-
-                for (const field of nameFields) {
-                    if (field.value && nameRegex.test(field.value)) {
-                        validationErrors.push(`${i + 2}行目: ${field.label}「${field.value}」に数字または記号が含まれています`);
-                    }
-                }
-
-                const email = String(rowData['メールアドレス(必須)'] || '').trim();
-                if (email) {
-                    if (!/^[\x20-\x7E]+$/.test(email)) {
-                        validationErrors.push(`${i + 2}行目: メールアドレスに全角文字が含まれています`);
-                        continue;
-                    }
-                    // Validate email format
-                    if (!/^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-                        validationErrors.push(`${i + 2}行目: メールアドレスの形式が正しくありません`);
-                        continue;
-                    }
-                }
-
-                const rawPassword = String(rowData['パスワード(必須)'] || '').trim();
-                const password = toHalfWidth(rawPassword);
-
-                // Password Validation (8-16 digits, numeric only)
-                const passwordErrors = [];
-                // Only validate password for new users or if provided
-                if (password) {
-                    if (password.length < 8 || password.length > 16) {
-                        passwordErrors.push('パスワードは8文字以上16文字以下である必要があります');
-                    }
-                    if (!/^[0-9]+$/.test(password)) {
-                        passwordErrors.push('パスワードは半角数字のみ使用可能です');
-                    }
-                }
-
-                if (passwordErrors.length > 0) {
-                    passwordErrors.forEach(err => {
-                        validationErrors.push(`${i + 2}行目: ${err}`);
-                    });
-                    continue;
-                }
-
-                // スペースを除去し、半角スペースで結合
-                const cleanName = `${lastName.replace(/[\s　]+/g, '')} ${firstName.replace(/[\s　]+/g, '')}`.trim();
-                const cleanNameKana = `${lastNameKana.replace(/[\s　]+/g, '')} ${firstNameKana.replace(/[\s　]+/g, '')}`.trim();
-
-                const rawRole = String(rowData['権限(必須)'] || '').trim();
-                const role = (rawRole === '管理者' || rawRole.toLowerCase() === 'admin') ? 'admin' : 'user';
-                console.log(`[Import] Code: ${code}, RawRole: "${rawRole}" -> Role: ${role}`);
-
-                const emp: Omit<Employee, 'id'> & { id?: string } = {
-                    code: code,
-                    gender: String(rowData['性別'] || ''),
-                    name: cleanName,
-                    nameKana: cleanNameKana,
-                    birthDate: birthDateValue,
-                    age: parseNumber(rowData['年齢']),
-                    areaCode: toHalfWidth(String(rowData['エリアコード'] || '')).trim(),
-                    addressCode: toHalfWidth(String(rowData['事業所コード'] || '')).trim(),
-                    joinDate: joinDateValue,
-                    yearsOfService: parseNumber(rowData['勤続年数']),
-                    monthsHasuu: parseNumber(rowData['勤続端数月数']),
-                    role: role,
-                    password: password,
-                    companyNo: '',
-                    departmentCode: toHalfWidth(String(rowData['部署コード'] || '')).trim(),
-                    email: email
-                };
-
-                importData.push(emp as Employee);
-                processedCodes.add(code);
+                return;
             }
+
+            // 2. Call Bulk API
+            if (importData.length === 0) {
+                showToast('インポート可能なデータがありませんでした', 'error');
+                return;
+            }
+
+            // ... rest of the function is the same ...
 
             // If there are validation errors from parsing, show them and stop.
             if (validationErrors.length > 0) {
@@ -410,7 +302,7 @@ function EmployeeListContent() {
 
         const headers = [
             '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
-            'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
+            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '権限(必須)', 'パスワード(必須)'
         ];
 
@@ -430,7 +322,6 @@ function EmployeeListContent() {
                 item.age || '',
                 item.areaCode || '',
                 item.addressCode || '',
-                item.departmentCode || '',
                 item.joinDate || '',
                 (item.yearsOfService !== undefined && item.yearsOfService !== null) ? `${item.yearsOfService}年` : '',
                 item.monthsHasuu || '',
@@ -443,24 +334,71 @@ function EmployeeListContent() {
     const handleDownloadTemplate = async () => {
         const headers = [
             '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
-            'エリアコード', '事業所コード', '部署コード', '入社年月日', '勤続年数', '勤続端数月数',
+            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
             '権限(必須)', 'パスワード(必須)'
         ];
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Template');
 
-        // Add headers
+        // Headers
+        const topHeader = [
+            '基本情報', '', '', '', '', '', '', '', '',
+            '所属・勤務情報', '', '', '', '',
+            'システム情報', ''
+        ];
+
+        worksheet.addRow(topHeader);
         worksheet.addRow(headers);
 
-        // Styling headers
-        const headerRow = worksheet.getRow(1);
-        headerRow.font = { name: 'Yu Gothic', bold: true };
-        headerRow.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
+        // Merge cells for top header
+        worksheet.mergeCells('A1:I1'); // Basic Info (9 columns)
+        worksheet.mergeCells('J1:N1'); // Work Info (5 columns)
+        worksheet.mergeCells('O1:P1'); // System Info (2 columns)
+
+        // Styling Top Header (Row 1)
+        const topRow = worksheet.getRow(1);
+        topRow.height = 30; // 16px font approx
+        topRow.font = { name: 'Yu Gothic', bold: true, size: 16 };
+        topRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        const setCellColor = (colStart: number, colEnd: number, color: string) => {
+            for (let c = colStart; c <= colEnd; c++) {
+                const cell = worksheet.getCell(1, c);
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            }
         };
+
+        // Apply background colors
+        setCellColor(1, 9, 'FFFCE4D6'); // Orange (Basic)
+        setCellColor(10, 14, 'FFEBF1DE'); // Olive (Work)
+        setCellColor(15, 16, 'DCE6F1');   // Aqua (System)
+
+        // Styling Column Headers (Row 2)
+        const headerRow = worksheet.getRow(2);
+        headerRow.font = { name: 'Yu Gothic', bold: true };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        for (let i = 1; i <= headers.length; i++) {
+            const cell = worksheet.getCell(2, i);
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' } // Gray
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
 
         // Set column widths
         worksheet.columns.forEach(col => {
@@ -468,7 +406,7 @@ function EmployeeListContent() {
         });
 
         // Data Validation for 性別 (Column B)
-        for (let i = 2; i <= 100; i++) {
+        for (let i = 3; i <= 100; i++) {
             worksheet.getCell(`B${i}`).dataValidation = {
                 type: 'list',
                 allowBlank: true,
@@ -476,9 +414,9 @@ function EmployeeListContent() {
             };
         }
 
-        // Data Validation for 権限 (Column P - calculated from headers index)
-        const roleColChar = 'P'; // 16th column
-        for (let i = 2; i <= 100; i++) {
+        // Data Validation for 権限 (Column O)
+        const roleColChar = 'O';
+        for (let i = 3; i <= 100; i++) {
             worksheet.getCell(`${roleColChar}${i}`).dataValidation = {
                 type: 'list',
                 allowBlank: true,
