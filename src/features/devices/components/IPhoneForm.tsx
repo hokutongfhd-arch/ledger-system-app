@@ -326,7 +326,6 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 name="carrier"
                                 value={formData.carrier}
                                 onChange={handleChange}
-                                placeholder="選択してください"
                             >
                                 <option value="KDDI">KDDI</option>
 

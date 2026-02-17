@@ -418,7 +418,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                                 name="carrier"
                                 value={formData.carrier}
                                 onChange={handleChange}
-                                placeholder="選択してください"
                             >
                                 <option value="au・wimax2+">au・wimax2+</option>
                                 <option value="au">au</option>

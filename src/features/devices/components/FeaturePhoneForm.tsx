@@ -316,7 +316,6 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 name="carrier"
                                 value={formData.carrier}
                                 onChange={handleChange}
-                                placeholder="選択してください"
                             >
                                 <option value="KDDI">KDDI</option>
                                 <option value="SoftBank">SoftBank</option>

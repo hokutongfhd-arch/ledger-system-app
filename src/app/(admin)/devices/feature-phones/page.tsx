@@ -117,6 +117,8 @@ function FeaturePhoneListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            const { validateDeviceImportRow } = await import('../../../../features/devices/device-import-validator');
+
             let successCount = 0;
             let errorCount = 0;
             const existingManagementNumbers = new Set(featurePhones.map(d => d.managementNumber));
@@ -129,6 +131,14 @@ function FeaturePhoneListContent() {
 
             const validCarriers = ['KDDI', 'SoftBank', 'Docomo', 'Rakuten', 'その他'];
             const validStatuses = ['使用中', '予備機', '在庫', '故障', '修理中', '廃棄'];
+            const statusMap: Record<string, string> = {
+                '使用中': 'in-use',
+                '予備機': 'backup',
+                '在庫': 'available',
+                '故障': 'broken',
+                '修理中': 'repairing',
+                '廃棄': 'discarded'
+            };
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
@@ -141,117 +151,27 @@ function FeaturePhoneListContent() {
                     rowData[header] = row[index];
                 });
 
-                const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-                const normalizePhone = (phone: string) => toHalfWidth(phone).trim().replace(/-/g, '');
-                const statusMap: Record<string, string> = {
-                    '使用中': 'in-use',
-                    '予備機': 'backup',
-                    '在庫': 'available',
-                    '故障': 'broken',
-                    '修理中': 'repairing',
-                    '廃棄': 'discarded'
-                };
+                const validation = validateDeviceImportRow(
+                    rowData,
+                    i,
+                    existingPhoneNumbers,
+                    processedPhoneNumbers,
+                    existingManagementNumbers,
+                    processedManagementNumbers
+                );
 
-                let rowHasError = false;
-                const rawManagementNumber = String(rowData['管理番号(必須)'] || '');
-                const managementNumber = toHalfWidth(rawManagementNumber).trim();
-
-                if (!managementNumber) {
-                    errors.push(`${i + 2}行目: 管理番号が空です`);
-                    rowHasError = true;
-                } else {
-                    // Check for full-width characters in the original input
-                    if (/[^\x20-\x7E]/.test(rawManagementNumber)) {
-                        errors.push(`${i + 2}行目: 管理番号「${rawManagementNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
-                        rowHasError = true;
-                    } else if (existingManagementNumbers.has(managementNumber)) {
-                        errors.push(`${i + 2}行目: 管理番号「${managementNumber}」は既に存在します`);
-                        rowHasError = true;
-                    } else if (processedManagementNumbers.has(managementNumber)) {
-                        errors.push(`${i + 2}行目: 管理番号「${managementNumber}」がファイル内で重複しています`);
-                        rowHasError = true;
-                    }
+                if (!validation.isValid) {
+                    errors.push(...validation.errors);
+                    continue;
                 }
+
+                const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
                 const rawPhoneNumber = String(rowData['電話番号(必須)'] || '');
                 const phoneNumber = formatPhoneNumber(toHalfWidth(rawPhoneNumber).trim());
-                const normalizedPhone = normalizePhone(phoneNumber);
 
-                if (!phoneNumber) {
-                    errors.push(`${i + 2}行目: 電話番号が空です`);
-                    rowHasError = true;
-                } else {
-                    if (existingPhoneNumbers.has(normalizedPhone)) {
-                        errors.push(`${i + 2}行目: 電話番号「${phoneNumber}」は既に存在します`);
-                        rowHasError = true;
-                    } else if (processedPhoneNumbers.has(normalizedPhone)) {
-                        errors.push(`${i + 2}行目: 電話番号「${phoneNumber}」がファイル内で重複しています`);
-                        rowHasError = true;
-                    }
-                }
-
-                // --- Additional Validation ---
-
-                // Carrier
-                const carrier = String(rowData['キャリア'] || '').trim();
-                if (carrier && !validCarriers.includes(carrier)) {
-                    errors.push(`${i + 2}行目: キャリア「${carrier}」は不正な値です`);
-                    rowHasError = true;
-                }
-
-                // Status
-                const statusRaw = String(rowData['状況'] || '').trim();
-                if (statusRaw && !validStatuses.includes(statusRaw)) {
-                    errors.push(`${i + 2}行目: 状況「${statusRaw}」は不正な値です`);
-                    rowHasError = true;
-                }
-
-                // Employee Code (Half-width numbers only)
-                const employeeCode = String(rowData['社員コード'] || '').trim();
-                if (employeeCode && !/^\d+$/.test(employeeCode)) {
-                    errors.push(`${i + 2}行目: 社員コード「${employeeCode}」は半角数字で入力してください`);
-                    rowHasError = true;
-                }
-
-                // Office Code (Half-width numbers and hyphens only)
-                const officeCode = String(rowData['事業所コード'] || '').trim();
-                if (officeCode && !/^[0-9-]+$/.test(officeCode)) {
-                    errors.push(`${i + 2}行目: 事業所コード「${officeCode}」に不正な文字が含まれています。半角数字とハイフンのみ使用可能です。`);
-                    rowHasError = true;
-                }
-
-                // Date Validation Helper
-                const isValidDate = (val: any) => {
-                    if (!val) return true; // Empty is valid (checked later if required)
-                    if (typeof val === 'number') return true; // Excel serial date
-                    const str = String(val).trim();
-                    if (!str) return true;
-                    return /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(str);
-                };
-
-                // Receipt Date
-                if (!isValidDate(rowData['受領書提出日'])) {
-                    errors.push(`${i + 2}行目: 受領書提出日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
-                    rowHasError = true;
-                }
-
-                // Lend Date
-                if (!isValidDate(rowData['貸与日'])) {
-                    errors.push(`${i + 2}行目: 貸与日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
-                    rowHasError = true;
-                }
-
-                // Return Date
-                if (!isValidDate(rowData['返却日'])) {
-                    errors.push(`${i + 2}行目: 返却日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
-                    rowHasError = true;
-                }
-
-                // --- End Additional Validation ---
-
-                if (rowHasError) {
-                    continue; // Continue to find more errors in other rows
-                }
+                const rawManagementNumber = String(rowData['管理番号(必須)'] || '');
+                const managementNumber = toHalfWidth(rawManagementNumber).trim();
 
                 const formatDate = (val: any) => {
                     if (!val) return '';
@@ -261,9 +181,6 @@ function FeaturePhoneListContent() {
                     }
                     return String(val).trim().replace(/\//g, '-');
                 };
-
-                processedManagementNumbers.add(managementNumber);
-                processedPhoneNumbers.add(normalizedPhone);
 
                 const formatAddressCode = (code: string) => {
                     const cleanCode = String(code || '').trim();
@@ -292,6 +209,8 @@ function FeaturePhoneListContent() {
                 if (newFeaturePhone.employeeId) newFeaturePhone.status = 'in-use';
 
                 importData.push(newFeaturePhone);
+                if (validation.managementNumber) processedManagementNumbers.add(validation.managementNumber);
+                if (validation.normalizedPhone) processedPhoneNumbers.add(validation.normalizedPhone);
             }
 
             // All-or-Nothing check
