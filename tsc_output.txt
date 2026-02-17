@@ -1,0 +1,5 @@
+src/app/(admin)/masters/areas/page.tsx(282,38): error TS2552: Cannot find name 'handleExportCSVClick'. Did you mean 'handleImportClick'?
+src/app/(admin)/masters/areas/page.tsx(286,50): error TS2304: Cannot find name 'handleAdd'.
+src/app/(admin)/masters/areas/page.tsx(309,25): error TS2304: Cannot find name 'handleEdit'.
+src/app/(admin)/masters/areas/page.tsx(310,27): error TS2304: Cannot find name 'handleDelete'.
+src/app/(admin)/masters/areas/page.tsx(325,31): error TS2304: Cannot find name 'handleBulkDelete'.

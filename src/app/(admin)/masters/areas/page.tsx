@@ -70,6 +70,7 @@ function AreaListContent() {
     const headers = ['エリアコード(必須)', 'エリア名(必須)'];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        headerRowIndex: 1, // Header is on 2nd row
         onValidate: async (rows, fileHeaders) => {
             const missingHeaders = headers.filter(h => !fileHeaders.includes(h));
             if (missingHeaders.length > 0) {
@@ -117,6 +118,9 @@ function AreaListContent() {
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
+                // Excel Row = i + 1 (data start) + 1 (header) + 1 (title) = i + 3
+                const excelRowNumber = i + 3;
+
                 const rowData: any = {};
                 fileHeaders.forEach((header, index) => {
                     rowData[header] = row[index];
@@ -127,10 +131,10 @@ function AreaListContent() {
                 let rowHasError = false;
 
                 if (existingCodes.has(code)) {
-                    errors.push(`${i + 2}行目: エリアコード「${code}」は既に存在します`);
+                    errors.push(`${excelRowNumber}行目: エリアコード「${code}」は既に存在します`);
                     rowHasError = true;
                 } else if (processedCodes.has(code)) {
-                    errors.push(`${i + 2}行目: エリアコード「${code}」がファイル内で重複しています`);
+                    errors.push(`${excelRowNumber}行目: エリアコード「${code}」がファイル内で重複しています`);
                     rowHasError = true;
                 }
 
@@ -169,8 +173,9 @@ function AreaListContent() {
                 try {
                     await addArea(data as Omit<Area, 'id'>, true, true);
                     successCount++;
-                } catch (error: any) {
-                    errors.push(`登録エラー: ${data.areaCode} - ${error.message || '不明なエラー'}`);
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : '不明なエラー';
+                    errors.push(`登録エラー: ${data.areaCode} - ${message}`);
                     errorCount++;
                 }
             }
@@ -255,17 +260,39 @@ function AreaListContent() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Template');
 
-        // Add headers
+        // Headers
+        const topHeader = ['基本情報', ''];
+        worksheet.addRow(topHeader);
         worksheet.addRow(headers);
 
-        // Styling headers
-        const headerRow = worksheet.getRow(1);
+        // Merge cells for top header (A1:B1)
+        worksheet.mergeCells('A1:B1');
+
+        // Styling Top Header (Row 1)
+        const topRow = worksheet.getRow(1);
+        topRow.height = 30;
+        topRow.font = { name: 'Yu Gothic', bold: true, size: 16 };
+        topRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Apply background color to A1-B1 (Merged)
+        // Note: When merging, styling the top-left cell (A1) applies to the merged area usually, 
+        // but applying to all involved cells is safer for borders/fills.
+        ['A1', 'B1'].forEach(cellRef => {
+            const cell = worksheet.getCell(cellRef);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE4D6' } }; // Orange
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        // Styling Column Headers (Row 2)
+        const headerRow = worksheet.getRow(2);
         headerRow.font = { name: 'Yu Gothic', bold: true };
-        headerRow.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
-        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        for (let i = 1; i <= headers.length; i++) {
+            const cell = worksheet.getCell(2, i);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }; // Gray
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        }
 
         // Format code column as text (Column A)
         worksheet.getColumn(1).numFmt = '@';
@@ -278,7 +305,7 @@ function AreaListContent() {
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement('a') as HTMLAnchorElement;
         a.href = url;
         a.download = 'エリアマスタエクセルフォーマット.xlsx';
         a.click();
