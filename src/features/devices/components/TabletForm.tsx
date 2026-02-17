@@ -207,7 +207,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                 </div>
 
                 <div className="space-y-4">
-                    <SectionHeader>場所・使用者</SectionHeader>
+                    <SectionHeader>使用者・場所</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FormLabel>社員名(社員コード)</FormLabel>

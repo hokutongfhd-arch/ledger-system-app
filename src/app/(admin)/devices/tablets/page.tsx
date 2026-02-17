@@ -103,12 +103,14 @@ function TabletListContent() {
     });
 
     const { handleExport } = useCSVExport<Tablet>();
+    // Updated headers order
     const headers = [
-        'メーカー', '型番(必須)', '端末CD(必須)', '契約年数',
-        '社員コード', '事業所コード', '負担先', '過去貸与履歴', '備考', '状況'
+        '端末CD(必須)', '型番(必須)', 'メーカー', '契約年数', '状況',
+        '社員コード', '事業所コード', '負担先', '過去貸与履歴', '備考'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        headerRowIndex: 1, // New format has headers in the 2nd row (index 1)
         onValidate: async (rows, fileHeaders) => {
             const requiredHeaders = headers;
             const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
@@ -152,6 +154,7 @@ function TabletListContent() {
                 acc[value] = key;
                 return acc;
             }, {} as Record<string, string>);
+            const validStatuses = ['使用中', '予備機', '在庫', '故障', '修理中', '廃棄'];
 
             const importData: any[] = [];
 
@@ -195,27 +198,49 @@ function TabletListContent() {
                     }
                 }
 
+                // Status Validation
+                const statusValue = String(rowData['状況'] || '').trim();
+                if (statusValue && !validStatuses.includes(statusValue)) {
+                    errors.push(`${i + 2}行目: 状況「${statusValue}」は不正な値です`);
+                    rowHasError = true;
+                }
+
+                // Employee Code Validation
+                const employeeCode = String(rowData['社員コード'] || '').trim();
+                if (employeeCode && !/^\d+$/.test(employeeCode)) {
+                    errors.push(`${i + 2}行目: 社員コード「${employeeCode}」は半角数字で入力してください`);
+                    rowHasError = true;
+                }
+
+                // Office Code Validation
+                const officeCode = String(rowData['事業所コード'] || '').trim();
+                if (officeCode && !/^\d+$/.test(officeCode)) {
+                    errors.push(`${i + 2}行目: 事業所コード「${officeCode}」は半角数字で入力してください`);
+                    rowHasError = true;
+                }
+
                 if (rowHasError) {
                     continue;
                 }
 
                 processedTerminalCodes.add(terminalCode);
-                const statusValue = String(rowData['状況'] || '');
                 const status = reverseStatusMap[statusValue] || 'available';
 
                 const newTablet: Omit<Tablet, 'id'> = {
                     terminalCode: terminalCode,
                     maker: String(rowData['メーカー'] || ''),
-                    modelNumber: String(rowData['型番(必須)'] || ''),
+                    modelNumber: rawModelNumber,
                     status: status as any,
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
-                    employeeCode: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['事業所コード'] || ''),
+                    employeeCode: employeeCode,
+                    addressCode: officeCode,
                     costBearer: String(rowData['負担先'] || ''),
                     history: String(rowData['過去貸与履歴'] || ''),
                     notes: String(rowData['備考'] || ''),
                     address: '',
                 };
+
+                if (newTablet.employeeCode) newTablet.status = 'in-use';
 
                 importData.push(newTablet);
             }
@@ -315,16 +340,16 @@ function TabletListContent() {
         });
 
         handleExport(filteredData, headers, `tablet_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
-            item.maker || '',
-            item.modelNumber || '',
             item.terminalCode || '',
+            item.modelNumber || '',
+            item.maker || '',
             normalizeContractYear(item.contractYears || ''),
+            statusMap[item.status] || item.status,
             item.employeeCode || '',
             item.addressCode || '',
             item.costBearer || '',
             `"${item.history || ''}"`,
-            `"${item.notes || ''}"`,
-            statusMap[item.status] || item.status
+            `"${item.notes || ''}"`
         ]);
     };
 
@@ -332,33 +357,107 @@ function TabletListContent() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Template');
 
-        // Add headers
-        worksheet.addRow(headers);
+        // Styles
+        const fontStyle = { name: 'Yu Gothic' };
+        const headerFont1 = { name: 'Yu Gothic', bold: true, size: 16 };
+        const headerFont2 = { name: 'Yu Gothic', bold: true, size: 11 };
 
-        // Styling headers
-        const headerRow = worksheet.getRow(1);
-        headerRow.font = { name: 'Yu Gothic', bold: true };
-        headerRow.fill = {
+        // Set column widths and default font FIRST
+        worksheet.columns = headers.map(() => ({ width: 20, style: { font: fontStyle } }));
+
+        // --- Row 1: Merged Headers ---
+        // Basic Info: A-E (columns 1-5)
+        worksheet.mergeCells('A1:E1');
+        const cellA1 = worksheet.getCell('A1');
+        cellA1.value = '基本情報';
+        cellA1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA1.font = headerFont1;
+        cellA1.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
+            fgColor: { argb: 'FFFBE5D6' } // Light Orange
         };
+
+        // User/Place: F-H (columns 6-8)
+        worksheet.mergeCells('F1:H1');
+        const cellF1 = worksheet.getCell('F1');
+        cellF1.value = '使用者・場所';
+        cellF1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellF1.font = headerFont1;
+        cellF1.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE2EFDA' } // Light Olive
+        };
+
+        // Others: I-J (columns 9-10)
+        worksheet.mergeCells('I1:J1');
+        const cellI1 = worksheet.getCell('I1');
+        cellI1.value = 'その他';
+        cellI1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellI1.font = headerFont1;
+        cellI1.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFDDEBF7' } // Light Aqua
+        };
+
+        // --- Row 2: Column Headers ---
+        worksheet.addRow(headers);
+        const headerRow = worksheet.getRow(2);
+
+        // Style Row 2
+        for (let i = 1; i <= headers.length; i++) {
+            const cell = headerRow.getCell(i);
+            cell.font = headerFont2;
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD9D9D9' } // Grey 15%
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+
+        // Adjust Row Heights
+        worksheet.getRow(1).height = 30;
+        worksheet.getRow(2).height = 25;
 
         const totalRows = 1000;
 
-        // Data Validation (Status dropdown) - column J (index 10)
-        for (let i = 2; i <= totalRows + 1; i++) {
-            worksheet.getCell(i, 10).dataValidation = {
+        // Apply Data Validation and Formats
+        // Columns Indices (1-based):
+        // 1: Terminal CD (Text)
+        // 2: Model No (Text)
+        // 3: Maker
+        // 4: Contract Years
+        // 5: Status (Dropdown)
+        // 6: Emp Code (Text)
+        // 7: Office Code (Text)
+        // 8: Cost Bearer
+        // 9: History
+        // 10: Notes
+
+        // Text Formats: A(1), B(2), F(6), G(7)
+        // Added B(2) Model No just in case it's numeric-like
+        worksheet.getColumn(1).numFmt = '@';
+        worksheet.getColumn(2).numFmt = '@';
+        worksheet.getColumn(6).numFmt = '@';
+        worksheet.getColumn(7).numFmt = '@';
+
+        // Data Validation (Status dropdown) - column E (index 5)
+        for (let i = 3; i <= totalRows + 2; i++) {
+            worksheet.getCell(i, 5).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
             };
         }
-
-        // Set column widths
-        worksheet.columns.forEach(col => {
-            col.width = 20;
-        });
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
