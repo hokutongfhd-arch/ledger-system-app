@@ -76,12 +76,14 @@ function RouterListContent() {
 
     const { handleExport } = useCSVExport<Router>();
     const headers = [
-        'No.', '契約状況', '契約年数', '通信キャリア', '機種型番', 'SIM電番(必須)',
-        '通信容量', '端末CD(必須)', '社員コード', '事業所コード', 'IPアドレス', 'サブネットマスク', '開始IP',
-        '終了IP', '請求元', '費用', '費用振替', '負担先', '貸与履歴', '備考(返却日)', '状況'
+        '端末CD(必須)', 'No.', 'SIM電番(必須)', '機種型番', '通信キャリア', '通信容量',
+        '契約状況', '契約年数', '状況', '社員コード', '事業所コード',
+        'IPアドレス', 'サブネットマスク', '開始IP', '終了IP',
+        '請求元', '負担先', '費用', '費用振替', '貸与履歴', '備考(返却日)'
     ];
 
     const { handleImportClick, fileInputRef, handleFileChange } = useFileImport({
+        headerRowIndex: 1, // Header is on the second row
         onValidate: async (rows, fileHeaders) => {
             const requiredHeaders = headers;
             const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
@@ -152,20 +154,20 @@ function RouterListContent() {
 
                 // Check for full-width characters in Terminal Code
                 if (/[^\x20-\x7E]/.test(rawTerminalCode)) {
-                    errors.push(`${i + 2}行目: 端末CD「${rawTerminalCode}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                    errors.push(`${i + 3}行目: 端末CD「${rawTerminalCode}」に全角文字が含まれています。半角文字のみ使用可能です。`);
                     rowHasError = true;
                 }
                 const terminalCode = rawTerminalCode.trim();
 
                 if (!terminalCode) {
-                    errors.push(`${i + 2}行目: 端末CDが空です`);
+                    errors.push(`${i + 3}行目: 端末CDが空です`);
                     rowHasError = true;
                 } else {
                     if (existingTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」は既に存在します`);
+                        errors.push(`${i + 3}行目: 端末CD「${terminalCode}」は既に存在します`);
                         rowHasError = true;
                     } else if (processedTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
+                        errors.push(`${i + 3}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
                         rowHasError = true;
                     }
                 }
@@ -173,7 +175,7 @@ function RouterListContent() {
                 // Check for full-width characters in Model Number
                 const rawModelNumber = String(rowData['機種型番'] || '');
                 if (/[^\x20-\x7E]/.test(rawModelNumber)) {
-                    errors.push(`${i + 2}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
+                    errors.push(`${i + 3}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
                     rowHasError = true;
                 }
                 const modelNumber = rawModelNumber.trim();
@@ -183,12 +185,52 @@ function RouterListContent() {
 
                 if (simNumberNormalized) {
                     if (existingSimNumbers.has(simNumberNormalized)) {
-                        errors.push(`${i + 2}行目: SIM電番「${rawSimNumber}」は既に存在します`);
+                        errors.push(`${i + 3}行目: SIM電番「${rawSimNumber}」は既に存在します`);
                         rowHasError = true;
                     } else if (processedSimNumbers.has(simNumberNormalized)) {
-                        errors.push(`${i + 2}行目: SIM電番「${rawSimNumber}」がファイル内で重複しています`);
+                        errors.push(`${i + 3}行目: SIM電番「${rawSimNumber}」がファイル内で重複しています`);
                         rowHasError = true;
                     }
+                }
+
+                // Network IP Validation
+                const validateIpFormat = (value: string, fieldName: string) => {
+                    if (!value || value.trim() === '') return;
+                    // Regex checks for 4 groups of 1-3 digits separated by dots
+                    const ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+                    if (!ipRegex.test(value)) {
+                        errors.push(`${i + 3}行目: ${fieldName}「${value}」の形式が正しくありません (xxx.xxx.xxx.xxx形式、各1-3桁で入力してください)`);
+                        rowHasError = true;
+                    }
+                };
+
+                validateIpFormat(String(rowData['IPアドレス'] || ''), 'IPアドレス');
+                validateIpFormat(String(rowData['サブネットマスク'] || ''), 'サブネットマスク');
+                validateIpFormat(String(rowData['開始IP'] || ''), '開始IP');
+                validateIpFormat(String(rowData['終了IP'] || ''), '終了IP');
+
+                validateIpFormat(String(rowData['終了IP'] || ''), '終了IP');
+
+                // Carrier Validation
+                const validCarriers = ['au・wimax2+', 'au', 'docomo(iij)', 'SoftBank'];
+                const carrier = String(rowData['通信キャリア'] || '').trim();
+                if (carrier && !validCarriers.includes(carrier)) {
+                    errors.push(`${i + 3}行目: 通信キャリア「${carrier}」は不正です。プルダウンから選択するか、正しい値を入力してください。(${validCarriers.join(', ')})`);
+                    rowHasError = true;
+                }
+
+                // Employee Code Validation
+                const employeeCode = String(rowData['社員コード'] || '').trim();
+                if (employeeCode && !/^[0-9-]+$/.test(employeeCode)) {
+                    errors.push(`${i + 3}行目: 社員コード「${employeeCode}」に不正な文字が含まれています。半角数字とハイフンのみ使用可能です。`);
+                    rowHasError = true;
+                }
+
+                // Office Code Validation
+                const officeCode = String(rowData['事業所コード'] || '').trim();
+                if (officeCode && !/^[0-9-]+$/.test(officeCode)) {
+                    errors.push(`${i + 3}行目: 事業所コード「${officeCode}」に不正な文字が含まれています。半角数字とハイフンのみ使用可能です。`);
+                    rowHasError = true;
                 }
 
                 if (rowHasError) {
@@ -200,7 +242,7 @@ function RouterListContent() {
 
                 const newRouter: Omit<Router, 'id'> = {
                     no: String(rowData['No.'] || ''),
-                    contractStatus: normalizeContractYear(String(rowData['契約状況'] || '')),
+                    contractStatus: String(rowData['契約状況'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['通信キャリア'] || ''),
                     modelNumber: modelNumber,
@@ -332,14 +374,15 @@ function RouterListContent() {
         };
 
         handleExport(filteredData, headers, `router_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
+            item.terminalCode,
             item.no || '',
+            formatPhoneNumber(item.simNumber || ''),
+            item.modelNumber || '',
+            item.carrier || '',
+            item.dataCapacity || '',
             item.contractStatus || '',
             normalizeContractYear(item.contractYears || ''),
-            item.carrier || '',
-            item.modelNumber || '',
-            formatPhoneNumber(item.simNumber || ''),
-            item.dataCapacity || '',
-            item.terminalCode,
+            statusLabelMap[item.status] || item.status,
             item.employeeCode || '',
             item.addressCode || '',
             item.ipAddress || '',
@@ -347,12 +390,11 @@ function RouterListContent() {
             item.startIp || '',
             item.endIp || '',
             item.biller || '',
+            item.costBearer || '',
             item.cost || '',
             item.costTransfer || '',
-            item.costBearer || '',
             `"${item.lendingHistory || ''}"`,
-            `"${item.notes || ''}"`,
-            statusLabelMap[item.status] || item.status
+            `"${item.notes || ''}"`
         ]);
     };
 
@@ -360,43 +402,100 @@ function RouterListContent() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Template');
 
-        // Add headers
+        // Headers
+        const topHeader = [
+            '基本情報', '', '', '', '', '', '', '', '',
+            '使用者・場所', '',
+            'ネットワーク情報', '', '', '',
+            '費用・管理情報', '', '', '',
+            'その他', ''
+        ];
+
+        worksheet.addRow(topHeader);
         worksheet.addRow(headers);
 
-        // Styling headers
-        const headerRow = worksheet.getRow(1);
-        headerRow.font = { name: 'Yu Gothic', bold: true };
-        headerRow.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
+        // Merge cells for top header
+        worksheet.mergeCells('A1:I1'); // Basic Info
+        worksheet.mergeCells('J1:K1'); // User/Place
+        worksheet.mergeCells('L1:O1'); // Network
+        worksheet.mergeCells('P1:S1'); // Cost/Mgmt
+        worksheet.mergeCells('T1:U1'); // Others
+
+        // Styling Top Header (Row 1)
+        const topRow = worksheet.getRow(1);
+        topRow.height = 30; // 16px font approx
+        topRow.font = { name: 'Yu Gothic', bold: true, size: 16 };
+        topRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        const setCellColor = (colStart: number, colEnd: number, color: string) => {
+            for (let c = colStart; c <= colEnd; c++) {
+                const cell = worksheet.getCell(1, c);
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            }
         };
 
-        const totalRows = 500; // Routers are fewer, 500 is enough
+        // Apply background colors (approximate ARGB based on "Accent X, White+60%")
+        setCellColor(1, 9, 'FFFCE4D6'); // Orange (Basic)
+        setCellColor(10, 11, 'FFEBF1DE'); // Olive (User)
+        setCellColor(12, 15, 'DCE6F1');   // Aqua (Network) (Standard Light Blue/Aqua)
+        setCellColor(16, 19, 'E4DFEC');   // Purple (Cost)
+        setCellColor(20, 21, 'F2DCDB');   // Red (Others)
 
-        // Data Validation (Status dropdown) - column X (index 24)
-        for (let i = 2; i <= totalRows + 1; i++) {
-            // 通信キャリア - column D (index 4)
-            worksheet.getCell(i, 4).dataValidation = {
+        // Styling Column Headers (Row 2)
+        const headerRow = worksheet.getRow(2);
+        headerRow.font = { name: 'Yu Gothic', bold: true, size: 11 };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        for (let i = 1; i <= headers.length; i++) {
+            const cell = worksheet.getCell(2, i);
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' } // Gray (Background 1, Black+15% approx)
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+
+        const totalRows = 500;
+
+        // Data Validation
+        for (let i = 3; i <= totalRows + 2; i++) {
+            // Carrier - Column E (5)
+            worksheet.getCell(i, 5).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"au・wimax2+,au,docomo(iij),SoftBank"']
             };
 
-            // 状況 - column X (index 24)
-            worksheet.getCell(i, 24).dataValidation = {
+            // Status - Column I (9)
+            worksheet.getCell(i, 9).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
             };
         }
 
-        // Format phone number / numeric columns as text if needed
-        worksheet.getColumn(6).numFmt = '@'; // SIM number
+        // Format numeric columns as text to prevent scientific notation etc.
+        // SIM Number (C - 3), Employee Code (J - 10), Office Code (K - 11)
+        worksheet.getColumn(3).numFmt = '@';
+        worksheet.getColumn(10).numFmt = '@';
+        worksheet.getColumn(11).numFmt = '@';
+        worksheet.getColumn(1).width = 15; // Terminal CD
 
         // Set column widths
         worksheet.columns.forEach(col => {
-            col.width = 20;
+            col.width = 18;
         });
 
         const buffer = await workbook.xlsx.writeBuffer();

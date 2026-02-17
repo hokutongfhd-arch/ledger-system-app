@@ -213,10 +213,10 @@ function FeaturePhoneListContent() {
                     rowHasError = true;
                 }
 
-                // Office Code (Half-width numbers only)
+                // Office Code (Half-width numbers and hyphens only)
                 const officeCode = String(rowData['事業所コード'] || '').trim();
-                if (officeCode && !/^\d+$/.test(officeCode)) {
-                    errors.push(`${i + 2}行目: 事業所コード「${officeCode}」は半角数字で入力してください`);
+                if (officeCode && !/^[0-9-]+$/.test(officeCode)) {
+                    errors.push(`${i + 2}行目: 事業所コード「${officeCode}」に不正な文字が含まれています。半角数字とハイフンのみ使用可能です。`);
                     rowHasError = true;
                 }
 
