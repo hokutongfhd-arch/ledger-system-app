@@ -9,104 +9,93 @@ export const parseAndValidateEmployees = (
     const importData: Employee[] = [];
     const validationErrors: string[] = [];
 
-    // 1. Parse all rows into Employee objects first
+    // Helper: Check for full-width characters (considers anything outside ASCII range as full-width roughly, or specifically check range)
+    // Requirement says "Full-width characters". Usually means checking for non-half-width-ASCII.
+    // ASCII printable: 0x20 - 0x7E.
+    const hasFullWidth = (str: string) => /[^\x20-\x7E]/.test(str);
+
+    // Helper: Validate date format
+    const isValidDateFormat = (str: string) => {
+        if (!str) return true; // Empty check handled separately if required
+        // Supported formats: yyyy年mm月dd日, yyyy-mm-dd, yyyy/mm/dd
+        // Also check if dates are valid numbers
+        const p1 = /^\d{4}年\d{1,2}月\d{1,2}日$/;
+        const p2 = /^\d{4}-\d{1,2}-\d{1,2}$/;
+        const p3 = /^\d{4}\/\d{1,2}\/\d{1,2}$/;
+        return p1.test(str) || p2.test(str) || p3.test(str);
+    };
+
+    const parseDate = (val: any): string => {
+        if (!val) return '';
+        const strVal = String(val).trim();
+        // If Excel serial number (although template sets Text format for most, dates might be standard Date)
+        if (typeof val === 'number') {
+            const date = new Date((val - 25569) * 86400 * 1000);
+            return date.toISOString().split('T')[0];
+        }
+        // If string, we expect it to matches one of the formats, but we need to normalize to YYYY-MM-DD for storage
+        // Format normalization logic:
+        let y, m, d;
+        if (strVal.includes('年')) {
+            const parts = strVal.split(/[年月日]/);
+            y = parts[0]; m = parts[1]; d = parts[2];
+        } else if (strVal.includes('-')) {
+            const parts = strVal.split('-');
+            y = parts[0]; m = parts[1]; d = parts[2];
+        } else if (strVal.includes('/')) {
+            const parts = strVal.split('/');
+            y = parts[0]; m = parts[1]; d = parts[2];
+        }
+
+        if (y && m && d) {
+            return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        }
+        return ''; // Should not happen if confirmed valid
+    };
+
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row || row.length === 0) continue;
         const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
         if (isRowEmpty) continue;
 
-        // Adjust row index for error messages (Title + Header + Data)
-        // i is 0-based index of data rows.
-        // Excel Row = i + 1 (data start) + 1 (header) + 1 (title) = i + 3
         const excelRowNumber = i + 3;
-
         const rowData: any = {};
         headers.forEach((header, index) => {
             rowData[header] = row[index];
         });
 
-        const toHalfWidth = (str: string) => {
-            return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-        };
-
         let rowHasError = false;
 
-        // 1. Employee Code (社員コード)
-        const rawCode = String(rowData['社員コード(必須)'] || '');
-        const code = toHalfWidth(rawCode).trim();
+        // 1. Employee Code
+        const rawCode = String(rowData['社員コード(必須)'] || '').trim();
         if (!rawCode) {
             validationErrors.push(`${excelRowNumber}行目: 社員コード(必須)が未入力です`);
             rowHasError = true;
         } else {
-            if (processedCodes.has(code)) {
-                validationErrors.push(`${excelRowNumber}行目: 社員コード「${code}」がファイル内で重複しています`);
-                rowHasError = true; // Use flag instead of continue to show other potential errors? 
-                // But duplicate ID is critical. Let's mark as Error.
+            if (hasFullWidth(rawCode)) {
+                validationErrors.push(`${excelRowNumber}行目: 社員コード「${rawCode}」に全角文字が含まれています`);
+                rowHasError = true;
+            }
+            if (processedCodes.has(rawCode)) {
+                validationErrors.push(`${excelRowNumber}行目: 社員コード「${rawCode}」がファイル内で重複しています`);
+                rowHasError = true;
             }
         }
 
-        // 2. Name Fields (Name, Kana)
+        // 2-6. Name / Kana
         const lastName = String(rowData['苗字(必須)'] || rowData['氏名'] || '').trim();
         const firstName = String(rowData['名前(必須)'] || '').trim();
         const lastNameKana = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
         const firstNameKana = String(rowData['名前カナ'] || '').trim();
 
-        const nameRegex = /[0-9０-９!-/:-@[-`{-~！-／：-＠［-｀｛-～、。,.?？!！]/;
-        const nameFields = [
-            { label: '苗字', value: lastName },
-            { label: '名前', value: firstName },
-            { label: '苗字カナ', value: lastNameKana },
-            { label: '名前カナ', value: firstNameKana }
-        ];
+        if (!lastName) { validationErrors.push(`${excelRowNumber}行目: 苗字(必須)が未入力です`); rowHasError = true; }
+        if (!firstName) { validationErrors.push(`${excelRowNumber}行目: 名前(必須)が未入力です`); rowHasError = true; }
 
-        for (const field of nameFields) {
-            if (field.value && nameRegex.test(field.value)) {
-                validationErrors.push(`${excelRowNumber}行目: ${field.label}「${field.value}」に数字または記号が含まれています`);
-                rowHasError = true;
-            }
-        }
-
-        // 3. Date Fields (Birth, Join) and Logic
-        const formatDate = (val: any) => {
-            if (!val) return '';
-            if (typeof val === 'number') {
-                const date = new Date((val - 25569) * 86400 * 1000);
-                return date.toISOString().split('T')[0];
-            }
-            return String(val).trim().replace(/\//g, '-');
-        };
-
-        const birthDateValue = formatDate(rowData['生年月日']);
-        const joinDateValue = formatDate(rowData['入社年月日']);
-
-        if (birthDateValue && joinDateValue && new Date(birthDateValue) > new Date(joinDateValue)) {
-            validationErrors.push(`${excelRowNumber}行目: 入社年月日（${joinDateValue}）は生年月日（${birthDateValue}）以降である必要があります`);
-            rowHasError = true;
-        }
-
-        // 4. Role - No specific validation error (defaults to user), but we process it
-
-        // 5. Password (パスワード)
-        const rawPassword = String(rowData['パスワード(必須)'] || '').trim();
-        const password = toHalfWidth(rawPassword);
-        // Only validate if provided (Required? Header says "必須" but original code said "if (password)"...)
-        // We stick to original behavior: validate format if exists.
-        if (password) {
-            if (password.length < 8 || password.length > 16) {
-                validationErrors.push(`${excelRowNumber}行目: パスワードは8文字以上16文字以下である必要があります`);
-                rowHasError = true;
-            }
-            if (!/^[0-9]+$/.test(password)) {
-                validationErrors.push(`${excelRowNumber}行目: パスワードは半角数字のみ使用可能です`);
-                rowHasError = true;
-            }
-        }
-
-        // 6. Email (メールアドレス) - Last column often
+        // 7. Email
         const email = String(rowData['メールアドレス(必須)'] || '').trim();
         if (email) {
-            if (!/^[\x20-\x7E]+$/.test(email)) {
+            if (hasFullWidth(email)) {
                 validationErrors.push(`${excelRowNumber}行目: メールアドレスに全角文字が含まれています`);
                 rowHasError = true;
             } else if (!/^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
@@ -115,46 +104,130 @@ export const parseAndValidateEmployees = (
             }
         }
 
+        // 8. Birth Date
+        const rawBirthDate = String(rowData['生年月日'] || '').trim();
+        if (rawBirthDate && !isValidDateFormat(rawBirthDate)) {
+            validationErrors.push(`${excelRowNumber}行目: 生年月日「${rawBirthDate}」の形式が正しくありません`);
+            rowHasError = true;
+        }
+
+        // 9. Age
+        const rawAge = String(rowData['年齢'] || '').trim();
+        if (rawAge && hasFullWidth(rawAge)) {
+            validationErrors.push(`${excelRowNumber}行目: 年齢「${rawAge}」に全角文字が含まれています`);
+            rowHasError = true;
+        }
+
+        // 10. Area Code
+        const rawAreaCode = String(rowData['エリアコード'] || '').trim();
+        if (rawAreaCode && hasFullWidth(rawAreaCode)) {
+            validationErrors.push(`${excelRowNumber}行目: エリアコード「${rawAreaCode}」に全角文字が含まれています`);
+            rowHasError = true;
+        }
+
+        // 11. Office Code
+        const rawAddressCode = String(rowData['事業所コード'] || '').trim();
+        if (rawAddressCode && hasFullWidth(rawAddressCode)) {
+            validationErrors.push(`${excelRowNumber}行目: 事業所コード「${rawAddressCode}」に全角文字が含まれています`);
+            rowHasError = true;
+        }
+
+        // 12. Join Date
+        const rawJoinDate = String(rowData['入社年月日'] || '').trim();
+        if (rawJoinDate && !isValidDateFormat(rawJoinDate)) {
+            validationErrors.push(`${excelRowNumber}行目: 入社年月日「${rawJoinDate}」の形式が正しくありません`);
+            rowHasError = true;
+        }
+
+        // Cross-field validation for Dates (Birth vs Join)
+        // Check both valid before comparing? Or checks at end?
+        // Usually logical checks come after format checks.
+        // We can do it here if format is valid.
+        const birthDateValue = parseDate(rawBirthDate);
+        const joinDateValue = parseDate(rawJoinDate);
+
+        if (birthDateValue && joinDateValue && new Date(birthDateValue) > new Date(joinDateValue)) {
+            // Message might appear after field specific errors, which is acceptable or expected.
+            // If we want it strictly ordered, where does it go? 
+            // Usually as a row-level error or associated with Join Date.
+            validationErrors.push(`${excelRowNumber}行目: 入社年月日（${joinDateValue}）は生年月日（${birthDateValue}）以降である必要があります`);
+            rowHasError = true;
+        }
+
+        // 13. Years of Service
+        const rawYears = String(rowData['勤続年数'] || '').trim();
+        if (rawYears && hasFullWidth(rawYears)) {
+            validationErrors.push(`${excelRowNumber}行目: 勤続年数「${rawYears}」に全角文字が含まれています`);
+            rowHasError = true;
+        }
+
+        // 14. Months of Service
+        const rawMonths = String(rowData['勤続端数月数'] || '').trim();
+        if (rawMonths && hasFullWidth(rawMonths)) {
+            validationErrors.push(`${excelRowNumber}行目: 勤続端数月数「${rawMonths}」に全角文字が含まれています`);
+            rowHasError = true;
+        }
+
+        // 15. Role
+        const rawRole = String(rowData['権限(必須)'] || '').trim();
+        if (!rawRole) {
+            validationErrors.push(`${excelRowNumber}行目: 権限(必須)が未入力です`);
+            rowHasError = true;
+        } else if (rawRole !== '管理者' && rawRole !== 'ユーザー') {
+            validationErrors.push(`${excelRowNumber}行目: 権限「${rawRole}」は無効な値です`);
+            rowHasError = true;
+        }
+        const role = (rawRole === '管理者') ? 'admin' : 'user';
+
+        // 16. Password
+        const rawPassword = String(rowData['パスワード(必須)'] || '').trim();
+        const password = rawPassword;
+        if (password) {
+            if (hasFullWidth(password)) {
+                validationErrors.push(`${excelRowNumber}行目: パスワード「${password}」に全角文字が含まれています`);
+                rowHasError = true;
+            } else if (password.length < 8 || password.length > 16) {
+                validationErrors.push(`${excelRowNumber}行目: パスワードは8文字以上16文字以下である必要があります`);
+                rowHasError = true;
+            } else if (!/^[0-9]+$/.test(password)) {
+                validationErrors.push(`${excelRowNumber}行目: パスワードは半角数字のみ使用可能です`);
+                rowHasError = true;
+            }
+        }
+
         if (rowHasError) continue;
 
-
-
-        if (rowHasError) continue;
-
-        // Helper for parsing numbers
-        const parseNumber = (val: any) => {
-            const parsed = parseInt(String(val || ''));
-            return isNaN(parsed) ? 0 : Math.max(0, parsed);
+        // Parse Values
+        const parseNumber = (val: string) => {
+            if (!val) return 0;
+            const parsed = parseInt(val.replace(/[^0-9]/g, ''));
+            return isNaN(parsed) ? 0 : parsed;
         };
 
-        const rawRole = String(rowData['権限(必須)'] || '').trim();
-        const role = (rawRole === '管理者' || rawRole.toLowerCase() === 'admin') ? 'admin' : 'user';
-
-        // スペースを除去し、半角スペースで結合
-        const cleanName = `${lastName.replace(/[\s　]+/g, '')} ${firstName.replace(/[\s　]+/g, '')}`.trim();
-        const cleanNameKana = `${lastNameKana.replace(/[\s　]+/g, '')} ${firstNameKana.replace(/[\s　]+/g, '')}`.trim();
+        const cleanName = `${lastName} ${firstName}`.trim();
+        const cleanNameKana = `${lastNameKana} ${firstNameKana}`.trim();
 
         const emp: Omit<Employee, 'id'> & { id?: string } = {
-            code: code,
+            code: rawCode,
             gender: String(rowData['性別'] || ''),
             name: cleanName,
             nameKana: cleanNameKana,
             birthDate: birthDateValue,
-            age: parseNumber(rowData['年齢']),
-            areaCode: toHalfWidth(String(rowData['エリアコード'] || '')).trim(),
-            addressCode: toHalfWidth(String(rowData['事業所コード'] || '')).trim(),
+            age: parseNumber(rawAge),
+            areaCode: rawAreaCode,
+            addressCode: rawAddressCode,
             joinDate: joinDateValue,
-            yearsOfService: parseNumber(rowData['勤続年数']),
-            monthsHasuu: parseNumber(rowData['勤続端数月数']),
+            yearsOfService: parseNumber(rawYears),
+            monthsHasuu: parseNumber(rawMonths),
             role: role,
             password: password,
             companyNo: '',
-            departmentCode: '', // Department code removed from import
+            departmentCode: '',
             email: email
         };
 
         importData.push(emp as Employee);
-        processedCodes.add(code);
+        processedCodes.add(rawCode);
     }
 
     return { validEmployees: importData, errors: validationErrors };
