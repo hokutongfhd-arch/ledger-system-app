@@ -126,16 +126,27 @@ function AreaListContent() {
                     rowData[header] = row[index];
                 });
 
-                const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-                const code = toHalfWidth(String(rowData['エリアコード(必須)'] || '')).trim();
+                const rawCode = String(rowData['エリアコード(必須)'] || '').trim();
                 let rowHasError = false;
 
-                if (existingCodes.has(code)) {
-                    errors.push(`${excelRowNumber}行目: エリアコード「${code}」は既に存在します`);
+                if (!rawCode) {
+                    errors.push(`${excelRowNumber}行目: エリアコード(必須)が未入力です`);
                     rowHasError = true;
-                } else if (processedCodes.has(code)) {
-                    errors.push(`${excelRowNumber}行目: エリアコード「${code}」がファイル内で重複しています`);
+                } else if (!/^[0-9]+$/.test(rawCode)) {
+                    errors.push(`${excelRowNumber}行目: エリアコード「${rawCode}」に半角数字以外の文字が含まれています`);
                     rowHasError = true;
+                }
+
+                const code = rawCode;
+
+                if (!rowHasError) {
+                    if (existingCodes.has(code)) {
+                        errors.push(`${excelRowNumber}行目: エリアコード「${code}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedCodes.has(code)) {
+                        errors.push(`${excelRowNumber}行目: エリアコード「${code}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
                 }
 
                 if (rowHasError) {
