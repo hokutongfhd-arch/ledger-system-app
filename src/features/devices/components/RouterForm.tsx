@@ -28,7 +28,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
     const simPart3Ref = useRef<HTMLInputElement>(null);
     const { handleAutoTab } = useAutoFocus();
     const [formData, setFormData] = useState<Omit<Router, 'id'>>({
-        no: '',
         biller: '',
         terminalCode: '',
         modelNumber: '',
@@ -339,10 +338,7 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             {errorFields.has('terminalCode') && !formData.terminalCode && <FormError>この項目は必須です</FormError>}
                             {errorFields.has('terminalCode') && isTerminalCodeDuplicate && <FormError>既に登録されている端末CDです</FormError>}
                         </div>
-                        <div>
-                            <FormLabel>No.</FormLabel>
-                            <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
-                        </div>
+
                         <div>
                             <div className="flex justify-between items-end mb-1">
                                 <FormLabel required>SIM電番</FormLabel>

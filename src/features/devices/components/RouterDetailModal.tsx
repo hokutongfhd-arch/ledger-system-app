@@ -183,28 +183,24 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                         {/* Section 1: Basic Info */}
                         <div>
                             <SectionHeader icon={<Wifi size={18} />} title="基本情報" />
-                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
+                            <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <DetailRow label="端末CD" value={item.terminalCode} icon={<Wifi size={14} className="text-gray-400" />} />
-                                    <DetailRow label="No." value={item.no} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailRow label="SIM電番" value={formatPhoneNumber(item.simNumber || '')} icon={<Phone size={14} className="text-gray-400" />} />
+
                                     <DetailRow label="機種型番" value={item.modelNumber} />
                                     <DetailRow label="通信キャリア" value={item.carrier} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <DetailRow label="SIM電番" value={formatPhoneNumber(item.simNumber || '')} icon={<Phone size={14} className="text-gray-400" />} />
+
                                     <DetailRow label="通信容量" value={item.dataCapacity} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <DetailRow label="契約状況" value={item.contractStatus} />
+
                                     <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
-                                </div>
-                                <div className="group">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>
-                                    <span className={`px-2 py-1 text-xs font-bold rounded border ${getStatusColor(item.status)}`}>
-                                        {getStatusLabel(item.status)}
-                                    </span>
+                                    <div className="group">
+                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>
+                                        <span className={`px-2 py-1 text-xs font-bold rounded border ${getStatusColor(item.status)}`}>
+                                            {getStatusLabel(item.status)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -270,7 +266,6 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
 
                 {/* Footer */}
                 <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between">
-                    <span>No: {item.no}</span>
                     <span>Device ID: {item.id}</span>
                 </div>
             </div>

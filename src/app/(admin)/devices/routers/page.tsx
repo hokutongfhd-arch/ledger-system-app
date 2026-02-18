@@ -76,7 +76,7 @@ function RouterListContent() {
 
     const { handleExport } = useCSVExport<Router>();
     const headers = [
-        '端末CD(必須)', 'No.', 'SIM電番(必須)', '機種型番', '通信キャリア', '通信容量',
+        '端末CD(必須)', 'SIM電番(必須)', '機種型番', '通信キャリア', '通信容量',
         '契約状況', '契約年数', '状況', '社員コード', '事業所コード',
         'IPアドレス', 'サブネットマスク', '開始IP', '終了IP',
         '請求元', '負担先', '費用', '費用振替', '貸与履歴', '備考(返却日)'
@@ -208,7 +208,6 @@ function RouterListContent() {
                 if (simNumberNormalized) processedSimNumbers.add(simNumberNormalized);
 
                 const newRouter: Omit<Router, 'id'> = {
-                    no: String(rowData['No.'] || ''),
                     contractStatus: String(rowData['契約状況'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['通信キャリア'] || ''),
@@ -342,7 +341,6 @@ function RouterListContent() {
 
         handleExport(filteredData, headers, `router_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.terminalCode,
-            item.no || '',
             formatPhoneNumber(item.simNumber || ''),
             item.modelNumber || '',
             item.carrier || '',
@@ -370,8 +368,9 @@ function RouterListContent() {
         const worksheet = workbook.addWorksheet('Template');
 
         // Headers
+        // Headers
         const topHeader = [
-            '基本情報', '', '', '', '', '', '', '', '',
+            '基本情報', '', '', '', '', '', '', '',
             '使用者・場所', '',
             'ネットワーク情報', '', '', '',
             '費用・管理情報', '', '', '',
@@ -382,11 +381,11 @@ function RouterListContent() {
         worksheet.addRow(headers);
 
         // Merge cells for top header
-        worksheet.mergeCells('A1:I1'); // Basic Info
-        worksheet.mergeCells('J1:K1'); // User/Place
-        worksheet.mergeCells('L1:O1'); // Network
-        worksheet.mergeCells('P1:S1'); // Cost/Mgmt
-        worksheet.mergeCells('T1:U1'); // Others
+        worksheet.mergeCells('A1:H1'); // Basic Info
+        worksheet.mergeCells('I1:J1'); // User/Place
+        worksheet.mergeCells('K1:N1'); // Network
+        worksheet.mergeCells('O1:R1'); // Cost/Mgmt
+        worksheet.mergeCells('S1:T1'); // Others
 
         // Styling Top Header (Row 1)
         const topRow = worksheet.getRow(1);
@@ -408,11 +407,11 @@ function RouterListContent() {
         };
 
         // Apply background colors (approximate ARGB based on "Accent X, White+60%")
-        setCellColor(1, 9, 'FFFCE4D6'); // Orange (Basic)
-        setCellColor(10, 11, 'FFEBF1DE'); // Olive (User)
-        setCellColor(12, 15, 'DCE6F1');   // Aqua (Network) (Standard Light Blue/Aqua)
-        setCellColor(16, 19, 'E4DFEC');   // Purple (Cost)
-        setCellColor(20, 21, 'F2DCDB');   // Red (Others)
+        setCellColor(1, 8, 'FFFCE4D6'); // Orange (Basic)
+        setCellColor(9, 10, 'FFEBF1DE'); // Olive (User)
+        setCellColor(11, 14, 'DCE6F1');   // Aqua (Network) (Standard Light Blue/Aqua)
+        setCellColor(15, 18, 'E4DFEC');   // Purple (Cost)
+        setCellColor(19, 20, 'F2DCDB');   // Red (Others)
 
         // Styling Column Headers (Row 2)
         const headerRow = worksheet.getRow(2);
@@ -438,15 +437,15 @@ function RouterListContent() {
 
         // Data Validation
         for (let i = 3; i <= totalRows + 2; i++) {
-            // Carrier - Column E (5)
-            worksheet.getCell(i, 5).dataValidation = {
+            // Carrier - Column D (4)
+            worksheet.getCell(i, 4).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"au・wimax2+,au,docomo(iij),SoftBank"']
             };
 
-            // Status - Column I (9)
-            worksheet.getCell(i, 9).dataValidation = {
+            // Status - Column H (8)
+            worksheet.getCell(i, 8).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
@@ -454,10 +453,11 @@ function RouterListContent() {
         }
 
         // Format numeric columns as text to prevent scientific notation etc.
-        // SIM Number (C - 3), Employee Code (J - 10), Office Code (K - 11)
-        worksheet.getColumn(3).numFmt = '@';
+        // SIM Number (B - 2), Employee Code (I - 9), Office Code (J - 10)
+        worksheet.getColumn(2).numFmt = '@';
+        worksheet.getColumn(9).numFmt = '@';
         worksheet.getColumn(10).numFmt = '@';
-        worksheet.getColumn(11).numFmt = '@';
+        worksheet.getColumn(19).numFmt = '@'; // Lending History
         worksheet.getColumn(1).width = 15; // Terminal CD
 
         // Set column widths

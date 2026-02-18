@@ -396,7 +396,6 @@ export async function getTabletHistoryAction(tabletId: string) {
 
 // Simplified mapper for Router
 const mapRouterToDb = (t: Partial<Router>) => ({
-    no: t.no,
     biller: t.biller,
     terminal_code: t.terminalCode,
     model_number: t.modelNumber,
