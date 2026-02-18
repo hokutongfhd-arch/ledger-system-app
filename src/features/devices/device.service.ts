@@ -108,7 +108,7 @@ export const deviceService = {
     // Routers
     mapRouterFromDb: (d: any): Router => ({
         id: d.id,
-        no: s(d.no),
+
         biller: s(d.biller),
         terminalCode: s(d.terminal_code),
         modelNumber: s(d.model_number),
@@ -132,7 +132,7 @@ export const deviceService = {
         employeeCode: s(d.employee_code),
     }),
     mapRouterToDb: (t: Partial<Router>) => ({
-        no: t.no,
+
         biller: t.biller,
         terminal_code: t.terminalCode,
         model_number: t.modelNumber,

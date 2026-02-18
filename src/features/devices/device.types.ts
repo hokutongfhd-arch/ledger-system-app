@@ -98,7 +98,6 @@ export interface FeaturePhoneUsageHistory {
 
 export interface Router {
     id: string;
-    no: string;
     biller: string;
     terminalCode: string;
     modelNumber: string;
