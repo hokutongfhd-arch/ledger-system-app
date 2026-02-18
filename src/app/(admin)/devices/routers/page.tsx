@@ -232,7 +232,7 @@ function RouterListContent() {
                     status: (statusMap[rowData['状況']] || 'available') as any
                 };
 
-                if (newRouter.employeeCode) newRouter.status = 'in-use';
+
 
                 importData.push(newRouter);
             }

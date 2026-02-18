@@ -210,7 +210,7 @@ function TabletListContent() {
                     address: '',
                 };
 
-                if (newTablet.employeeCode) newTablet.status = 'in-use';
+
 
                 importData.push(newTablet);
             }

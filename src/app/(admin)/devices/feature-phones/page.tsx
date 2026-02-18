@@ -206,7 +206,7 @@ function FeaturePhoneListContent() {
                     status: (statusMap[rowData['状況']] || 'available') as any
                 };
 
-                if (newFeaturePhone.employeeId) newFeaturePhone.status = 'in-use';
+
 
                 importData.push(newFeaturePhone);
                 if (validation.managementNumber) processedManagementNumbers.add(validation.managementNumber);

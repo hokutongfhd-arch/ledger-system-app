@@ -242,7 +242,20 @@ function IPhoneListContent() {
                     id: rowData['ID'] ? String(rowData['ID']) : undefined,
                 };
 
-                if (newIPhone.employeeId) newIPhone.status = 'in-use';
+                if (newIPhone.employeeId && !newIPhone.status) newIPhone.status = 'in-use'; // Only default to in-use if status is missing AND employee exists?
+                // Actually user said "Import what is selected".
+                // If the user selected "Stock" but assigned an employee, it should be "Stock" (as they requested "correctly imported as selected").
+                // If they left it EMPTY, `statusMap` defaults to `available`.
+                // If they have employee but no status, maybe `in-use` is better default?
+                // But the code `status: (statusMap[rowData['状況']] || 'available')` handles default.
+                // The current code forces `in-use` even if `rowData['状況']` was valid.
+                // I will simply REMOVE the override.
+                // But wait, if they leave Status EMPTY but provide Employee, should it be Available or In Use?
+                // Usually In Use.
+                // But `statusMap` defaults to `available` if key missing.
+                // I should probably allow the passed status to win.
+                // I will just remove the line `if (newIPhone.employeeId) newIPhone.status = 'in-use';`.
+
 
                 importData.push(newIPhone);
                 if (validation.managementNumber) processedManagementNumbers.add(validation.managementNumber);
