@@ -144,6 +144,40 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
             throw error;
         }
 
+        // ------------------------------------------------------------------
+        // Resolve Actor Names from Employees Table
+        // ------------------------------------------------------------------
+        // Extract unique employee codes from logs
+        const actorCodes = Array.from(new Set(
+            (logs || [])
+                .map((l: any) => l.actor_employee_code)
+                .filter((code: any) => code) // Filter out null/undefined/empty
+        )) as string[];
+
+        if (actorCodes.length > 0) {
+            const { data: employees, error: empError } = await supabase
+                .from('employees')
+                .select('employee_code, name')
+                .in('employee_code', actorCodes);
+
+            if (empError) {
+                console.error('Failed to resolve employee names:', empError);
+            } else if (employees) {
+                const nameMap = new Map(employees.map(e => [e.employee_code, e.name]));
+
+                // Update logs with latest names
+                // We mutate the logs array in place or map it
+                if (logs) {
+                    logs.forEach((log: any) => {
+                        if (log.actor_employee_code && nameMap.has(log.actor_employee_code)) {
+                            log.actor_name = nameMap.get(log.actor_employee_code);
+                        }
+                    });
+                }
+            }
+        }
+        // ------------------------------------------------------------------
+
         // Fetch Login Failures count for last 24h
         const yesterday = new Date();
         yesterday.setHours(yesterday.getHours() - 24);
@@ -181,6 +215,14 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
 
         // Resolve responder names for recent anomalies
         const responderIds = Array.from(new Set(recentAnomalies.filter((l: any) => l.acknowledged_by).map((l: any) => l.acknowledged_by)));
+        // Also collect actor employee codes for name resolution
+        const anomalyActorCodes = Array.from(new Set(recentAnomalies.filter((l: any) => l.actor_employee_code).map((l: any) => l.actor_employee_code)));
+
+        // We need to fetch by auth_id for responders, and by code for actors.
+        // Since the employees table has both, we might need two queries or a complex one.
+        // Simpler to do two queries if needed, or just specific ones.
+
+        // 1. Resolve Responders (by auth_id)
         if (responderIds.length > 0) {
             const { data: employees } = await supabase
                 .from('employees')
@@ -193,6 +235,25 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
                     ...l,
                     acknowledged_by_name: l.acknowledged_by ? nameMap.get(l.acknowledged_by) : undefined
                 }));
+            }
+        }
+
+        // 2. Resolve Actors (by code)
+        if (anomalyActorCodes.length > 0) {
+            const { data: employees, error: empError } = await supabase
+                .from('employees')
+                .select('employee_code, name')
+                .in('employee_code', anomalyActorCodes);
+
+            if (!empError && employees) {
+                const nameMap = new Map(employees.map(e => [e.employee_code, e.name]));
+                recentAnomalies = recentAnomalies.map((l: any) => {
+                    const name = l.actor_employee_code ? nameMap.get(l.actor_employee_code) : undefined;
+                    return {
+                        ...l,
+                        actor_name: name || l.actor_name // Fallback to existing if not found, or overwrite if found
+                    };
+                });
             }
         }
 
