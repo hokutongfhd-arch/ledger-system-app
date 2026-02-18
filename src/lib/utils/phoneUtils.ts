@@ -14,6 +14,11 @@ export const normalizePhoneNumber = (phone: string): string => {
  * @returns フォーマットされた電話番号
  */
 export const formatPhoneNumber = (phone: string): string => {
+    // 既にハイフン付きで有効な形式（各ブロック2~4桁）の場合はそのまま返す
+    if (/^\d{2,4}-\d{2,4}-\d{2,4}$/.test(phone)) {
+        return phone;
+    }
+
     let normalized = normalizePhoneNumber(phone);
 
     // 先頭が0でなく、かつ9桁または10桁の場合は先頭に0を補完（Excelインポート対策）

@@ -103,34 +103,42 @@ export const validateAddressImportRow = (
     // 7. Phone (TEL, FAX)
     const tel = toHalfWidth(String(rowData['TEL'] || '')).trim();
     if (tel) {
-        if (!/^\d{11}$/.test(tel) && !/^\d{3}-\d{4}-\d{4}$/.test(tel)) {
-            errors.push(`${excelRowNumber}行目: TEL「${tel}」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です`);
+        if (!/^\d{2,4}-\d{2,4}-\d{2,4}$/.test(tel)) {
+            errors.push(`${excelRowNumber}行目: TEL「${tel}」は「xxxx-xxxx-xxxx」の形式(各ブロック2~4桁)で入力してください`);
             rowHasError = true;
         }
     }
 
     const fax = toHalfWidth(String(rowData['FAX'] || '')).trim();
     if (fax) {
-        if (!/^\d{11}$/.test(fax) && !/^\d{3}-\d{4}-\d{4}$/.test(fax)) {
-            errors.push(`${excelRowNumber}行目: FAX「${fax}」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です`);
+        if (!/^\d{2,4}-\d{2,4}-\d{2,4}$/.test(fax)) {
+            errors.push(`${excelRowNumber}行目: FAX「${fax}」は「xxxx-xxxx-xxxx」の形式(各ブロック2~4桁)で入力してください`);
             rowHasError = true;
         }
     }
 
-    // Other Text Fields
+    // 8. Accounting Code (to match '経理コード')
     const accountingCode = toHalfWidth(String(rowData['経理コード'] || '')).trim();
     if (accountingCode && !/^[0-9-]+$/.test(accountingCode)) {
         errors.push(`${excelRowNumber}行目: 経理コード「${accountingCode}」は半角数字とハイフンのみ入力可能です`);
         rowHasError = true;
     }
 
+    // 9. Area Code Confirm (to match 'エリアコード(確認用)')
+    const areaCodeConfirm = toHalfWidth(String(rowData['エリアコード(確認用)'] || '')).trim();
+    if (areaCodeConfirm && !/^[0-9-]+$/.test(areaCodeConfirm)) {
+        errors.push(`${excelRowNumber}行目: エリアコード(確認用)「${areaCodeConfirm}」は半角数字とハイフンのみ入力可能です`);
+        rowHasError = true;
+    }
+
+    // 10. Branch Number (to match '枝番')
     const branchNumber = toHalfWidth(String(rowData['枝番'] || '')).trim();
     if (branchNumber && !/^[0-9-]+$/.test(branchNumber)) {
         errors.push(`${excelRowNumber}行目: 枝番「${branchNumber}」は半角数字とハイフンのみ入力可能です`);
         rowHasError = true;
     }
 
-    // Label Zip (宛名ラベル用〒)
+    // 11. Label Zip (to match '宛名ラベル用〒')
     const labelZip = toHalfWidth(String(rowData['宛名ラベル用〒'] || '')).trim();
     if (labelZip) {
         const is7Digits = /^\d{7}$/.test(labelZip);
@@ -139,13 +147,6 @@ export const validateAddressImportRow = (
             errors.push(`${excelRowNumber}行目: 宛名ラベル用〒「${labelZip}」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です`);
             rowHasError = true;
         }
-    }
-
-    // Area Code Check (Confirmation) - 'エリアコード(確認用)'
-    const areaCodeConfirm = toHalfWidth(String(rowData['エリアコード(確認用)'] || '')).trim();
-    if (areaCodeConfirm && !/^[0-9-]+$/.test(areaCodeConfirm)) {
-        errors.push(`${excelRowNumber}行目: エリアコード(確認用)「${areaCodeConfirm}」は半角数字とハイフンのみ入力可能です`);
-        rowHasError = true;
     }
 
     // End of sequential checks
@@ -164,8 +165,8 @@ export const validateAddressImportRow = (
         no: no,
         zipCode: formatZipCode(zip || ''),
         address: address,
-        tel: formatPhoneNumber(tel || ''),
-        fax: formatPhoneNumber(fax || ''),
+        tel: tel, // Already strictly validated and formatted
+        fax: fax, // Already strictly validated and formatted
         division: String(rowData['事業部'] || ''),
         accountingCode: accountingCode,
         mainPerson: String(rowData['主担当'] || ''),
