@@ -145,6 +145,7 @@ function TabletListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            const { validateTabletImportRow } = await import('../../../../features/devices/device-import-validator');
             let successCount = 0;
             let errorCount = 0;
             const existingTerminalCodes = new Set(tablets.map(t => t.terminalCode));
@@ -171,63 +172,32 @@ function TabletListContent() {
 
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
-                let rowHasError = false;
-                const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
-                const terminalCode = toHalfWidth(rawTerminalCode).trim();
+                const validation = validateTabletImportRow(
+                    rowData,
+                    i,
+                    existingTerminalCodes,
+                    processedTerminalCodes
+                );
 
-                const rawModelNumber = String(rowData['型番(必須)'] || '');
-                if (/[^\x20-\x7E]/.test(rawModelNumber)) {
-                    errors.push(`${i + 2}行目: 型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
-                    rowHasError = true;
-                }
-
-                if (!terminalCode) {
-                    errors.push(`${i + 2}行目: 端末CDが空です`);
-                    rowHasError = true;
-                } else {
-                    // Check for full-width characters in the original input
-                    if (/[^\x20-\x7E]/.test(rawTerminalCode)) {
-                        errors.push(`${i + 2}行目: 端末CD「${rawTerminalCode}」に全角文字が含まれています。半角文字のみ使用可能です。`);
-                        rowHasError = true;
-                    } else if (existingTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」は既に存在します`);
-                        rowHasError = true;
-                    } else if (processedTerminalCodes.has(terminalCode)) {
-                        errors.push(`${i + 2}行目: 端末CD「${terminalCode}」がファイル内で重複しています`);
-                        rowHasError = true;
-                    }
-                }
-
-                // Status Validation
-                const statusValue = String(rowData['状況'] || '').trim();
-                if (statusValue && !validStatuses.includes(statusValue)) {
-                    errors.push(`${i + 2}行目: 状況「${statusValue}」は不正な値です`);
-                    rowHasError = true;
-                }
-
-                // Employee Code Validation
-                const employeeCode = String(rowData['社員コード'] || '').trim();
-                if (employeeCode && !/^\d+$/.test(employeeCode)) {
-                    errors.push(`${i + 2}行目: 社員コード「${employeeCode}」は半角数字で入力してください`);
-                    rowHasError = true;
-                }
-
-                // Office Code (Half-width numbers and hyphens only)
-                const officeCode = String(rowData['事業所コード'] || '').trim();
-                if (officeCode && !/^[0-9-]+$/.test(officeCode)) {
-                    errors.push(`${i + 2}行目: 事業所コード「${officeCode}」に不正な文字が含まれています。半角数字とハイフンのみ使用可能です。`);
-                    rowHasError = true;
-                }
-
-                if (rowHasError) {
+                if (!validation.isValid) {
+                    errors.push(...validation.errors);
                     continue;
                 }
 
-                processedTerminalCodes.add(terminalCode);
-                const status = reverseStatusMap[statusValue] || 'available';
+                if (validation.managementNumber) processedTerminalCodes.add(validation.managementNumber);
+
+                const status = reverseStatusMap[String(rowData['状況'] || '').trim()] || 'available';
+
+                // Re-construct data (Validation ensures format is mostly correct, but we might need to trim/normalize again if validator didn't expose it all)
+                // Validator exposed `managementNumber` (terminalCode).
+                // We need others.
+
+                const rawModelNumber = String(rowData['型番(必須)'] || '');
+                const employeeCode = String(rowData['社員コード'] || '').trim();
+                const officeCode = String(rowData['事業所コード'] || '').trim();
 
                 const newTablet: Omit<Tablet, 'id'> = {
-                    terminalCode: terminalCode,
+                    terminalCode: validation.managementNumber || toHalfWidth(String(rowData['端末CD(必須)'] || '')).trim(),
                     maker: String(rowData['メーカー'] || ''),
                     modelNumber: rawModelNumber,
                     status: status as any,

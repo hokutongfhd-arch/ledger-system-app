@@ -236,8 +236,8 @@ function IPhoneListContent() {
                     receiptDate: formatDate(rowData['受領書提出日']),
                     lendDate: formatDate(rowData['貸与日']),
                     returnDate: formatDate(rowData['返却日']),
-                    smartAddressId: String(rowData['SMARTアドレス帳ID'] || ''),
-                    smartAddressPw: String(rowData['SMARTアドレス帳PW'] || ''),
+                    smartAddressId: rowData['SMARTアドレス帳ID'] !== undefined && rowData['SMARTアドレス帳ID'] !== null ? String(rowData['SMARTアドレス帳ID']) : '',
+                    smartAddressPw: rowData['SMARTアドレス帳PW'] !== undefined && rowData['SMARTアドレス帳PW'] !== null ? String(rowData['SMARTアドレス帳PW']) : '',
                     notes: String(rowData['備考'] || ''),
                     id: rowData['ID'] ? String(rowData['ID']) : undefined,
                 };

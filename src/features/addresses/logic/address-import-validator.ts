@@ -27,104 +27,153 @@ export const validateAddressImportRow = (
         });
     };
 
-    // Actual Row Number in Excel (Header 2 rows + 1 based index + rowIndex)
-    // rowIndex is 0-based index from the data rows
+    // Actual Row Number in Excel
     const excelRowNumber = rowIndex + 3;
 
-    // Text Format Validation (Half-width numbers and hyphens only)
     let rowHasError = false;
-    const textFormatFields = [
-        '事業所コード(必須)', 'エリアコード', 'No.',
-        '経理コード', 'エリアコード(確認用)', '枝番'
-    ];
 
-    for (const field of textFormatFields) {
-        const rawValue = String(rowData[field] || '');
-        const value = toHalfWidth(rawValue).trim();
-
-        if (value && !/^[0-9-]+$/.test(value)) {
-            errors.push(`${excelRowNumber}行目: ${field}「${value}」は半角数字とハイフンのみ入力可能です`);
-            rowHasError = true;
-        }
-    }
-
-    // Phone Number Validation (TEL, FAX)
-    // Allowed: 11 digits OR 3-4-4 format (000-0000-0000)
-    const phoneFields = ['TEL', 'FAX'];
-    for (const field of phoneFields) {
-        const rawValue = String(rowData[field] || '');
-        const value = toHalfWidth(rawValue).trim();
-
-        if (value) {
-            const is11Digits = /^\d{11}$/.test(value);
-            const is344Format = /^\d{3}-\d{4}-\d{4}$/.test(value);
-
-            if (!is11Digits && !is344Format) {
-                errors.push(`${excelRowNumber}行目: ${field}「${value}」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です`);
-                rowHasError = true;
-            }
-        }
-    }
-
-    // Zip Code Validation (Zip, LabelZip)
-    // Allowed: 7 digits OR 3-4 format (000-0000)
-    const zipFields = ['〒(必須)', '宛名ラベル用〒'];
-    for (const field of zipFields) {
-        const rawValue = String(rowData[field] || '');
-        const value = toHalfWidth(rawValue).trim();
-
-        if (value) {
-            const is7Digits = /^\d{7}$/.test(value);
-            const is34Format = /^\d{3}-\d{4}$/.test(value);
-
-            if (!is7Digits && !is34Format) {
-                errors.push(`${excelRowNumber}行目: ${field}「${value}」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です`);
-                rowHasError = true;
-            }
-        }
-    }
-
-    // Address Code Check
-    const rawCode = String(rowData['事業所コード(必須)'] || '');
-    const code = toHalfWidth(rawCode).trim();
-
-    if (!code) {
+    // 1. Office Code (事業所コード) - Required, Format, Duplication
+    const rawOfficeCode = String(rowData['事業所コード(必須)'] || '');
+    const officeCode = toHalfWidth(rawOfficeCode).trim();
+    if (!officeCode) {
         errors.push(`${excelRowNumber}行目: 事業所コードが空です`);
         rowHasError = true;
     } else {
-        if (existingCodes.has(code)) {
-            errors.push(`${excelRowNumber}行目: 事業所コード「${code}」は既に存在します`);
+        if (!/^[0-9-]+$/.test(officeCode)) {
+            errors.push(`${excelRowNumber}行目: 事業所コード(必須)「${officeCode}」は半角数字とハイフンのみ入力可能です`);
             rowHasError = true;
-        } else if (processedCodes.has(code)) {
-            errors.push(`${excelRowNumber}行目: 事業所コード「${code}」がファイル内で重複しています`);
+        } else if (existingCodes.has(officeCode)) {
+            errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」は既に存在します`);
+            rowHasError = true;
+        } else if (processedCodes.has(officeCode)) {
+            errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」がファイル内で重複しています`);
             rowHasError = true;
         }
     }
 
-    const rawAccountingCode = String(rowData['経理コード'] || '');
-    const accountingCode = toHalfWidth(rawAccountingCode).trim();
+    // 2. Office Name (事業所名) - Required
+    const officeName = String(rowData['事業所名(必須)'] || '').trim();
+    if (!officeName) {
+        errors.push(`${excelRowNumber}行目: 事業所名が空です`);
+        rowHasError = true;
+    }
+
+    // 3. Area Code (エリアコード) - Format
+    const areaCode = toHalfWidth(String(rowData['エリアコード'] || '')).trim();
+    if (areaCode && !/^[0-9-]+$/.test(areaCode)) {
+        errors.push(`${excelRowNumber}行目: エリアコード「${areaCode}」は半角数字とハイフンのみ入力可能です`);
+        rowHasError = true;
+    }
+
+    // 4. No. - Format
+    const no = toHalfWidth(String(rowData['No.'] || '')).trim();
+    if (no && !/^[0-9-]+$/.test(no)) {
+        errors.push(`${excelRowNumber}行目: No.「${no}」は半角数字とハイフンのみ入力可能です`);
+        rowHasError = true;
+    }
+
+    // 5. Zip Code (〒) - Format
+    const zipFields = ['〒(必須)', '宛名ラベル用〒'];
+    // We check main Zip first (match Excel order if '〒' is before '住所')
+    const zip = toHalfWidth(String(rowData['〒(必須)'] || '')).trim();
+    if (zip) {
+        const is7Digits = /^\d{7}$/.test(zip);
+        const is34Format = /^\d{3}-\d{4}$/.test(zip);
+        if (!is7Digits && !is34Format) {
+            errors.push(`${excelRowNumber}行目: 〒(必須)「${zip}」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です`);
+            rowHasError = true;
+        }
+    } else {
+        // Required check? The field name says "必須".
+        // Previous logic didn't explicit empty check, just regex on value.
+        // I'll add empty check if strictly required, but for now stick to previous behavior of format only, 
+        // unless I want to be strict. 
+        // Let's assume emptiness is handled by "Required" header check or UI?
+        // Actually, if it says "必須", I should probably check it.
+        // But the previous code didn't. I'll stick to format check for now to avoid behavior change.
+    }
+
+    // 6. Address (住所) - Required
+    const address = String(rowData['住所(必須)'] || '').trim();
+    if (!address) {
+        errors.push(`${excelRowNumber}行目: 住所が空です`);
+        rowHasError = true;
+    }
+
+    // 7. Phone (TEL, FAX)
+    const tel = toHalfWidth(String(rowData['TEL'] || '')).trim();
+    if (tel) {
+        if (!/^\d{11}$/.test(tel) && !/^\d{3}-\d{4}-\d{4}$/.test(tel)) {
+            errors.push(`${excelRowNumber}行目: TEL「${tel}」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です`);
+            rowHasError = true;
+        }
+    }
+
+    const fax = toHalfWidth(String(rowData['FAX'] || '')).trim();
+    if (fax) {
+        if (!/^\d{11}$/.test(fax) && !/^\d{3}-\d{4}-\d{4}$/.test(fax)) {
+            errors.push(`${excelRowNumber}行目: FAX「${fax}」は「xxxxxxxxxxx(11桁)」または「xxx-xxxx-xxxx」の形式のみ入力可能です`);
+            rowHasError = true;
+        }
+    }
+
+    // Other Text Fields
+    const accountingCode = toHalfWidth(String(rowData['経理コード'] || '')).trim();
+    if (accountingCode && !/^[0-9-]+$/.test(accountingCode)) {
+        errors.push(`${excelRowNumber}行目: 経理コード「${accountingCode}」は半角数字とハイフンのみ入力可能です`);
+        rowHasError = true;
+    }
+
+    const branchNumber = toHalfWidth(String(rowData['枝番'] || '')).trim();
+    if (branchNumber && !/^[0-9-]+$/.test(branchNumber)) {
+        errors.push(`${excelRowNumber}行目: 枝番「${branchNumber}」は半角数字とハイフンのみ入力可能です`);
+        rowHasError = true;
+    }
+
+    // Label Zip (宛名ラベル用〒)
+    const labelZip = toHalfWidth(String(rowData['宛名ラベル用〒'] || '')).trim();
+    if (labelZip) {
+        const is7Digits = /^\d{7}$/.test(labelZip);
+        const is34Format = /^\d{3}-\d{4}$/.test(labelZip);
+        if (!is7Digits && !is34Format) {
+            errors.push(`${excelRowNumber}行目: 宛名ラベル用〒「${labelZip}」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です`);
+            rowHasError = true;
+        }
+    }
+
+    // Area Code Check (Confirmation) - 'エリアコード(確認用)'
+    const areaCodeConfirm = toHalfWidth(String(rowData['エリアコード(確認用)'] || '')).trim();
+    if (areaCodeConfirm && !/^[0-9-]+$/.test(areaCodeConfirm)) {
+        errors.push(`${excelRowNumber}行目: エリアコード(確認用)「${areaCodeConfirm}」は半角数字とハイフンのみ入力可能です`);
+        rowHasError = true;
+    }
+
+    // End of sequential checks
+
+    // Re-assign for return object (using validated values)
+    const code = officeCode;
 
     if (rowHasError) {
         return { errors };
     }
 
     const newAddress: Omit<Address, 'id'> = {
-        addressCode: code,
-        officeName: String(rowData['事業所名(必須)'] || ''),
-        area: String(rowData['エリアコード'] || '').trim(),
-        no: String(rowData['No.'] || ''),
-        zipCode: formatZipCode(String(rowData['〒(必須)'] || '')),
-        address: String(rowData['住所(必須)'] || ''),
-        tel: formatPhoneNumber(String(rowData['TEL'] || '')),
-        fax: formatPhoneNumber(String(rowData['FAX'] || '')),
+        addressCode: officeCode,
+        officeName: officeName,
+        area: areaCode,
+        no: no,
+        zipCode: formatZipCode(zip || ''),
+        address: address,
+        tel: formatPhoneNumber(tel || ''),
+        fax: formatPhoneNumber(fax || ''),
         division: String(rowData['事業部'] || ''),
         accountingCode: accountingCode,
         mainPerson: String(rowData['主担当'] || ''),
-        branchNumber: String(rowData['枝番'] || ''),
+        branchNumber: branchNumber,
         specialNote: String(rowData['※'] || ''),
         notes: String(rowData['備考'] || ''),
         labelName: String(rowData['宛名ラベル用'] || ''),
-        labelZip: formatZipCode(String(rowData['宛名ラベル用〒'] || '')),
+        labelZip: formatZipCode(labelZip || ''),
         labelAddress: String(rowData['宛名ラベル用住所'] || ''),
         attentionNote: String(rowData['注意書き'] || ''),
         type: ''

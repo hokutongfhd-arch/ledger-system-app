@@ -196,10 +196,7 @@ function RouterListContent() {
                     '廃棄': 'discarded'
                 };
 
-                if (/[^\x20-\x7E]/.test(rawModelNumber)) {
-                    errors.push(`${i + 3}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
-                    continue;
-                }
+
 
                 const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
                 const terminalCode = toHalfWidth(rawTerminalCode).trim();
