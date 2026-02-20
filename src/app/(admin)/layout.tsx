@@ -34,7 +34,12 @@ export default function AdminLayout({
     }
 
     if (!user) {
-        return null; // Don't render content while redirecting
+        // While redirecting or checking, show loading to avoid white screen flash
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-paper">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-accent-electric"></div>
+            </div>
+        );
     }
 
     return (

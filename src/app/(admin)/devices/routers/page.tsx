@@ -7,7 +7,7 @@ import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
 import { Table } from '../../../../components/ui/Table';
 import type { Router } from '../../../../features/devices/device.types';
-import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload } from 'lucide-react';
+import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { RouterForm } from '../../../../features/devices/components/RouterForm';
 import * as XLSX from 'xlsx';
@@ -339,7 +339,7 @@ function RouterListContent() {
             'discarded': '廃棄'
         };
 
-        handleExport(filteredData, headers, `router_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
+        handleExport(filteredData, headers, `wifi_router_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
             item.terminalCode,
             formatPhoneNumber(item.simNumber || ''),
             item.modelNumber || '',
@@ -532,8 +532,13 @@ function RouterListContent() {
 
             <div className="bg-background-paper p-4 rounded-xl shadow-card border border-border flex gap-4 items-center">
                 <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-                    <input type="text" placeholder="検索..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg outline-none bg-background-subtle text-text-main" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted z-10" size={18} />
+                    <input type="text" placeholder="検索..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-10 py-2 border border-border rounded-lg outline-none bg-background-subtle text-text-main" />
+                    {searchTerm && (
+                        <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <X size={16} />
+                        </button>
+                    )}
                 </div>
             </div>
 

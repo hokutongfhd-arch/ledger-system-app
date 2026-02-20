@@ -6,6 +6,7 @@ import Toast, { ToastMessage, ToastType } from '../../components/ui/Toast';
 interface ToastContextType {
     showToast: (message: string, type?: ToastType, description?: string, duration?: number) => string;
     dismissToast: (id: string) => void;
+    dismissAll: () => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -24,8 +25,12 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setToasts(prev => prev.filter(t => t.id !== id));
     }, []);
 
+    const dismissAll = useCallback(() => {
+        setToasts([]);
+    }, []);
+
     return (
-        <ToastContext.Provider value={{ showToast, dismissToast }}>
+        <ToastContext.Provider value={{ showToast, dismissToast, dismissAll }}>
             {children}
             {/* Toast Container */}
             <div className="fixed bottom-4 right-4 z-[9999] flex flex-col items-end pointer-events-none">

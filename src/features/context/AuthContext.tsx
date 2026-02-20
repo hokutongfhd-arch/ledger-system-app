@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import type { Employee } from '../../lib/types';
@@ -13,7 +13,7 @@ interface AuthContextType {
     user: Employee | null;
     isLoading: boolean;
     login: (employeeCode: string, password: string) => Promise<Employee | null>;
-    logout: () => Promise<void>;
+    logout: (shouldRedirect?: boolean) => Promise<void>;
     refreshUser: () => Promise<void>;
 }
 
@@ -43,15 +43,28 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     authId: s(d.auth_id),
 });
 
+// Singleton pattern for Supabase client to prevent "Multiple GoTrueClient instances" in dev
+const getSupabaseClient = () => {
+    if (typeof window === 'undefined') return createClientComponentClient();
+
+    if (process.env.NODE_ENV === 'development') {
+        if (!(global as any)._supabaseClient) {
+            (global as any)._supabaseClient = createClientComponentClient();
+        }
+        return (global as any)._supabaseClient;
+    }
+    return createClientComponentClient();
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Create a Supabase client configured to use cookies - Memoized to prevent multiple instances
-    const [supabase] = useState(() => createClientComponentClient());
+    // Use singleton or create new
+    const [supabase] = useState(() => getSupabaseClient());
 
     const [user, setUser] = useState<Employee | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
-    const refreshUser = async () => {
+    const refreshUser = useCallback(async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
@@ -76,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
             console.error('Failed to refresh user:', error);
         }
-    };
+    }, [supabase]);
 
     // Initialize session on mount
     React.useEffect(() => {
@@ -88,10 +101,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const { data: { session }, error } = await supabase.auth.getSession();
 
                 if (error) {
-                    // Refresh Token が無効または見つからない場合
+                    // Check for specific refresh token errors
+                    // "Invalid Refresh Token" or "Refresh Token Not Found" usually means the session is dead on server
                     if (error.message.includes('Refresh Token') || error.status === 400) {
-                        console.warn('Invalid session detected, clearing local auth:', error.message);
+                        console.warn('Invalid session detected (Refresh Token Error), clearing local auth.');
                         await supabase.auth.signOut({ scope: 'local' });
+                        setUser(null);
+                        return;
                     } else {
                         throw error;
                     }
@@ -125,9 +141,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         };
         initSession();
-    }, []);
+    }, [refreshUser, supabase]);
 
-    const login = async (employeeCode: string, password: string) => {
+    const login = useCallback(async (employeeCode: string, password: string) => {
         try {
             // Supabase Auth Login (Pseudo-Email Strategy)
             if (employeeCode === '999999') {
@@ -234,9 +250,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             return null;
         }
-    };
+    }, [router, supabase]);
 
-    const logout = async () => {
+    const logout = useCallback(async (shouldRedirect: boolean = true) => {
         try {
             if (user) {
                 // ログの失敗がログアウトを邪魔しないようにする
@@ -246,17 +262,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     actor: { employeeCode: user.code, name: user.name }
                 }).catch(err => console.warn('Logout log failed:', err));
             }
-            await supabase.auth.signOut().catch(err => console.warn('SignOut failed:', err));
-            await logoutSetupAccount().catch(err => console.warn('Logout setup account failed:', err));
+
+            // Check session before global sign out to prevent 403
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                await supabase.auth.signOut().catch((err: any) => console.warn('SignOut failed:', err));
+            } else {
+                // Even if no session, ensure local storage is cleared
+                await supabase.auth.signOut({ scope: 'local' }).catch((err: any) => console.warn('Local SignOut failed:', err));
+            }
+
+            await logoutSetupAccount().catch((err: any) => console.warn('Logout setup account failed:', err));
             if (typeof window !== 'undefined') sessionStorage.removeItem('ledger_session_active');
             setUser(null);
         } catch (error) {
             console.error('Logout process error:', error);
         } finally {
-            // 確実にログイン画面へ飛ばす
-            window.location.href = '/login';
+            // 確実にログイン画面へ飛ばす (Requested)
+            if (shouldRedirect) {
+                window.location.href = '/login';
+            }
         }
-    };
+    }, [user, supabase]);
 
     return (
         <AuthContext.Provider value={{ user, login, logout, refreshUser, isLoading }}>

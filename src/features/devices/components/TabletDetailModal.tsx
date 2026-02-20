@@ -219,10 +219,7 @@ export const TabletDetailModal: React.FC<TabletDetailModalProps> = ({
                     </div>
                 )}
 
-                {/* Footer */}
-                <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between">
-                    <span>Device ID: {item.id}</span>
-                </div>
+
             </div>
         </Modal>
     );

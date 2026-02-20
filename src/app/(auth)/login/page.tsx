@@ -11,9 +11,26 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const { login } = useAuth();
-    const { showToast, dismissToast } = useToast();
+    const { login, logout } = useAuth();
+    const { showToast, dismissToast, dismissAll } = useToast();
     const router = useRouter();
+    const isMountedRef = React.useRef(false);
+
+    // Reset state on mount (handle back-button cache) - STRICTLY ONCE
+    React.useEffect(() => {
+        if (isMountedRef.current) return;
+        isMountedRef.current = true;
+
+        const cleanup = async () => {
+            if (dismissAll) dismissAll(); // Clear any stale toasts (e.g. previous success)
+            await logout(false); // Force logout without redirecting (we are already here)
+            setCode('');
+            setPassword('');
+            setError('');
+        };
+        cleanup();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
