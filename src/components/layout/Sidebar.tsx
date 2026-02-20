@@ -21,6 +21,13 @@ const SidebarItem = ({ to, icon: Icon, label, indent = false }: { to: string; ic
             dismissToast(loadingId);
             setLoadingId(null);
         }
+
+        // Failsafe: If component unmounts while loading (e.g. Layout remount), dismiss.
+        return () => {
+            if (loadingId) {
+                dismissToast(loadingId);
+            }
+        };
     }, [pathname, loadingId, to, dismissToast]);
 
     const handleClick = () => {
