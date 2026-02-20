@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSetupUserServer } from './auth_setup';
 
 const getSupabaseAdmin = () => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -11,6 +12,11 @@ const getSupabaseAdmin = () => {
 };
 
 const checkAuth = async () => {
+    // 1. Check for Setup User first
+    const setupUser = await getSetupUserServer();
+    if (setupUser) return setupUser;
+
+    // 2. Check for Supabase Auth User
     const cookieStore = await cookies();
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
     const { data: { user } } = await supabase.auth.getUser();

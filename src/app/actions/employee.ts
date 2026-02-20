@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { fixOperationLogActor } from '../api/admin/employees/audit_helper';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSetupUserServer } from './auth_setup';
 
 const getSupabaseAdmin = () => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -16,17 +17,21 @@ export async function createEmployeeAction(data: any) {
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication & Admin Role
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error('Unauthenticated');
+    const setupUser = await getSetupUserServer();
+    if (setupUser) {
+        // Setup user is treated as admin
+    } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            throw new Error('Unauthenticated');
+        }
+        // Optional: Check if user is admin in 'employees' table or metadata
+        const { data: employee } = await supabase
+            .from('employees')
+            .select('authority')
+            .eq('auth_id', user.id)
+            .single();
     }
-
-    // Optional: Check if user is admin in 'employees' table or metadata
-    const { data: employee } = await supabase
-        .from('employees')
-        .select('authority')
-        .eq('auth_id', user.id)
-        .single();
 
     // Allow if actual admin OR if Setup Account (which might not be in DB via this path, but handled by getSupabaseAdmin in other flows)
     // For now, assume if they have access to the UI and are authenticated, they passed middleware.
@@ -88,9 +93,14 @@ export async function fetchEmployeesAction() {
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error('Unauthenticated');
+    const setupUser = await getSetupUserServer();
+    if (setupUser) {
+        // Setup user allowed
+    } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            throw new Error('Unauthenticated');
+        }
     }
 
     // 2. Use Admin Client to Fetch All (Bypass RLS)
@@ -113,9 +123,14 @@ export async function updateEmployeeAction(id: string, data: any) {
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error('Unauthenticated');
+    const setupUser = await getSetupUserServer();
+    if (setupUser) {
+        // Setup user allowed
+    } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            throw new Error('Unauthenticated');
+        }
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -164,9 +179,16 @@ export async function deleteEmployeeAction(id: string) {
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error('Unauthenticated');
+    let currentUser: any = null;
+    const setupUser = await getSetupUserServer();
+    if (setupUser) {
+        currentUser = setupUser;
+    } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            throw new Error('Unauthenticated');
+        }
+        currentUser = user;
     }
 
     // 2. Fetch Employee to get Auth ID before deletion
@@ -235,10 +257,10 @@ export async function deleteEmployeeAction(id: string) {
 
     // 5. Fix Audit Log Actor -> REMOVED.
     // User requested to separate Audit/Operation logs.
-    if (user) {
+    if (currentUser) {
         // Run async without awaiting to not block UI response
-        console.log(`[DeleteAction] Patching operation log for ${id} by ${user.email}`);
-        await fixOperationLogActor(supabaseAdmin, id, 'employees', user, 'DELETE');
+        console.log(`[DeleteAction] Patching operation log for ${id} by ${currentUser.email || currentUser.code}`);
+        await fixOperationLogActor(supabaseAdmin, id, 'employees', currentUser, 'DELETE');
     }
 
     return { success: true };
@@ -249,9 +271,16 @@ export async function deleteManyEmployeesAction(ids: string[]) {
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error('Unauthenticated');
+    let currentUser: any = null;
+    const setupUser = await getSetupUserServer();
+    if (setupUser) {
+        currentUser = setupUser;
+    } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            throw new Error('Unauthenticated');
+        }
+        currentUser = user;
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -313,9 +342,9 @@ export async function deleteManyEmployeesAction(ids: string[]) {
     }
 
     // 5. Fix Audit Log Actor -> REMOVED.
-    if (user) {
+    if (currentUser) {
         for (const id of ids) {
-            await fixOperationLogActor(supabaseAdmin, id, 'employees', user, 'DELETE');
+            await fixOperationLogActor(supabaseAdmin, id, 'employees', currentUser, 'DELETE');
         }
     }
 

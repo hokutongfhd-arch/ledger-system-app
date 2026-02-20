@@ -26,10 +26,13 @@ export default function EmployeeListPage() {
     const router = useRouter();
 
     useEffect(() => {
-        if (!user) router.push('/login');
+        const isSetup = document.cookie.includes('is_initial_setup=true');
+        if (!user && !isSetup) router.push('/login');
     }, [user, router]);
 
-    if (!user) return null;
+    // Allow render if setup mode (user might be null briefly)
+    const isSetupMode = typeof document !== 'undefined' && document.cookie.includes('is_initial_setup=true');
+    if (!user && !isSetupMode) return null;
 
     return <EmployeeListContent />;
 }

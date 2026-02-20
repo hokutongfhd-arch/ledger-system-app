@@ -29,7 +29,27 @@ export async function POST(req: Request) {
         const supabaseUser = createRouteHandlerClient({ cookies: () => cookieStore });
         // Retrieve session user to use as "Actor" for audit logs
         const { data: { session } } = await supabaseUser.auth.getSession();
-        const actorUser = session?.user;
+        let actorUser = session?.user;
+
+        // Fallback for Initial Setup Account
+        if (!actorUser) {
+            const isSetup = cookieStore.get('is_initial_setup')?.value === 'true';
+            if (isSetup) {
+                actorUser = {
+                    id: 'INITIAL_SETUP_ACCOUNT',
+                    email: 'setup_admin@system.local',
+                    user_metadata: {
+                        name: '初期セットアップアカウント',
+                        employee_code: '999999'
+                    },
+                    app_metadata: { role: 'admin' },
+                    aud: 'authenticated',
+                    created_at: new Date().toISOString()
+                } as any;
+            } else {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+        }
 
         const supabaseAdmin = getSupabaseAdmin();
         const results = [];

@@ -16,7 +16,11 @@ export default function AdminLayout({
 
     // Protect Route: If not loading and not user, redirect (and don't render)
     useEffect(() => {
-        if (!isLoading && !user) {
+        // Special check for Setup Account (Cookie based)
+        // Client-side, we can check document.cookie fallback if user state is not yet synced but cookie exists
+        const isSetup = document.cookie.includes('is_initial_setup=true');
+
+        if (!isLoading && !user && !isSetup) {
             router.push('/login');
         }
     }, [isLoading, user, router]);

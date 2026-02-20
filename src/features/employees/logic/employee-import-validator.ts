@@ -105,10 +105,16 @@ export const parseAndValidateEmployees = (
         }
 
         // 8. Birth Date
-        const rawBirthDate = String(rowData['生年月日'] || '').trim();
-        if (rawBirthDate && !isValidDateFormat(rawBirthDate)) {
-            validationErrors.push(`${excelRowNumber}行目: 生年月日「${rawBirthDate}」の形式が正しくありません`);
-            rowHasError = true;
+        const rawBirthDate = rowData['生年月日'];
+        let birthDateValue = '';
+        if (rawBirthDate || rawBirthDate === 0) {
+            // Check formatted string first to validate format if string
+            if (typeof rawBirthDate === 'string' && !isValidDateFormat(rawBirthDate)) {
+                 validationErrors.push(`${excelRowNumber}行目: 生年月日「${rawBirthDate}」の形式が正しくありません`);
+                 rowHasError = true;
+            } else {
+                birthDateValue = parseDate(rawBirthDate);
+            }
         }
 
         // 9. Age
@@ -133,18 +139,23 @@ export const parseAndValidateEmployees = (
         }
 
         // 12. Join Date
-        const rawJoinDate = String(rowData['入社年月日'] || '').trim();
-        if (rawJoinDate && !isValidDateFormat(rawJoinDate)) {
-            validationErrors.push(`${excelRowNumber}行目: 入社年月日「${rawJoinDate}」の形式が正しくありません`);
-            rowHasError = true;
+        const rawJoinDate = rowData['入社年月日'];
+        let joinDateValue = '';
+        if (rawJoinDate || rawJoinDate === 0) {
+             if (typeof rawJoinDate === 'string' && !isValidDateFormat(rawJoinDate)) {
+                validationErrors.push(`${excelRowNumber}行目: 入社年月日「${rawJoinDate}」の形式が正しくありません`);
+                rowHasError = true;
+             } else {
+                joinDateValue = parseDate(rawJoinDate);
+             }
         }
 
         // Cross-field validation for Dates (Birth vs Join)
         // Check both valid before comparing? Or checks at end?
         // Usually logical checks come after format checks.
         // We can do it here if format is valid.
-        const birthDateValue = parseDate(rawBirthDate);
-        const joinDateValue = parseDate(rawJoinDate);
+        // const birthDateValue = parseDate(rawBirthDate); // ALREADY PARSED ABOVE
+        // const joinDateValue = parseDate(rawJoinDate);   // ALREADY PARSED ABOVE
 
         if (birthDateValue && joinDateValue && new Date(birthDateValue) > new Date(joinDateValue)) {
             // Message might appear after field specific errors, which is acceptable or expected.
