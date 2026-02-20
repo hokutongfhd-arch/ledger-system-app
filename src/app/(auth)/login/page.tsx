@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../features/context/AuthContext';
+import { useToast } from '../../../features/context/ToastContext';
 import { Database, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
@@ -11,24 +12,36 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const { login } = useAuth();
+    const { showToast, dismissToast } = useToast();
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const user = await login(code, password);
+        const toastId = showToast('ログイン中...', 'loading', undefined, 0); // Persistent toast
 
-        if (user) {
-            router.refresh();
-            // Wait a tick for state/cookie propagation if needed, 
-            // but refresh() usually handles the server-side re-render trigger.
-            // Check role from the returned user object which is reliable.
-            if (user.role === 'admin') {
-                router.push('/');
+        try {
+            const user = await login(code, password);
+
+            if (user) {
+                dismissToast(toastId);
+                showToast('ログイン完了', 'success');
+                router.refresh();
+                if (user.role === 'admin') {
+                    router.push('/');
+                } else {
+                    router.push('/dashboard');
+                }
             } else {
-                router.push('/dashboard');
+                dismissToast(toastId);
+                const errorMsg = '社員番号またはパスワードが間違っています';
+                setError(errorMsg);
+                showToast(errorMsg, 'error');
             }
-        } else {
-            setError('社員番号またはパスワードが間違っています');
+        } catch (e) {
+            dismissToast(toastId);
+            const errorMsg = 'ログイン処理中にエラーが発生しました';
+            setError(errorMsg);
+            showToast(errorMsg, 'error');
         }
     };
 

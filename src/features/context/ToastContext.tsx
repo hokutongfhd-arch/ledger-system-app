@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import Toast, { ToastMessage, ToastType } from '../../components/ui/Toast';
 
 interface ToastContextType {
-    showToast: (message: string, type?: ToastType, description?: string, duration?: number) => void;
+    showToast: (message: string, type?: ToastType, description?: string, duration?: number) => string;
     dismissToast: (id: string) => void;
 }
 
@@ -17,6 +17,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const id = Math.random().toString(36).substring(7);
         const newToast: ToastMessage = { id, message, type, description, duration };
         setToasts(prev => [...prev, newToast]);
+        return id;
     }, []);
 
     const dismissToast = useCallback((id: string) => {
@@ -27,7 +28,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         <ToastContext.Provider value={{ showToast, dismissToast }}>
             {children}
             {/* Toast Container */}
-            <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end pointer-events-none">
+            <div className="fixed bottom-4 right-4 z-[9999] flex flex-col items-end pointer-events-none">
                 <div className="pointer-events-auto">
                     {toasts.map(toast => (
                         <Toast key={toast.id} toast={toast} onDismiss={dismissToast} />

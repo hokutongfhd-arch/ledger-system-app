@@ -5,13 +5,42 @@ import { clsx } from 'clsx';
 import { useAuth } from '../../features/context/AuthContext';
 import { useData } from '../../features/context/DataContext';
 
+import { useToast } from '../../features/context/ToastContext';
+import React, { useEffect, useState } from 'react';
+
 const SidebarItem = ({ to, icon: Icon, label, indent = false }: { to: string; icon: any; label: string; indent?: boolean }) => {
     const pathname = usePathname();
     const isActive = pathname === to;
+    const { showToast, dismissToast } = useToast();
+    const [loadingId, setLoadingId] = useState<string | null>(null);
+
+    // Navigation Completion Listener
+    useEffect(() => {
+        // If we have a pending navigation (loadingId) and we have arrived at the target (pathname === to)
+        if (loadingId && pathname === to) {
+            dismissToast(loadingId);
+            setLoadingId(null);
+        }
+    }, [pathname, loadingId, to, dismissToast]);
+
+    const handleClick = () => {
+        const id = showToast('読み込み中...', 'loading', undefined, 0);
+
+        if (pathname === to) {
+            // Same page click: Manual timeout since pathname detection won't fire a change
+            setTimeout(() => {
+                dismissToast(id);
+            }, 1000);
+        } else {
+            // New page click: Let the useEffect handle dismissal upon arrival
+            setLoadingId(id);
+        }
+    };
 
     return (
         <Link
             href={to}
+            onClick={handleClick}
             className={clsx(
                 'flex items-center gap-4 px-6 py-3 text-sm font-medium transition-all duration-300 border-l-4 group relative overflow-hidden',
                 isActive

@@ -338,9 +338,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [logs, setLogs] = useState<Log[]>([]);
     const { user } = useAuth();
-    const { showToast } = useToast();
+    const { showToast, dismissToast } = useToast();
 
     const fetchData = useCallback(async () => {
+        const toastId = showToast('データ読み込み中...', 'loading', undefined, 0);
         try {
             // Use Server Actions to fetch data (bypassing RLS issues for imported users)
             const [
@@ -362,9 +363,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ]);
 
             // Default fetch: Current week's logs from audit_logs
-            // Logs are still fetched via Client for now (User ID based RLS should be fine, or verify later)
-            // But if logs are empty too, we might need an action for logs.
-            // For now, let's assume Logs RLS is "Auth User can read logs".
             const { start, end } = getWeekRange(new Date());
             const { data: logData } = await supabase.from('audit_logs')
                 .select('*')
@@ -383,8 +381,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         } catch (error) {
             console.error('Failed to fetch data:', error);
+            showToast('データ読み込みに失敗しました', 'error');
+        } finally {
+            dismissToast(toastId);
         }
-    }, [supabase]);
+    }, [supabase, showToast, useToast]); // useToast added to dep if needed, but showToast is enough if stable
 
     useEffect(() => {
         if (user) {
