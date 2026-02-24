@@ -231,11 +231,7 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
                     </div>
                 )}
 
-                {/* Footer / Meta */}
-                <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between">
-                    <span>デバイス管理システム</span>
-                    <span>Last Updated: -</span>
-                </div>
+
             </div>
         </Modal>
     );
