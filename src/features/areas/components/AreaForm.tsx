@@ -54,13 +54,21 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
     };
 
     // Uniqueness Check
-    const isDuplicate = useMemo(() => {
+    const isCodeDuplicate = useMemo(() => {
         if (!formData.areaCode) return false;
         return areas.some(area =>
             area.areaCode === formData.areaCode &&
             (!initialData || String(area.id) !== String(initialData.id))
         );
     }, [areas, formData.areaCode, initialData]);
+
+    const isNameDuplicate = useMemo(() => {
+        if (!formData.areaName) return false;
+        return areas.some(area =>
+            area.areaName === formData.areaName &&
+            (!initialData || String(area.id) !== String(initialData.id))
+        );
+    }, [areas, formData.areaName, initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -78,9 +86,14 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
             if (!firstErrorField) firstErrorField = areaNameRef.current;
         }
 
-        if (isDuplicate) {
+        if (isCodeDuplicate) {
             newErrorFields.add('areaCode');
             if (!firstErrorField) firstErrorField = codeRef.current;
+        }
+
+        if (isNameDuplicate) {
+            newErrorFields.add('areaName');
+            if (!firstErrorField) firstErrorField = areaNameRef.current;
         }
 
         if (newErrorFields.size > 0) {
@@ -131,7 +144,8 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
                                 onChange={handleChange}
                                 error={errorFields.has('areaName')}
                             />
-                            {errorFields.has('areaName') && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('areaName') && !formData.areaName && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('areaName') && formData.areaName && isNameDuplicate && <FormError>既に登録されているエリア名です</FormError>}
                         </div>
                     </div>
                 </div>

@@ -105,7 +105,9 @@ function AreaListContent() {
         },
         onImport: async (rows, fileHeaders) => {
             const existingCodes = new Set(areas.map(a => a.areaCode));
+            const existingNames = new Set(areas.map(a => a.areaName));
             const processedCodes = new Set<string>();
+            const processedNames = new Set<string>();
             const errors: string[] = [];
             let successCount = 0;
             let errorCount = 0;
@@ -127,6 +129,7 @@ function AreaListContent() {
                 });
 
                 const rawCode = String(rowData['エリアコード(必須)'] || '').trim();
+                const rawName = String(rowData['エリア名(必須)'] || '').trim();
                 let rowHasError = false;
 
                 if (!rawCode) {
@@ -137,7 +140,13 @@ function AreaListContent() {
                     rowHasError = true;
                 }
 
+                if (!rawName) {
+                    errors.push(`${excelRowNumber}行目: エリア名(必須)が未入力です`);
+                    rowHasError = true;
+                }
+
                 const code = rawCode;
+                const name = rawName;
 
                 if (!rowHasError) {
                     if (existingCodes.has(code)) {
@@ -147,6 +156,14 @@ function AreaListContent() {
                         errors.push(`${excelRowNumber}行目: エリアコード「${code}」がファイル内で重複しています`);
                         rowHasError = true;
                     }
+
+                    if (existingNames.has(name)) {
+                        errors.push(`${excelRowNumber}行目: エリア名「${name}」は既に存在します`);
+                        rowHasError = true;
+                    } else if (processedNames.has(name)) {
+                        errors.push(`${excelRowNumber}行目: エリア名「${name}」がファイル内で重複しています`);
+                        rowHasError = true;
+                    }
                 }
 
                 if (rowHasError) {
@@ -154,10 +171,11 @@ function AreaListContent() {
                 }
 
                 processedCodes.add(code);
+                processedNames.add(name);
 
                 const newArea: Omit<Area, 'id'> = {
                     areaCode: code,
-                    areaName: String(rowData['エリア名(必須)'] || '')
+                    areaName: name
                 };
 
                 importData.push(newArea);
