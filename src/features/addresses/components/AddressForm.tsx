@@ -21,7 +21,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
 
     // Refs
-    const codeRef = useRef<HTMLInputElement>(null);
     const officeNameRef = useRef<HTMLInputElement>(null);
     const addressRef = useRef<HTMLInputElement>(null);
 
@@ -38,6 +37,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
     const labelZipPart1Ref = useRef<HTMLInputElement>(null);
     const labelZipPart2Ref = useRef<HTMLInputElement>(null);
+
+    const codePart1Ref = useRef<HTMLInputElement>(null);
+    const codePart2Ref = useRef<HTMLInputElement>(null);
 
     // Form Data State
     const [formData, setFormData] = useState<Omit<Address, 'id'>>({
@@ -67,6 +69,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     const [faxParts, setFaxParts] = useState({ part1: '', part2: '', part3: '' });
     const [zipParts, setZipParts] = useState({ part1: '', part2: '' });
     const [labelZipParts, setLabelZipParts] = useState({ part1: '', part2: '' });
+    const [addressCodeParts, setAddressCodeParts] = useState({ part1: '', part2: '' });
 
     const areaOptions = useMemo(() => {
         return areas.map(area => ({
@@ -75,7 +78,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         }));
     }, [areas]);
 
-    const { handleAutoTab } = useAutoFocus(codeRef);
+    const { handleAutoTab } = useAutoFocus(codePart1Ref);
 
     // Initialize from initialData
     useEffect(() => {
@@ -125,6 +128,15 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
             if (initialData.labelZip) {
                 const parts = initialData.labelZip.split('-');
                 setLabelZipParts({
+                    part1: parts[0] || '',
+                    part2: parts[1] || '',
+                });
+            }
+
+            // Parse Address Code
+            if (initialData.addressCode) {
+                const parts = initialData.addressCode.split('-');
+                setAddressCodeParts({
                     part1: parts[0] || '',
                     part2: parts[1] || '',
                 });
@@ -186,6 +198,25 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         }
     };
 
+    const handleAddressCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (!/^\d*$/.test(value)) return;
+
+        const newParts = { ...addressCodeParts, [name]: value };
+        setAddressCodeParts(newParts);
+
+        if (name === 'part1') handleAutoTab(e, 4, codePart2Ref);
+
+        const fullCode = `${newParts.part1}-${newParts.part2}`.replace(/^-+|-+$/g, '');
+        setFormData(prev => ({ ...prev, addressCode: fullCode }));
+
+        if (errorFields.has('addressCode')) {
+            const newErrorFields = new Set(errorFields);
+            newErrorFields.delete('addressCode');
+            setErrorFields(newErrorFields);
+        }
+    };
+
     const handleTelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         if (!/^\d*$/.test(value)) return;
@@ -241,13 +272,21 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     };
 
     // Uniqueness Check
-    const isDuplicate = useMemo(() => {
+    const isAddressCodeDuplicate = useMemo(() => {
         if (!formData.addressCode) return false;
         return addresses.some(addr =>
             addr.addressCode === formData.addressCode &&
             (!initialData || String(addr.id) !== String(initialData.id))
         );
     }, [addresses, formData.addressCode, initialData]);
+
+    const isOfficeNameDuplicate = useMemo(() => {
+        if (!formData.officeName) return false;
+        return addresses.some(addr =>
+            addr.officeName === formData.officeName &&
+            (!initialData || String(addr.id) !== String(initialData.id))
+        );
+    }, [addresses, formData.officeName, initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -256,9 +295,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         let firstErrorField: HTMLElement | null = null;
 
         // Required Field Check
-        if (!formData.addressCode) {
+        if (!formData.addressCode || !/^\d{4}-\d{2}$/.test(formData.addressCode)) {
             newErrorFields.add('addressCode');
-            if (!firstErrorField) firstErrorField = codeRef.current;
+            if (!firstErrorField) firstErrorField = codePart1Ref.current;
         }
         if (!formData.officeName) {
             newErrorFields.add('officeName');
@@ -273,9 +312,14 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
             if (!firstErrorField) firstErrorField = addressRef.current;
         }
 
-        if (isDuplicate) {
+        if (isAddressCodeDuplicate) {
             newErrorFields.add('addressCode');
-            if (!firstErrorField) firstErrorField = codeRef.current;
+            if (!firstErrorField) firstErrorField = codePart1Ref.current;
+        }
+
+        if (isOfficeNameDuplicate) {
+            newErrorFields.add('officeName');
+            if (!firstErrorField) firstErrorField = officeNameRef.current;
         }
 
         if (newErrorFields.size > 0) {
@@ -309,18 +353,34 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FormLabel required>事業所コード</FormLabel>
-                            <Input
-                                ref={codeRef}
-                                name="addressCode"
-                                value={formData.addressCode}
-                                onChange={handleNumberChange}
-                                placeholder="半角数字のみ"
-                                error={errorFields.has('addressCode')}
-                                readOnly={!!initialData}
-                                className={!!initialData ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
-                            />
-                            {errorFields.has('addressCode') && !addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('addressCode') && addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && (
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    ref={codePart1Ref}
+                                    name="part1"
+                                    value={addressCodeParts.part1}
+                                    onChange={handleAddressCodeChange}
+                                    maxLength={4}
+                                    className="w-20 text-center"
+                                    placeholder="1234"
+                                    error={errorFields.has('addressCode')}
+                                    readOnly={!!initialData}
+                                />
+                                <span className="text-gray-500">-</span>
+                                <Input
+                                    ref={codePart2Ref}
+                                    name="part2"
+                                    value={addressCodeParts.part2}
+                                    onChange={handleAddressCodeChange}
+                                    maxLength={2}
+                                    className="w-16 text-center"
+                                    placeholder="56"
+                                    error={errorFields.has('addressCode')}
+                                    readOnly={!!initialData}
+                                />
+                            </div>
+                            {errorFields.has('addressCode') && !formData.addressCode && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('addressCode') && formData.addressCode && !/^\d{4}-\d{2}$/.test(formData.addressCode) && <FormError>形式が正しくありません (xxxx-xx)</FormError>}
+                            {errorFields.has('addressCode') && formData.addressCode === initialData?.addressCode && addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && (
                                 <FormError>既に登録されている事業所コードです</FormError>
                             )}
                         </div>
@@ -333,7 +393,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 onChange={handleChange}
                                 error={errorFields.has('officeName')}
                             />
-                            {errorFields.has('officeName') && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('officeName') && !formData.officeName && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('officeName') && formData.officeName && isOfficeNameDuplicate && <FormError>既に登録されている事業所名です</FormError>}
                         </div>
                         <div>
                             <FormLabel>エリアコード</FormLabel>

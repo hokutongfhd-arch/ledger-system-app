@@ -12,7 +12,9 @@ export const validateAddressImportRow = (
     fileHeaders: string[],
     rowIndex: number,
     existingCodes: Set<string>,
-    processedCodes: Set<string>
+    processedCodes: Set<string>,
+    existingNames: Set<string>,
+    processedNames: Set<string>
 ): { errors: string[], data?: Omit<Address, 'id'> } => {
     const errors: string[] = [];
     const rowData: any = {};
@@ -34,20 +36,29 @@ export const validateAddressImportRow = (
 
     // 1. Office Code (事業所コード) - Required, Format, Duplication
     const rawOfficeCode = String(rowData['事業所コード(必須)'] || '');
-    const officeCode = toHalfWidth(rawOfficeCode).trim();
+    let officeCode = toHalfWidth(rawOfficeCode).trim();
     if (!officeCode) {
         errors.push(`${excelRowNumber}行目: 事業所コードが空です`);
         rowHasError = true;
     } else {
-        if (!/^[0-9-]+$/.test(officeCode)) {
-            errors.push(`${excelRowNumber}行目: 事業所コード(必須)「${officeCode}」は半角数字とハイフンのみ入力可能です`);
+        const is6Digits = /^\d{6}$/.test(officeCode);
+        const isFormatted = /^\d{4}-\d{2}$/.test(officeCode);
+
+        if (is6Digits) {
+            officeCode = `${officeCode.slice(0, 4)}-${officeCode.slice(4)}`;
+        } else if (!isFormatted) {
+            errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」は「xxxx-xx」または「xxxxxx(6桁)」の形式で入力してください`);
             rowHasError = true;
-        } else if (existingCodes.has(officeCode)) {
-            errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」は既に存在します`);
-            rowHasError = true;
-        } else if (processedCodes.has(officeCode)) {
-            errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」がファイル内で重複しています`);
-            rowHasError = true;
+        }
+
+        if (!rowHasError) {
+            if (existingCodes.has(officeCode)) {
+                errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」は既に存在します`);
+                rowHasError = true;
+            } else if (processedCodes.has(officeCode)) {
+                errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」がファイル内で重複しています`);
+                rowHasError = true;
+            }
         }
     }
 
@@ -56,6 +67,14 @@ export const validateAddressImportRow = (
     if (!officeName) {
         errors.push(`${excelRowNumber}行目: 事業所名が空です`);
         rowHasError = true;
+    } else {
+        if (existingNames.has(officeName)) {
+            errors.push(`${excelRowNumber}行目: 事業所名「${officeName}」は既に存在します`);
+            rowHasError = true;
+        } else if (processedNames.has(officeName)) {
+            errors.push(`${excelRowNumber}行目: 事業所名「${officeName}」がファイル内で重複しています`);
+            rowHasError = true;
+        }
     }
 
     // 3. Area Code (エリアコード) - Format

@@ -131,7 +131,9 @@ function AddressListContent() {
             let errorCount = 0;
 
             const existingCodes = new Set(addresses.map(a => a.addressCode));
+            const existingNames = new Set(addresses.map(a => a.officeName));
             const processedCodes = new Set<string>();
+            const processedNames = new Set<string>();
             const errors: string[] = [];
 
             const importData: any[] = [];
@@ -143,7 +145,7 @@ function AddressListContent() {
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
-                const { errors: rowErrors, data: newAddress } = validateAddressImportRow(row, fileHeaders, i, existingCodes, processedCodes);
+                const { errors: rowErrors, data: newAddress } = validateAddressImportRow(row, fileHeaders, i, existingCodes, processedCodes, existingNames, processedNames);
 
                 if (rowErrors.length > 0) {
                     errors.push(...rowErrors);
@@ -152,6 +154,7 @@ function AddressListContent() {
 
                 if (newAddress) {
                     processedCodes.add(newAddress.addressCode);
+                    processedNames.add(newAddress.officeName);
                     importData.push(newAddress);
                 }
             }
