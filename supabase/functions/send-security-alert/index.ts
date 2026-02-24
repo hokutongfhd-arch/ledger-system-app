@@ -1,57 +1,78 @@
-console.log("Webhook received");
-console.log(JSON.stringify(payload));
-
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
+// ==============================
+// 環境変数
+// ==============================
 const resend = new Resend(Deno.env.get("RESEND_API_KEY")!);
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const appUrl = Deno.env.get("APP_URL") || "#";
 
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
+// ==============================
+// 型定義
+// ==============================
 interface AuditLogRecord {
   action_type: string;
   target_type: string;
-  details: string;
+  details: string | null;
   occurred_at: string;
-  actor_name: string;
-  // その他必要なフィールド
+  actor_name: string | null;
 }
 
 interface WebhookPayload {
-  type: "INSERT";
-  table: "audit_logs";
+  type: string;
+  table: string;
+  schema: string;
   record: AuditLogRecord;
-  schema: "public";
+  old_record?: AuditLogRecord | null;
 }
 
+// ==============================
+// Edge Function
+// ==============================
 Deno.serve(async (req: Request) => {
   try {
+    console.log("Webhook received");
+
+    // JSON取得
     const payload: WebhookPayload = await req.json();
+    console.log("Payload:", payload);
 
-    // 1. INSERTイベント以外は無視
-    if (payload.type !== 'INSERT') {
-      return new Response(JSON.stringify({ message: 'Ignored non-insert event' }), { status: 200 });
+    // INSERT以外は無視
+    if (payload.type !== "INSERT") {
+      console.log("Ignored: not INSERT");
+      return new Response("Ignored", { status: 200 });
     }
 
-    const { record } = payload;
-    const { action_type, target_type, details, actor_name, occurred_at } = record;
-
-    // 2. セキュリティアラート（異常検知）以外は無視
-    // log.service.ts の定義に基づき 'ANOMALY_DETECTED' を対象とします
-    if (action_type !== 'ANOMALY_DETECTED') {
-      return new Response(JSON.stringify({ message: 'Ignored non-security event' }), { status: 200 });
+    // 対象テーブル確認
+    if (payload.table !== "audit_logs") {
+      console.log("Ignored: not audit_logs table");
+      return new Response("Ignored", { status: 200 });
     }
 
-    console.log(`Security alert detected: ${action_type} by ${actor_name}`);
+    const { action_type, target_type, details, actor_name, occurred_at } =
+      payload.record;
 
-    // 3. 管理者("admin")のメールアドレスを取得
-    // is_admin() 関数などでの定義に基づき、employees テーブルの authority='admin' を参照
+    // セキュリティアラート以外は無視
+    if (action_type !== "ANOMALY_DETECTED") {
+      console.log("Ignored: not security event");
+      return new Response("Ignored", { status: 200 });
+    }
+
+    console.log(
+      `Security alert detected: ${action_type} by ${actor_name}`
+    );
+
+    // ==============================
+    // 管理者取得
+    // ==============================
     const { data: admins, error: adminError } = await supabase
       .from("employees")
       .select("email")
-      .eq("authority", "admin") // authorityカラムを使用
+      .eq("authority", "admin")
       .not("email", "is", null);
 
     if (adminError) {
@@ -61,66 +82,77 @@ Deno.serve(async (req: Request) => {
 
     if (!admins || admins.length === 0) {
       console.log("No admin emails found.");
-      return new Response(JSON.stringify({ message: "No admins found" }), { status: 200 });
+      return new Response("No admins found", { status: 200 });
     }
 
     const adminEmails = admins.map((admin) => admin.email);
-    console.log(`Sending email to ${adminEmails.length} admins.`);
+    //const adminEmails = ["hokutongfhd@gmail.com"];
 
-    // 4. メール送信 (Resend)
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Security Alert <onboarding@resend.dev>", // 本番運用時は確認済みドメインに変更してください
-      to: adminEmails,
-      subject: `[Security Alert] 不正検知: ${target_type}`,
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+
+    // ==============================
+    // メール送信
+    // ==============================
+    const { data: emailData, error: emailError } =
+      await resend.emails.send({
+        from: "Security Alert <onboarding@resend.dev>",
+        to: adminEmails,
+        subject: `[Security Alert] 不正検知: ${target_type}`,
+        html: `
+        <div style="font-family: sans-serif; padding: 20px;">
           <h1 style="color: #d32f2f;">⚠️ セキュリティアラート検知</h1>
-          <p>システムにて以下の異常な操作またはイベントが記録されました。</p>
-          
-          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-            <tr style="background-color: #f5f5f5;">
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">発生日時</th>
-              <td style="padding: 10px; border: 1px solid #ddd;">${new Date(occurred_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</td>
+          <p>以下の異常イベントが記録されました。</p>
+          <table style="border-collapse: collapse; width: 100%;">
+            <tr>
+              <td><strong>発生日時</strong></td>
+              <td>${new Date(occurred_at).toLocaleString("ja-JP", {
+                timeZone: "Asia/Tokyo",
+              })}</td>
             </tr>
             <tr>
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">実行者</th>
-              <td style="padding: 10px; border: 1px solid #ddd;">${actor_name || '不明'}</td>
-            </tr>
-            <tr style="background-color: #f5f5f5;">
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">アクション</th>
-              <td style="padding: 10px; border: 1px solid #ddd;">${action_type}</td>
+              <td><strong>実行者</strong></td>
+              <td>${actor_name ?? "不明"}</td>
             </tr>
             <tr>
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">対象</th>
-              <td style="padding: 10px; border: 1px solid #ddd;">${target_type}</td>
+              <td><strong>アクション</strong></td>
+              <td>${action_type}</td>
             </tr>
-            <tr style="background-color: #f5f5f5;">
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">詳細</th>
-              <td style="padding: 10px; border: 1px solid #ddd;">${details}</td>
+            <tr>
+              <td><strong>対象</strong></td>
+              <td>${target_type}</td>
+            </tr>
+            <tr>
+              <td><strong>詳細</strong></td>
+              <td>${details ?? "なし"}</td>
             </tr>
           </table>
-          
-          <p style="margin-top: 20px;">
-            <a href="${Deno.env.get("APP_URL") || '#'}" style="background-color: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">管理画面で確認</a>
+          <p style="margin-top:20px;">
+            <a href="${appUrl}"
+              style="background:#1976d2;color:#fff;padding:10px 15px;text-decoration:none;border-radius:5px;">
+              管理画面で確認
+            </a>
           </p>
         </div>
       `,
-    });
+      });
 
     if (emailError) {
-      console.error("Resend API Error:", emailError);
+      console.error("Email send error:", emailError);
       throw emailError;
     }
 
+    console.log("Email sent successfully");
+
     return new Response(JSON.stringify(emailData), {
-      headers: { "Content-Type": "application/json" },
       status: 200,
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Function error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
-      headers: { "Content-Type": "application/json" },
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      { status: 500 }
+    );
   }
 });

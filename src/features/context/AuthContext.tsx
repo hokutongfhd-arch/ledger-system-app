@@ -230,6 +230,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Immediately refresh the router to allow server components/middleware to see the new cookie
             router.refresh();
+            // バッジの再取得を NotificationContext に通知（router.refresh 後の State リセット対策）
+            if (typeof window !== 'undefined') {
+                setTimeout(() => window.dispatchEvent(new CustomEvent('notification-refresh')), 300);
+            }
 
             // Fetch Employee Profile linked to this Auth User via Secure API
             // This handles RLS bypass and auto-linking if necessary

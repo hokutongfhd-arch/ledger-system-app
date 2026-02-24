@@ -23,6 +23,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const router = useRouter();
     const routerRef = useRef(router);
     const lastAnomalyRef = useRef<{ actor: string, target: string, timestamp: number } | null>(null);
+    // ポーリング用のインターバルRef
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
         routerRef.current = router;
@@ -45,13 +47,38 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const fetchUnreadState = useCallback(async () => {
         try {
+            // まず件数のみ取得（severity カラムが存在しない場合に備えてフォールバックを用意）
             const { data, count, error } = await supabase
                 .from('audit_logs')
-                .select('severity', { count: 'exact' })
+                .select('severity, is_acknowledged', { count: 'exact' })
                 .eq('action_type', 'ANOMALY_DETECTED')
                 .eq('is_acknowledged', false);
 
-            if (error) throw error;
+            if (error) {
+                // severity カラムが原因の場合は severity なしで再試行
+                console.warn('fetchUnreadState: retrying without severity:', error.message);
+                const { count: fallbackCount, error: fallbackError } = await supabase
+                    .from('audit_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('action_type', 'ANOMALY_DETECTED')
+                    .eq('is_acknowledged', false);
+
+                if (fallbackError) {
+                    console.error('fetchUnreadState fallback error:', fallbackError);
+                    return;
+                }
+
+                if (fallbackCount !== null) {
+                    setUnreadCount(fallbackCount);
+                    // severity が取れない場合は medium をデフォルトとして扱う
+                    if (fallbackCount > 0) {
+                        setMaxSeverity(prev => prev ?? 'medium');
+                    } else {
+                        setMaxSeverity(null);
+                    }
+                }
+                return;
+            }
 
             if (count !== null) {
                 setUnreadCount(count);
@@ -60,7 +87,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     data.forEach((log: any) => {
                         const sev = log.severity || 'medium';
                         if (isHigherSeverity(sev, currentMax)) {
-                            currentMax = sev;
+                            currentMax = sev as SeverityLevel;
                         }
                     });
                 }
@@ -69,7 +96,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         } catch (err) {
             console.error('Failed to fetch unread anomalies:', err);
         }
-    }, [isHigherSeverity]);
+    }, [isHigherSeverity, supabase]);
 
     const markAllAsRead = useCallback(async (silent: boolean = false) => {
         try {
@@ -99,15 +126,48 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             if (!silent) {
                 toast.error('既読設定に失敗しました');
             }
+            // 楽観的更新を元に戻す
             fetchUnreadState();
         }
-    }, [fetchUnreadState]);
+    }, [fetchUnreadState, supabase]);
 
     useEffect(() => {
+        // 初回フェッチ
         fetchUnreadState();
 
+        // =========================================================
+        // 30秒ごとのポーリング（ログイン失敗等でリアルタイムが
+        // 届かないケースをカバーする保険として追加）
+        // =========================================================
+        pollingRef.current = setInterval(() => {
+            fetchUnreadState();
+        }, 30000);
+
+        // =========================================================
+        // ページフォーカス時に再取得（ブラウザタブを切り替えた後に
+        // バッジが古い状態で表示される問題を解消）
+        // =========================================================
+        const handleFocus = () => {
+            fetchUnreadState();
+        };
+        window.addEventListener('focus', handleFocus);
+
+        // =========================================================
+        // ログイン成功後などにカスタムイベントで即時再取得
+        // AuthContext.tsx 側で window.dispatchEvent(new CustomEvent('notification-refresh'))
+        // を呼ぶことで、router.refresh() による State リセット後でも
+        // 最新バッジ数を即座に反映できる
+        // =========================================================
+        const handleNotificationRefresh = () => {
+            fetchUnreadState();
+        };
+        window.addEventListener('notification-refresh', handleNotificationRefresh);
+
+        // =========================================================
+        // Realtime: INSERT（新しいアラートが来た時）
+        // =========================================================
         const channel = supabase
-            .channel('audit-notifications-final')
+            .channel('audit-notifications-v2')
             .on(
                 'postgres_changes',
                 {
@@ -123,7 +183,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     const targetType = newLog.target_type || 'N/A';
                     const now = Date.now();
 
-                    // Consecutive detection (same actor + same target + within 30s)
+                    // 連続検知チェック（同一 actor + 同一 target + 30秒以内）
                     const isConsecutive = lastAnomalyRef.current &&
                         lastAnomalyRef.current.actor === actorCode &&
                         lastAnomalyRef.current.target === targetType &&
@@ -131,9 +191,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
                     lastAnomalyRef.current = { actor: actorCode, target: targetType, timestamp: now };
 
+                    // カウントとseverityの即時更新（楽観的更新）
                     setUnreadCount(prev => prev + 1);
-                    setMaxSeverity(prev => isHigherSeverity(severity, prev) ? severity : prev);
+                    setMaxSeverity(prev => isHigherSeverity(severity, prev) ? severity as SeverityLevel : prev);
 
+                    // low の場合はトースト通知しない
                     if (severity === 'low') return;
 
                     const isCritical = severity === 'critical';
@@ -149,15 +211,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     const title = isCritical ? '重大な不正検知' : (isHigh ? '不正検知（高）' : '不正検知');
                     const subtitle = isConsecutive ? '（連続発生）' : '';
 
-                    // Make Critical messages more specific
                     let message = '不審な操作が検出されました。';
                     if (isCritical) {
                         const metaMsg = newLog.metadata?.message;
-                        if (metaMsg) {
-                            message = `${metaMsg}`;
-                        } else {
-                            message = `重大なセキュリティリスクが検知されました: [${newLog.target_type}]`;
-                        }
+                        message = metaMsg ? `${metaMsg}` : `重大なセキュリティリスクが検知されました: [${newLog.target_type}]`;
                     } else if (isHigh) {
                         message = '高レベルの不正が検出されました。早急な確認を推奨します。';
                     }
@@ -204,20 +261,30 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 },
                 (payload) => {
                     const newLog = payload.new as any;
-                    // If action_type is specified and it's not an anomaly, skip
+                    // ANOMALY_DETECTED の既読状態が変わった場合は再フェッチ
                     if (newLog.action_type && newLog.action_type !== 'ANOMALY_DETECTED') {
                         return;
                     }
-                    // Otherwise (if anomaly or if action_type missing from payload), refetch
                     fetchUnreadState();
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    // サブスクライブ成功時に一度フェッチして最新状態を確保
+                    fetchUnreadState();
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('notification-refresh', handleNotificationRefresh);
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+            }
         };
-    }, [fetchUnreadState, isHigherSeverity]);
+    }, [fetchUnreadState, isHigherSeverity, supabase]);
 
     const value = useMemo(() => ({
         unreadCount,

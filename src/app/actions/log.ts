@@ -46,6 +46,9 @@ export async function createLogAction(entry: LogEntry) {
             target_id: entry.targetId,
             result: entry.result,
             is_acknowledged: entry.isAcknowledged ?? false,
+            severity: entry.severity || 'low',
+            details: entry.message || '',
+            occurred_at: new Date().toISOString(),
             metadata: {
                 message: entry.message,
                 ...entry.metadata
