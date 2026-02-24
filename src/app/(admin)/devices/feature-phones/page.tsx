@@ -545,8 +545,14 @@ function FeaturePhoneListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('managementNumber')}>管理番号{getSortIcon('managementNumber')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.managementNumber}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('modelName')}>機種名{getSortIcon('modelName')}</div>, accessor: 'modelName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: (item) => formatPhoneNumber(item.phoneNumber) },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者名{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || '' },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('lendDate')}>貸与日{getSortIcon('lendDate')}</div>, accessor: 'lendDate' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || '' },
+                    {
+                        header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>使用事業所{getSortIcon('addressCode')}</div>,
+                        accessor: (item) => {
+                            const addr = addresses.find(a => a.addressCode === item.addressCode);
+                            return addr ? `${addr.officeName} (${item.addressCode})` : item.addressCode || '';
+                        }
+                    },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('status')}>状況{getSortIcon('status')}</div>,
                         accessor: (item) => (
