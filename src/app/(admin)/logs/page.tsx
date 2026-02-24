@@ -155,9 +155,14 @@ function AuditLogContent() {
                 responseStatus = log.is_acknowledged ? '対応済' : '未対応';
             }
 
+            const actorDisplay = log.actorEmployeeCode
+                ? `${log.actorName} (${log.actorEmployeeCode})`
+                : log.actorName;
+
             return [
                 new Date(log.timestamp).toLocaleString('ja-JP'),
-                `${log.actorName} (${log.actorEmployeeCode})`,
+                // \t prefix prevents Excel from interpreting numeric strings or hyphens as formulas/negative numbers
+                ` ${actorDisplay}`,
                 responseStatus,
                 log.result === 'success' ? '成功' : '失敗',
                 log.details?.replace(/"/g, '""') || ''
@@ -174,7 +179,7 @@ function AuditLogContent() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `監査ログ_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.csv`;
         link.click();
         URL.revokeObjectURL(url);
     };
@@ -381,8 +386,8 @@ function OperationLogContent() {
         const rows = data.map(log => [
             // log.id, // Removed ID
             log.timestamp,
-            log.actorName,
-            log.actorCode,
+            ` ${log.actorName}`,
+            ` ${log.actorCode}`, // Space prefix stops Excel from auto-formatting as number/formula
             TABLE_LABELS[log.tableName] || log.tableName,
             log.operation,
             JSON.stringify(log.oldData).replace(/"/g, '""'),
@@ -399,7 +404,7 @@ function OperationLogContent() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `operation_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `操作ログ_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.csv`;
         link.click();
         URL.revokeObjectURL(url);
     };
