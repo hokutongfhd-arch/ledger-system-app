@@ -222,7 +222,9 @@ function TabletListContent() {
                     description: (
                         <div className="max-h-60 overflow-y-auto">
                             <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
-                            <ul>{errors.map((err, idx) => <li key={idx} className="text-red-600">{err}</li>)}</ul>
+                            <ul className="list-disc pl-5 text-sm text-red-600">
+                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
                         </div>
                     ),
                     confirmText: '閉じる',
@@ -247,7 +249,10 @@ function TabletListContent() {
                     title: 'インポート結果 (一部スキップ)',
                     description: (
                         <div className="max-h-60 overflow-y-auto">
-                            <ul>{errors.map((err, idx) => <li key={idx} className="text-red-600">{err}</li>)}</ul>
+                            <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
+                            <ul className="list-disc pl-5 text-sm text-red-600">
+                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
                         </div>
                     ),
                     confirmText: 'OK',

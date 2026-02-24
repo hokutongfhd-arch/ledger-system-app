@@ -130,33 +130,7 @@ function EmployeeListContent() {
                     title: 'インポートエラー',
                     description: (
                         <div className="max-h-60 overflow-y-auto">
-                            <p className="mb-2">以下のデータは処理されませんでした：</p>
-                            <ul className="list-disc pl-5 text-sm text-red-600">
-                                {validationErrors.map((err, idx) => <li key={idx}>{err}</li>)}
-                            </ul>
-                        </div>
-                    ),
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-                return;
-            }
-
-            // 2. Call Bulk API
-            if (importData.length === 0) {
-                showToast('インポート可能なデータがありませんでした', 'error');
-                return;
-            }
-
-            // ... rest of the function is the same ...
-
-            // If there are validation errors from parsing, show them and stop.
-            if (validationErrors.length > 0) {
-                await confirm({
-                    title: 'インポートエラー',
-                    description: (
-                        <div className="max-h-60 overflow-y-auto">
-                            <p className="mb-2">以下のデータは処理されませんでした：</p>
+                            <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
                             <ul className="list-disc pl-5 text-sm text-red-600">
                                 {validationErrors.map((err, idx) => <li key={idx}>{err}</li>)}
                             </ul>
@@ -186,7 +160,7 @@ function EmployeeListContent() {
                         title: 'インポートエラー',
                         description: (
                             <div className="max-h-60 overflow-y-auto">
-                                <p className="mb-2 font-bold text-red-600">メールアドレスの重複が検出されたためインポートを中止しました</p>
+                                <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
                                 <ul className="list-disc pl-5 text-sm text-red-600">
                                     {result.validationErrors.map((err, idx) => <li key={idx}>{err}</li>)}
                                 </ul>
@@ -206,7 +180,7 @@ function EmployeeListContent() {
                         title: 'インポートエラー',
                         description: (
                             <div className="max-h-60 overflow-y-auto">
-                                <p className="mb-2 text-red-600 font-bold">全件のインポートに失敗しました ({result.failureCount}件)</p>
+                                <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
                                 <ul className="list-disc pl-5 text-sm text-red-600">
                                     {result.errors.map((err, idx) => <li key={idx}>{err}</li>)}
                                 </ul>
@@ -221,7 +195,7 @@ function EmployeeListContent() {
                         title: 'インポート完了 (一部エラー)',
                         description: (
                             <div className="max-h-60 overflow-y-auto">
-                                <p className="mb-2">{result.successCount}件成功, <span className="text-red-600">{result.failureCount}件失敗</span></p>
+                                <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
                                 <ul className="list-disc pl-5 text-sm text-red-600">
                                     {result.errors.map((err, idx) => <li key={idx}>{err}</li>)}
                                 </ul>
