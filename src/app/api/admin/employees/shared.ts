@@ -31,6 +31,27 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
 
     try {
 
+        // --- Step 0: メールアドレスの重複チェック ---
+        if (email) {
+            const { data: emailConflicts, error: emailCheckError } = await supabaseAdmin
+                .from('employees')
+                .select('id, employee_code, name, email')
+                .ilike('email', email.trim()) // 大文字小文字を区別しない
+                .neq('employee_code', employee_code); // 自分自身（同じ社員コード）は除外
+
+            if (emailCheckError) {
+                console.error('[Upsert] Email check failed:', emailCheckError);
+                // チェック失敗時は続行（DB エラーはStep3でキャッチ）
+            } else if (emailConflicts && emailConflicts.length > 0) {
+                const conflictEmployee = emailConflicts[0];
+                return {
+                    success: false,
+                    error: `既に登録されているメールアドレスです（登録済み社員: ${conflictEmployee.name || conflictEmployee.employee_code}）`,
+                    code: employee_code,
+                };
+            }
+        }
+
         // --- Step 1: Resolve Auth User (Identity Resolution) ---
         let targetAuthId: string | null = null;
         let authAction = 'none';

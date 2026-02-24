@@ -52,6 +52,54 @@ export async function POST(req: Request) {
         }
 
         const supabaseAdmin = getSupabaseAdmin();
+
+        // =========================================================
+        // インポート前: メールアドレスの DB 重複チェック
+        // 既に登録されているメールアドレスが含まれていればインポートを中止
+        // =========================================================
+        const importEmails = employees
+            .filter((emp: any) => emp.email) // メールアドレスがある行のみ
+            .map((emp: any) => ({ code: emp.employee_code, email: emp.email.trim().toLowerCase() }));
+
+        if (importEmails.length > 0) {
+            // DB に存在する全社員のメールアドレス一覧を事前取得
+            const emailList = importEmails.map((e: any) => e.email);
+            const { data: existingEmailRows, error: emailFetchError } = await supabaseAdmin
+                .from('employees')
+                .select('employee_code, name, email')
+                .in('email', emailList);
+
+            if (!emailFetchError && existingEmailRows && existingEmailRows.length > 0) {
+                // 自分自身の上書き更新は除外して重複を判定
+                const importCodes = new Set(employees.map((e: any) => e.employee_code));
+                const duplicateErrors: string[] = [];
+
+                existingEmailRows.forEach((row: any) => {
+                    const isOwnUpdate = importCodes.has(row.employee_code);
+                    if (!isOwnUpdate) {
+                        // 既存の別社員のメールと重複
+                        const importedRow = importEmails.find((e: any) =>
+                            e.email === (row.email || '').toLowerCase()
+                        );
+                        if (importedRow) {
+                            duplicateErrors.push(
+                                `メールアドレス「${row.email}」は既に登録されています（登録済み社員: ${row.name || row.employee_code}）`
+                            );
+                        }
+                    }
+                });
+
+                if (duplicateErrors.length > 0) {
+                    return NextResponse.json({
+                        success: false,
+                        error: 'メールアドレスの重複が検出されたためインポートを中止しました',
+                        duplicateErrors,
+                        validationErrors: duplicateErrors,
+                    }, { status: 400 });
+                }
+            }
+        }
+
         const results = [];
 
         // Process sequentially to be safe (or Promise.all with concurrency limit if needed)

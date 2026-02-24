@@ -6,6 +6,7 @@ export const parseAndValidateEmployees = (
     headers: string[]
 ): { validEmployees: Employee[]; errors: string[] } => {
     const processedCodes = new Set<string>();
+    const processedEmails = new Set<string>(); // ファイル内メール重複チェック用
     const importData: Employee[] = [];
     const validationErrors: string[] = [];
 
@@ -100,6 +101,10 @@ export const parseAndValidateEmployees = (
                 rowHasError = true;
             } else if (!/^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
                 validationErrors.push(`${excelRowNumber}行目: メールアドレスの形式が正しくありません`);
+                rowHasError = true;
+            } else if (processedEmails.has(email.toLowerCase())) {
+                // ファイル内でメールアドレスが重複している場合
+                validationErrors.push(`${excelRowNumber}行目: メールアドレス「${email}」がファイル内で重複しています`);
                 rowHasError = true;
             }
         }
@@ -239,6 +244,7 @@ export const parseAndValidateEmployees = (
 
         importData.push(emp as Employee);
         processedCodes.add(rawCode);
+        if (email) processedEmails.add(email.toLowerCase()); // メール重複チェック用に登録
     }
 
     return { validEmployees: importData, errors: validationErrors };

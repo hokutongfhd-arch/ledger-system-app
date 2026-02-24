@@ -100,7 +100,8 @@ export const employeeService = {
             successCount: 0,
             failureCount: 0,
             totalProcessed: 0,
-            errors: [] as string[]
+            errors: [] as string[],
+            validationErrors: [] as string[]
         };
 
         for (let i = 0; i < items.length; i += CHUNK_SIZE) {
@@ -132,6 +133,13 @@ export const employeeService = {
                 });
 
                 if (!response.ok) {
+                    // HTTP 400 はメール重複など構造的エラー
+                    const errData = await response.json().catch(() => ({}));
+                    if (response.status === 400 && errData.validationErrors) {
+                        results.validationErrors = errData.validationErrors;
+                        results.failureCount += chunk.length;
+                        return results; // 即座に中断して結果を返す
+                    }
                     throw new Error(`API Error: ${response.statusText}`);
                 }
 
@@ -150,6 +158,8 @@ export const employeeService = {
 
             } catch (error: any) {
                 console.error('Bulk Save Chunk Error:', error);
+                // 既に結果オブジェクト（results.validationErrors）を返して中断するパスを通っているため、
+                // ここでの特別な処理は不要だが、万が一の他のエラーを拾う
                 results.failureCount += chunk.length;
                 results.errors.push(`Chunk ${i / CHUNK_SIZE + 1} Error: ${error.message}`);
             }

@@ -180,6 +180,24 @@ function EmployeeListContent() {
                 const { employeeService } = await import('../../../../features/employees/employee.service');
                 const result = await employeeService.saveEmployeesBulk(importData);
 
+                // 1. バリデーションエラー（メール重複など）のチェック
+                if (result.validationErrors && result.validationErrors.length > 0) {
+                    await confirm({
+                        title: 'インポートエラー',
+                        description: (
+                            <div className="max-h-60 overflow-y-auto">
+                                <p className="mb-2 font-bold text-red-600">メールアドレスの重複が検出されたためインポートを中止しました</p>
+                                <ul className="list-disc pl-5 text-sm text-red-600">
+                                    {result.validationErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                </ul>
+                            </div>
+                        ),
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                    return;
+                }
+
                 if (result.failureCount === 0) {
                     showToast(`インポート成功: ${result.successCount}件`, 'success');
                 } else if (result.successCount === 0) {

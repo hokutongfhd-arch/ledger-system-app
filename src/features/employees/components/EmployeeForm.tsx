@@ -225,7 +225,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
     };
 
 
-    // Uniqueness Check
+    // Uniqueness Check (社員コード)
     const isDuplicate = useMemo(() => {
         if (!formData.code) return false;
         return employees.some(emp =>
@@ -233,6 +233,16 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
             (!initialData || String(emp.id) !== String(initialData.id))
         );
     }, [employees, formData.code, initialData]);
+
+    // Uniqueness Check (メールアドレス)
+    const isEmailDuplicate = useMemo(() => {
+        if (!formData.email) return false;
+        return employees.some(emp =>
+            emp.email &&
+            emp.email.toLowerCase() === formData.email.toLowerCase() &&
+            (!initialData || String(emp.id) !== String(initialData.id))
+        );
+    }, [employees, formData.email, initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -268,6 +278,12 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         if (isDuplicate) {
             newErrorFields.add('code');
             if (!firstErrorField) firstErrorField = codeRef.current;
+        }
+
+        // メールアドレス重複チェック
+        if (isEmailDuplicate) {
+            newErrorFields.add('email_duplicate');
+            if (!firstErrorField) firstErrorField = emailRef.current;
         }
 
         // Password Validation (8+ digits, numeric only)
@@ -430,8 +446,9 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 placeholder="taro.yamada@example.com"
                                 error={errorFields.has('email') || emailError}
                             />
-                            {errorFields.has('email') && !emailError && <FormError>この項目は必須です</FormError>}
+                            {errorFields.has('email') && !emailError && !errorFields.has('email_duplicate') && <FormError>この項目は必須です</FormError>}
                             {emailError && <FormError>全角文字は入力できません</FormError>}
+                            {errorFields.has('email_duplicate') && <FormError>既に登録されているメールアドレスです</FormError>}
                         </div>
                         <div>
                             <FormLabel>生年月日</FormLabel>
