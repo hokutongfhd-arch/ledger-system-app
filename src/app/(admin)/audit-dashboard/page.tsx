@@ -149,15 +149,15 @@ export default function AuditDashboardPage() {
                             recentAnomalies.length > 0 && recentAnomalies.some(a => !a.is_acknowledged && (a.severity === 'high' || a.severity === 'critical')) && 'ring-4 ring-[#FF6B6B] ring-inset'
                         )}>
                             {recentAnomalies.length > 0 ? (
-                                <div className="space-y-4 overflow-x-auto">
-                                    <table className="w-full text-left min-w-[600px]">
-                                        <thead>
-                                            <tr className="border-b border-[#0A0E27]/10 text-xs font-display font-bold uppercase tracking-tighter opacity-50">
-                                                <th className="py-2">発生日時</th>
-                                                <th className="py-2">実行者</th>
-                                                <th className="py-2">アクション</th>
-                                                <th className="py-2">重要度</th>
-                                                <th className="py-2 text-right px-4">操作</th>
+                                <div className="max-h-[300px] overflow-y-auto pr-4 scroll-smooth">
+                                    <table className="w-full text-left min-w-[600px] border-separate border-spacing-0">
+                                        <thead className="sticky top-0 bg-white z-10 shadow-[0_1px_0_0_rgba(10,14,39,0.1)]">
+                                            <tr className="text-xs font-display font-bold uppercase tracking-tighter opacity-50">
+                                                <th className="py-2 pb-3">発生日時</th>
+                                                <th className="py-2 pb-3">実行者</th>
+                                                <th className="py-2 pb-3">アクション</th>
+                                                <th className="py-2 pb-3">重要度</th>
+                                                <th className="py-2 pb-3 text-right px-4">操作</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#0A0E27]/5">

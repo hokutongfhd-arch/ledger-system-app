@@ -143,9 +143,13 @@ function AuditLogContent() {
         const headers = ['日時', '実行者', '対応', '結果', '詳細'];
         const rows = data.map(log => {
             // Logic to determine Response status (matching UI)
+            const isLoginFailure = log.actionRaw === 'LOGIN_FAILURE';
+            const isHighRiskLoginFailure = isLoginFailure && (log.severity === 'high' || log.severity === 'critical');
+
             const needsResponse = log.actionRaw === 'ANOMALY_DETECTED' ||
-                log.result === 'failure' ||
-                (log.severity && log.severity !== 'low');
+                (log.result === 'failure' && (!isLoginFailure || isHighRiskLoginFailure)) ||
+                (isHighRiskLoginFailure);
+
             let responseStatus = '-';
             if (needsResponse || log.is_acknowledged) {
                 responseStatus = log.is_acknowledged ? '対応済' : '未対応';
@@ -231,9 +235,14 @@ function AuditLogContent() {
                         {
                             header: <div className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => handleSort('is_acknowledged')}>対応{getSortIcon('is_acknowledged')}</div>,
                             accessor: (item) => {
+                                const isLoginFailure = item.actionRaw === 'LOGIN_FAILURE';
+                                const isHighRiskLoginFailure = isLoginFailure && (item.severity === 'high' || item.severity === 'critical');
+
+                                // Determine if this log needs a response badge
                                 const needsResponse = item.actionRaw === 'ANOMALY_DETECTED' ||
-                                    item.result === 'failure' ||
-                                    (item.severity && item.severity !== 'low');
+                                    (item.result === 'failure' && (!isLoginFailure || isHighRiskLoginFailure)) || // Login failure only if high risk
+                                    (item.severity && item.severity !== 'low' && item.severity !== 'medium' && !isLoginFailure) || // Other severities
+                                    (isHighRiskLoginFailure);
 
                                 if (!needsResponse && !item.is_acknowledged) return <span className="text-gray-400">-</span>;
 

@@ -200,14 +200,13 @@ export async function fetchDashboardStatsServer(startDateStr: string) {
 
         if (anomalyError) console.warn('Anomaly Count Error:', anomalyError);
 
-        // Fetch Unacknowledged Anomalies (Recent 5)
+        // Fetch Unacknowledged Anomalies (All) - No limit to match notification badge/KPI
         const { data: recentAnomaliesData, error: recentError } = await supabase
             .from('audit_logs')
             .select('*')
             .eq('action_type', 'ANOMALY_DETECTED')
             .eq('is_acknowledged', false)
-            .order('occurred_at', { ascending: false })
-            .limit(5);
+            .order('occurred_at', { ascending: false });
 
         if (recentError) console.warn('Recent Anomalies Error:', recentError);
 

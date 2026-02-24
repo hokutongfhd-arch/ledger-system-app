@@ -7,7 +7,7 @@ import type { Employee } from '../../lib/types';
 // import { supabase } from '../../lib/supabaseClient'; // REMOVE: Don't use static client for auth
 import { logger } from '../../lib/logger';
 import { loginInitialSetup, getSetupUserServer, logoutSetupAccount } from '../../app/actions/auth_setup';
-import { getLoginEmailAction } from '@/app/actions/auth';
+import { getLoginEmailAction, handleLoginFailureAction, handleLoginSuccessAction } from '@/app/actions/auth';
 
 interface AuthContextType {
     user: Employee | null;
@@ -176,14 +176,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (authError) {
                 console.warn('Auth Login Failed:', authError.message);
-                await logger.log({
-                    action: 'LOGIN_FAILURE',
-                    targetType: 'auth',
-                    message: authError.message || 'Supabase Auth Sign-In Failed',
-                    actor: { employeeCode },
-                    result: 'failure',
-                    metadata: { error: authError }
-                });
+
+                // 失敗回数の更新と取得
+                const failureStatus = await handleLoginFailureAction(employeeCode);
+                const isAlertThreshold = failureStatus.count >= 5;
+
+                if (isAlertThreshold) {
+                    // 5回目以上の場合は「異常検知」ログのみを記録
+                    await logger.log({
+                        action: 'ANOMALY_DETECTED',
+                        targetType: 'auth',
+                        message: `同一社員外部コード(${employeeCode})による連続ログイン失敗を検知しました (${failureStatus.count}回)`,
+                        actor: { employeeCode },
+                        result: 'failure',
+                        isAcknowledged: false, // 異常検知は明示的に「未対応」として開始
+                        severity: 'high' as any,
+                        metadata: {
+                            failureCount: failureStatus.count,
+                            type: 'LOGIN_BRUTE_FORCE',
+                            error: authError,
+                            isRegistered: failureStatus.isRegistered
+                        }
+                    });
+                } else {
+                    // 1〜4回目は通常の失敗ログのみを記録
+                    await logger.log({
+                        action: 'LOGIN_FAILURE',
+                        targetType: 'auth',
+                        message: `ログイン失敗${failureStatus.count}回目`,
+                        actor: { employeeCode },
+                        result: 'failure',
+                        metadata: {
+                            error: authError,
+                            failureCount: failureStatus.count,
+                            isRegistered: failureStatus.isRegistered
+                        }
+                    });
+                }
                 return null;
             }
 
@@ -229,6 +258,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const employee = mapEmployeeFromDb(employeeData);
             console.log(`[AuthContext] Profile Fetched: Code=${employee.code}, Authority=${employeeData.authority} -> Role=${employee.role}`); // Debug Log
             setUser(employee);
+
+            // ログイン成功時に失敗回数をリセット
+            await handleLoginSuccessAction(employee.code);
+
             await logger.info({
                 action: 'LOGIN_SUCCESS',
                 targetType: 'auth',

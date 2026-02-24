@@ -41,6 +41,7 @@ export interface LogEntry {
         name?: string;
     };
     isAcknowledged?: boolean;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
 }
 
 class LoggerService {

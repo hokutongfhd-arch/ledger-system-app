@@ -52,9 +52,10 @@ const LogDetailModal: React.FC<LogDetailModalProps> = ({ log, isOpen, onClose, o
     const isLargeMetadata = metadataStr.length > 2000;
 
     // Determine if this log needs a response or already has one
+    const isLoginFailure = log.actionRaw === 'LOGIN_FAILURE';
     const needsResponse = (isAnomaly ||
-        isFailure ||
-        (log.severity && log.severity !== 'low')) && log.actionRaw !== 'GENERATE';
+        (isFailure && !isLoginFailure) || // Exclude login failures from details-level response tracking
+        (log.severity && log.severity !== 'low' && !isLoginFailure)) && log.actionRaw !== 'GENERATE';
     const hasResponse = !!log.response_status || log.is_acknowledged;
     const showResponseSection = needsResponse || hasResponse;
 
