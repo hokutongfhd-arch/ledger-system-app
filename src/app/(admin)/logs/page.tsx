@@ -137,7 +137,12 @@ function AuditLogContent() {
             targetType: 'report',
             targetId: 'audit_logs',
             result: 'success',
-            message: `監査ログのエクスポート: ${data.length}件`
+            message: `監査ログのエクスポート: ${data.length}件`,
+            actor: user ? {
+                authId: user.authId,
+                employeeCode: user.code,
+                name: user.name
+            } : undefined
         });
 
         const headers = ['日時', '実行者', '対応', '結果', '詳細'];
@@ -379,7 +384,12 @@ function OperationLogContent() {
             targetType: 'report',
             targetId: 'operation_logs',
             result: 'success',
-            message: `操作ログのエクスポート: ${data.length}件`
+            message: `操作ログのエクスポート: ${data.length}件`,
+            actor: user ? {
+                authId: user.authId,
+                employeeCode: user.code,
+                name: user.name
+            } : undefined
         });
 
         const headers = ['日時', '実行者名', '社員CD', 'テーブル', '操作', '変更前データ', '変更後データ'];
