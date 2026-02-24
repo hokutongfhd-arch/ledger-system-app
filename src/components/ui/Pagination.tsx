@@ -26,6 +26,41 @@ export const Pagination: React.FC<PaginationProps> = ({
     selectedCount = 0,
     onBulkDelete
 }) => {
+    const [inputVal, setInputVal] = React.useState(String(currentPage));
+
+    React.useEffect(() => {
+        setInputVal(String(currentPage));
+    }, [currentPage]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputVal(e.target.value);
+    };
+
+    const validateAndChange = (value: string) => {
+        let page = parseInt(value, 10);
+        if (isNaN(page) || page < 1) {
+            page = 1;
+        } else if (page > totalPages) {
+            page = totalPages;
+        }
+
+        if (page !== currentPage) {
+            onPageChange(page);
+        } else {
+            setInputVal(String(currentPage));
+        }
+    };
+
+    const handleInputBlur = () => {
+        validateAndChange(inputVal);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            validateAndChange(inputVal);
+        }
+    };
+
     return (
         <div className="flex flex-col xl:flex-row justify-between items-center bg-white p-4 border-t border-gray-200 mt-auto rounded-b-lg gap-4">
             {/* Left: Result Count and Bulk Actions */}
@@ -68,8 +103,10 @@ export const Pagination: React.FC<PaginationProps> = ({
                             type="number"
                             min={1}
                             max={totalPages || 1}
-                            value={currentPage}
-                            onChange={(e) => onPageChange(Number(e.target.value))}
+                            value={inputVal}
+                            onChange={handleInputChange}
+                            onBlur={handleInputBlur}
+                            onKeyDown={handleKeyDown}
                             className="w-16 border border-gray-300 rounded px-2 py-1 text-center text-sm"
                         />
                         <span className="text-sm text-gray-600 whitespace-nowrap">/ {totalPages || 1} ページ</span>

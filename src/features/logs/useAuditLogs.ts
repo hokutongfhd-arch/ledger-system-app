@@ -73,20 +73,28 @@ export const useAuditLogs = () => {
             });
 
             if (error) {
-                console.error('Server fetch error:', error);
-                // Attempt to display a more user-friendly error if it's JSON
-                let displayError = error;
+                // High-level log for developers
+                console.error('[AuditLogs] Fetch error occurred:', {
+                    error,
+                    currentPage,
+                    pageSize,
+                    filters
+                });
+
+                let displayError = 'サーバーとの通信中にエラーが発生しました';
                 try {
-                    // Try to parse if it looks like JSON
-                    if (error.trim().startsWith('{')) {
+                    if (typeof error === 'string' && error.trim().startsWith('{')) {
                         const parsed = JSON.parse(error);
+                        console.error('[AuditLogs] Parsed server error details:', parsed);
                         displayError = parsed.message || parsed.error || error;
+                    } else if (typeof error === 'object') {
+                        console.error('[AuditLogs] Raw error object:', error);
+                        displayError = (error as any).message || JSON.stringify(error);
                     } else {
-                        displayError = error;
+                        displayError = String(error);
                     }
                 } catch (e) {
-                    // Not JSON, keep as is
-                    displayError = error;
+                    displayError = String(error);
                 }
                 toast.error(`ログ取得エラー: ${displayError}`, { id: 'fetch-error' });
             }
@@ -95,8 +103,14 @@ export const useAuditLogs = () => {
             const mappedLogs = (data || []).map(logService.mapLogFromDb);
             setLogs(mappedLogs);
             setTotalCount(total);
+
+            // Bounds check: if current page is now beyond total pages due to new filters/count
+            const maxPage = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage > maxPage) {
+                setCurrentPage(maxPage);
+            }
         } catch (error: any) {
-            console.error('Failed to fetch audit logs:', error);
+            console.error('[AuditLogs] Failed to fetch audit logs (Exception):', error);
             toast.error('監査ログの取得に失敗しました');
         } finally {
             setLoading(false);
