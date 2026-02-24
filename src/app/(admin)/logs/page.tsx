@@ -346,7 +346,7 @@ function OperationLogContent() {
     const TABLE_LABELS: Record<string, string> = {
         employees: '社員マスタ',
         areas: 'エリアマスタ',
-        addresses: '住所マスタ',
+        addresses: '事業所マスタ',
         tablets: '勤怠タブレット',
         iphones: 'iPhone',
         featurephones: 'ガラホ',

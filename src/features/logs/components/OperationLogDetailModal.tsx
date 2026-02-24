@@ -11,7 +11,7 @@ interface OperationLogDetailModalProps {
 const TABLE_LABELS: Record<string, string> = {
     employees: '社員マスタ',
     areas: 'エリアマスタ',
-    addresses: '住所マスタ',
+    addresses: '事業所マスタ',
     tablets: '勤怠タブレット',
     iphones: 'iPhone',
     featurephones: 'ガラホ',
@@ -27,37 +27,35 @@ const FIELD_LABELS: Record<string, string> = {
 
     // Employee
     name: '氏名',
-    nameKana: '氏名（カナ）',
     name_kana: '氏名（カナ）',
-    code: '社員名',
-    employee_code: '社員名',
+    nameKana: '氏名（カナ）',
+    code: '社員コード',
+    employee_code: '社員コード',
     email: 'メールアドレス',
     role: '権限',
-    companyNo: '会社番号',
-    company_no: '会社番号',
-    departmentCode: '部署コード',
-    department_code: '部署コード',
-    department: '部署',
     gender: '性別',
     birthDate: '生年月日',
     birth_date: '生年月日',
-    joinDate: '入社日',
-    join_date: '入社日',
     age: '年齢',
+    joinDate: '入社年月日',
+    join_date: '入社年月日',
     yearsOfService: '勤続年数',
     years_of_service: '勤続年数',
-    employeeType: '社員区分',
-    employee_type: '社員区分',
-    salaryType: '給与区分',
-    salary_type: '給与区分',
-    costType: '原価区分',
-    cost_type: '原価区分',
-    roleTitle: '役職名',
-    role_title: '役職名',
-    jobType: '職種',
+    monthsHasuu: '勤続端数月数',
+    months_hasuu: '勤続端数月数',
+    area_code: 'エリアコード',
+    addressCode: '事業所コード',
+    address_code: '事業所コード',
+    age_at_month_end: '年齢',
+    authority: '権限',
+    birthday: '生年月日',
+    cost_class: '原価区分',
+    employee_class: '社員区分',
     job_type: '職種',
-    profileImage: 'プロフィール画像',
-    profile_image: 'プロフィール画像',
+    months_in_service: '勤続端数月数',
+    position: '役職名',
+    salary_class: '給与区分',
+    years_in_service: '勤続年数',
 
     // Device General
     managementNumber: '管理番号',
@@ -75,12 +73,6 @@ const FIELD_LABELS: Record<string, string> = {
     receipt_date: '受領書提出日',
     returnDate: '返却日',
     return_date: '返却日',
-    costCompany: '負担先会社',
-    cost_company: '負担先会社',
-    employeeId: '社員名',
-    employee_id: '社員名',
-    addressCode: '事業所',
-    address_code: '事業所',
 
     // Tablet / Router Specific
     terminalCode: '端末CD',
@@ -88,9 +80,10 @@ const FIELD_LABELS: Record<string, string> = {
     maker: 'メーカー',
     modelNumber: '機種型番',
     model_number: '機種型番',
-    officeCode: '事業所CD',
-    office_code: '事業所CD',
-    history: '履歴',
+    history: '過去貸与履歴',
+    lendingHistory: '過去貸与履歴',
+    lending_history: '過去貸与履歴',
+    lend_history: '過去貸与履歴',
     smartAddressId: 'スマートアドレスID',
     smart_address_id: 'スマートアドレスID',
     smartAddressPw: 'スマートアドレスPW',
@@ -101,6 +94,7 @@ const FIELD_LABELS: Record<string, string> = {
     cost_transfer: '費用振替',
     dataCapacity: '通信容量',
     data_capacity: '通信容量',
+    data_limit: '通信容量',
     simNumber: 'SIM電番',
     sim_number: 'SIM電番',
     ipAddress: 'IPアドレス',
@@ -111,48 +105,92 @@ const FIELD_LABELS: Record<string, string> = {
     start_ip: '開始IP',
     endIp: '終了IP',
     end_ip: '終了IP',
-    company: '会社',
-    actualLender: '実貸与先',
-    actual_lender: '実貸与先',
-    actualLenderName: '実貸与先名',
-    actual_lender_name: '実貸与先名',
     costBearer: '負担先',
     cost_bearer: '負担先',
-    lendingHistory: '貸与履歴',
-    lending_history: '貸与履歴',
     contractStatus: '契約状況',
     contract_status: '契約状況',
+    costCompany: '負担先',
+    cost_company: '負担先',
+    employeeId: '使用者',
+    employee_id: '使用者',
+    employeeCode: '使用者',
 
     // Area
-    areaCode: 'エリアコード',
-    area_code: 'エリアコード',
     areaName: 'エリア名',
     area_name: 'エリア名',
 
     // Address
-    officeName: '拠点名',
-    office_name: '拠点名',
+    officeName: '事業所名',
+    office_name: '事業所名',
+    fax: 'FAX',
     tel: '電話番号',
-    fax: 'FAX番号',
-    zipCode: '郵便番号',
-    zip_code: '郵便番号',
+    zipCode: '〒',
+    zip_code: '〒',
+    zip: '〒',
     address: '住所',
-    division: '所属',
-    area: 'エリア',
-    mainPerson: '担当者',
-    main_person: '担当者',
+    division: '事業部',
+    area: 'エリアコード',
+    mainPerson: '主担当',
+    main_person: '主担当',
     branchNumber: '枝番',
     branch_number: '枝番',
-    specialNote: '特記事項',
-    special_note: '特記事項',
-    attentionNote: '注意事項',
-    attention_note: '注意事項',
-    labelName: '宛名用氏名',
-    label_name: '宛名用氏名',
-    labelZip: '宛名用郵便番号',
-    label_zip: '宛名用郵便番号',
-    labelAddress: '宛名用住所',
-    label_address: '宛名用住所'
+    specialNote: '※',
+    special_note: '※',
+    attentionNote: '※',
+    attention_note: '※',
+    labelName: '宛名ラベル用',
+    label_name: '宛名ラベル用',
+    labelZip: '宛名ラベル用〒',
+    label_zip: '宛名ラベル用〒',
+    labelAddress: '宛名ラベル用住所',
+    label_address: '宛名ラベル用住所',
+    branch_no: '枝番',
+    caution: '※',
+    department: '事業部',
+    remarks: '注意書き',
+    supervisor: '主担当',
+    type: '区分',
+    category: '区分',
+    accountingCode: '経理コード',
+    accounting_code: '経理コード'
+};
+
+const TABLE_FIELD_ORDER: Record<string, string[]> = {
+    employees: [
+        'code', 'employee_code', 'gender', 'status', 'name', 'nameKana', 'name_kana', 'email', 'birthday', 'birthDate', 'birth_date', 'age', 'age_at_month_end',
+        'areaCode', 'area_code', 'addressCode', 'address_code', 'joinDate', 'join_date', 'years_in_service', 'yearsOfService', 'years_of_service',
+        'months_in_service', 'monthsHasuu', 'months_hasuu', 'authority', 'role', 'employee_class', 'salary_class', 'cost_class', 'position', 'job_type'
+    ],
+    addresses: [
+        'addressCode', 'address_code', 'officeName', 'office_name', 'area', 'no', 'zipCode', 'zip_code', 'zip', 'address',
+        'tel', 'fax', 'division', 'department', 'accountingCode', 'accounting_code', 'supervisor', 'mainPerson', 'main_person',
+        'branchNumber', 'branch_number', 'branch_no', 'specialNote', 'special_note', 'caution', 'attentionNote', 'attention_note',
+        'notes', 'labelName', 'label_name', 'labelZip', 'label_zip', 'labelAddress', 'label_address', 'remarks'
+    ],
+    areas: ['areaCode', 'area_code', 'areaName', 'area_name'],
+    iphones: [
+        'managementNumber', 'management_number', 'phoneNumber', 'phone_number', 'modelName', 'model_name', 'contractYears',
+        'contract_years', 'carrier', 'status', 'employee_code', 'employeeCode', 'employeeId', 'employee_id', 'addressCode', 'address_code',
+        'costBearer', 'cost_bearer', 'receiptDate', 'receipt_date', 'lendDate', 'lend_date', 'returnDate', 'return_date',
+        'smartAddressId', 'smart_address_id', 'smartAddressPw', 'smart_address_pw', 'notes'
+    ],
+    featurephones: [
+        'managementNumber', 'management_number', 'phoneNumber', 'phone_number', 'modelName', 'model_name', 'contractYears',
+        'contract_years', 'carrier', 'status', 'employee_code', 'employeeCode', 'employeeId', 'employee_id', 'addressCode', 'address_code',
+        'costCompany', 'cost_company', 'receiptDate', 'receipt_date', 'lendDate', 'lend_date', 'returnDate', 'return_date', 'notes'
+    ],
+    tablets: [
+        'terminalCode', 'terminal_code', 'modelNumber', 'model_number', 'maker', 'contractYears', 'contract_years', 'status',
+        'employee_code', 'employeeCode', 'employeeId', 'employee_id', 'addressCode', 'address_code', 'costBearer', 'cost_bearer',
+        'lend_history', 'lending_history', 'lendingHistory', 'notes'
+    ],
+    routers: [
+        'terminalCode', 'terminal_code', 'simNumber', 'sim_number', 'modelNumber', 'model_number', 'carrier', 'dataCapacity',
+        'data_capacity', 'data_limit', 'contractStatus', 'contract_status', 'contractYears', 'contract_years', 'status', 'employee_code',
+        'employeeCode', 'employeeId', 'employee_id', 'addressCode', 'address_code', 'ipAddress', 'ip_address', 'subnetMask',
+        'subnet_mask', 'startIp', 'start_ip', 'endIp', 'end_ip', 'biller', 'costBearer', 'cost_bearer', 'cost', 'costTransfer',
+        'cost_transfer', 'lending_history', 'lendingHistory', 'lend_history', 'notes'
+    ]
 };
 
 const OP_MAP: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -170,8 +208,6 @@ const STATUS_VALUE_MAP: Record<string, string> = {
     'backup': '予備機'
 };
 
-
-
 const formatLogValue = (key: string, value: any): React.ReactNode => {
     // 1. Handle explicit null/undefined
     if (value === undefined || value === null) return <span className="text-gray-400 italic font-normal text-[10px]">(なし)</span>;
@@ -184,13 +220,12 @@ const formatLogValue = (key: string, value: any): React.ReactNode => {
     }
 
     // 3. Handle "Return" (Empty values for specific fields)
-    // When Employee or Office is set to "Return" (unassigned), the value becomes empty.
     const RETURN_FIELDS = ['employee_code', 'employeeId', 'employee_id', 'address_code', 'addressCode', 'office_code', 'officeCode'];
     if (RETURN_FIELDS.includes(key) && strVal === '') {
         return '返却';
     }
 
-    // 4. Handle other empty strings (if not caught above)
+    // 4. Handle other empty strings
     if (strVal === '') {
         return <span className="text-gray-400 italic font-normal text-[10px]">(なし)</span>;
     }
@@ -207,15 +242,44 @@ export const OperationLogDetailModal: React.FC<OperationLogDetailModalProps> = (
         const oldData = log.oldData || {};
         const newData = log.newData || {};
 
-        // Ignore internal DB fields in diff if possible, or show all
-        const allKeys = Array.from(new Set([...Object.keys(oldData), ...Object.keys(newData)]))
-            .filter(k => !['id', 'created_at', 'updated_at', 'auth_id'].includes(k))
-            .sort();
+        const IGNORE_KEYS = ['id', 'created_at', 'updated_at', 'auth_id', 'user_name', 'operator_id', 'operator_name'];
+        if (log.tableName === 'routers') {
+            IGNORE_KEYS.push(
+                'actual_lender', 'actual_lender_name', 'company',
+                'no', '№', 'payer'
+            );
+        }
+        if (log.tableName === 'featurephones') {
+            IGNORE_KEYS.push('cost_bearer');
+        }
+        if (log.tableName === 'tablets') {
+            IGNORE_KEYS.push('address', 'office_code', 'officeCode');
+        }
+        if (log.tableName === 'employees') {
+            IGNORE_KEYS.push('employee_class', 'salary_class', 'cost_class', 'position', 'job_type');
+        }
+        if (log.tableName === 'addresses') {
+            IGNORE_KEYS.push('type', 'category');
+        }
 
-        const changes = allKeys.filter(key => {
+        const allKeys = Array.from(new Set([...Object.keys(oldData), ...Object.keys(newData)]))
+            .filter(k => !IGNORE_KEYS.includes(k));
+
+        // Sort based on TABLE_FIELD_ORDER
+        const fieldOrder = TABLE_FIELD_ORDER[log.tableName] || [];
+        const sortedKeys = allKeys.sort((a, b) => {
+            const indexA = fieldOrder.indexOf(a);
+            const indexB = fieldOrder.indexOf(b);
+
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+
+        const changes = sortedKeys.filter(key => {
             const oldVal = oldData[key];
             const newVal = newData[key];
-            // Shallow compare for JSONB primitives
             return JSON.stringify(oldVal) !== JSON.stringify(newVal);
         });
 
@@ -237,12 +301,22 @@ export const OperationLogDetailModal: React.FC<OperationLogDetailModalProps> = (
                     <tbody className="divide-y divide-border">
                         {changes.map(key => (
                             <tr key={key} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="px-4 py-2 font-medium text-xs text-blue-800">
-                                    {FIELD_LABELS[key] || key}
-                                    {FIELD_LABELS[key] && <div className="text-[9px] text-gray-400 font-mono mt-0.5">{key}</div>}
+                                <td className="px-4 py-2 font-medium text-xs">
+                                    <div className="text-blue-800 font-bold mb-0.5">
+                                        {(() => {
+                                            if (log.tableName === 'routers') {
+                                                if (key === 'carrier') return '通信キャリア';
+                                                if (['history', 'lendingHistory', 'lending_history', 'lend_history'].includes(key)) return '貸与履歴';
+                                            }
+                                            return FIELD_LABELS[key] || key;
+                                        })()}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 font-mono">
+                                        {key}
+                                    </div>
                                 </td>
                                 <td className="px-4 py-2">
-                                    <div className="text-red-600 bg-red-50 px-2 py-1 rounded line-through break-all whitespace-pre-wrap">
+                                    <div className="text-red-600 bg-red-50 px-2 py-1 rounded break-all whitespace-pre-wrap">
                                         {formatLogValue(key, log.oldData?.[key])}
                                     </div>
                                 </td>
