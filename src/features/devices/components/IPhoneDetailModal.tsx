@@ -89,20 +89,21 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
         <Modal isOpen={isOpen} onClose={onClose} title={showHistory ? "iPhone 使用履歴" : "iPhone デバイス詳細"}>
             <div className="space-y-6 font-sans">
                 {/* Header Section with Status */}
-                <div className="flex justify-between items-start border-b border-gray-100 pb-4">
+                <div className="flex justify-between items-start border-b border-gray-100 pb-6">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h3 className="text-2xl font-bold text-gray-800 tracking-tight">{item.managementNumber}</h3>
-                            {!showHistory && (
-                                <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
-                                    {getStatusLabel(item.status)}
-                                </span>
-                            )}
                         </div>
-                        <p className="text-gray-500 text-sm flex items-center gap-1">
-                            <Smartphone size={14} />
-                            {item.modelName} / {item.carrier}
-                        </p>
+                        <div className="space-y-1">
+                            <p className="text-gray-500 text-sm flex items-center gap-1">
+                                <Smartphone size={14} />
+                                {item.modelName} / {item.carrier}
+                            </p>
+                            <p className="text-blue-600 font-bold text-lg flex items-center gap-2">
+                                <span className="text-xs text-gray-400 font-normal">TEL:</span>
+                                {formatPhoneNumber(item.phoneNumber)}
+                            </p>
+                        </div>
                     </div>
                     <div>
                         {!showHistory ? (

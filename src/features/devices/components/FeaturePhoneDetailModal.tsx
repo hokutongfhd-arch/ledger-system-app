@@ -91,11 +91,6 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h3 className="text-2xl font-bold text-gray-800 tracking-tight">{item.managementNumber}</h3>
-                            {!showHistory && (
-                                <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
-                                    {getStatusLabel(item.status)}
-                                </span>
-                            )}
                         </div>
                         <div className="space-y-1">
                             <p className="text-gray-500 text-sm flex items-center gap-1">

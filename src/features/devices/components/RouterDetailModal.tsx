@@ -93,11 +93,6 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h3 className="text-2xl font-bold text-gray-800 tracking-tight">{item.terminalCode}</h3>
-                            {!showHistory && (
-                                <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(item.status)}`}>
-                                    {getStatusLabel(item.status)}
-                                </span>
-                            )}
                         </div>
                         <div className="text-gray-500 text-sm space-y-1">
                             <div className="flex items-center gap-1">
