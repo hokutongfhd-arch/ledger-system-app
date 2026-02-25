@@ -41,6 +41,8 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
     profileImage: typeof window !== 'undefined' ? localStorage.getItem(`profile_image_${d.id}`) || '' : '',
     authId: s(d.auth_id),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 // Singleton pattern for Supabase client to prevent "Multiple GoTrueClient instances" in dev

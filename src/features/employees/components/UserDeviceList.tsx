@@ -28,8 +28,8 @@ export const UserDeviceList: React.FC<UserDeviceListProps> = ({ targetCode, targ
     if (!codeToUse && !targetCode) return null; // If no target and no logged-in user, show nothing
 
     // Filter devices assigned to the target user
-    const myIPhones = iPhones.filter(d => d.employeeId === codeToUse);
-    const myFeaturePhones = featurePhones.filter(d => d.employeeId === codeToUse);
+    const myIPhones = iPhones.filter(d => d.employeeCode === codeToUse);
+    const myFeaturePhones = featurePhones.filter(d => d.employeeCode === codeToUse);
     const myRouters = routers.filter(d => (d.employeeCode && d.employeeCode === codeToUse) || d.actualLender === codeToUse || d.actualLender === nameToUse);
     const myTablets = tablets.filter(d => d.employeeCode === codeToUse);
 

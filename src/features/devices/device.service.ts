@@ -1,5 +1,5 @@
 import { deviceApi } from './device.api';
-import type { Tablet, IPhone, FeaturePhone, Router, DeviceStatus } from './device.types';
+import type { Tablet, IPhone, FeaturePhone, Router, DeviceStatus } from '../../lib/types';
 import { formatPhoneNumber } from '../../lib/utils/phoneUtils';
 
 // --- Data Mappers ---
@@ -20,6 +20,8 @@ export const deviceService = {
         status: (d.status as DeviceStatus) || 'available',
         contractYears: s(d.contract_years),
         employeeCode: s(d.employee_code),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
     }),
     mapTabletToDb: (t: Partial<Tablet>) => ({
         terminal_code: t.terminalCode,
@@ -41,7 +43,7 @@ export const deviceService = {
         carrier: s(d.carrier),
         phoneNumber: s(d.phone_number),
         managementNumber: s(d.management_number),
-        employeeId: s(d.employee_code),
+        employeeCode: s(d.employee_code),
         addressCode: s(d.address_code),
         costBearer: s(d.cost_bearer),
         smartAddressId: s(d.smart_address_id),
@@ -53,12 +55,14 @@ export const deviceService = {
         modelName: s(d.model_name),
         status: (d.status as DeviceStatus) || 'available',
         contractYears: s(d.contract_years),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
     }),
     mapIPhoneToDb: (t: Partial<IPhone>) => ({
         carrier: t.carrier,
         phone_number: t.phoneNumber ? formatPhoneNumber(t.phoneNumber) : t.phoneNumber,
         management_number: t.managementNumber,
-        employee_code: t.employeeId,
+        employee_code: t.employeeCode,
         address_code: t.addressCode,
         cost_bearer: t.costBearer,
         smart_address_id: t.smartAddressId,
@@ -78,7 +82,7 @@ export const deviceService = {
         carrier: s(d.carrier),
         phoneNumber: s(d.phone_number),
         managementNumber: s(d.management_number),
-        employeeId: s(d.employee_code),
+        employeeCode: s(d.employee_code),
         addressCode: s(d.address_code),
         costCompany: s(d.cost_company),
         lendDate: s(d.lend_date),
@@ -88,12 +92,14 @@ export const deviceService = {
         modelName: s(d.model_name),
         status: (d.status as DeviceStatus) || 'available',
         contractYears: s(d.contract_years),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
     }),
     mapFeaturePhoneToDb: (t: Partial<FeaturePhone>) => ({
         carrier: t.carrier,
         phone_number: t.phoneNumber,
         management_number: t.managementNumber,
-        employee_code: t.employeeId,
+        employee_code: t.employeeCode,
         address_code: t.addressCode,
         cost_company: t.costCompany,
         lend_date: t.lendDate,
@@ -108,7 +114,7 @@ export const deviceService = {
     // Routers
     mapRouterFromDb: (d: any): Router => ({
         id: d.id,
-
+        no: s(d.no),
         biller: s(d.biller),
         terminalCode: s(d.terminal_code),
         modelNumber: s(d.model_number),
@@ -121,8 +127,11 @@ export const deviceService = {
         subnetMask: s(d.subnet_mask),
         startIp: s(d.start_ip),
         endIp: s(d.end_ip),
+        company: s(d.company),
         addressCode: s(d.address_code),
+        actualLender: s(d.actual_lender),
         costBearer: s(d.cost_bearer),
+        actualLenderName: s(d.actual_lender_name),
         lendingHistory: s(d.lend_history),
         notes: s(d.notes),
         status: (d.status as DeviceStatus) || 'available',
@@ -130,9 +139,11 @@ export const deviceService = {
         returnDate: '',
         contractYears: s(d.contract_years),
         employeeCode: s(d.employee_code),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
     }),
     mapRouterToDb: (t: Partial<Router>) => ({
-
+        no: t.no,
         biller: t.biller,
         terminal_code: t.terminalCode,
         model_number: t.modelNumber,
@@ -145,8 +156,11 @@ export const deviceService = {
         subnet_mask: t.subnetMask,
         start_ip: t.startIp,
         end_ip: t.endIp,
+        company: t.company,
         address_code: t.addressCode,
+        actual_lender: t.actualLender,
         cost_bearer: t.costBearer,
+        actual_lender_name: t.actualLenderName,
         lend_history: t.lendingHistory,
         notes: t.notes,
         contract_status: t.contractStatus,

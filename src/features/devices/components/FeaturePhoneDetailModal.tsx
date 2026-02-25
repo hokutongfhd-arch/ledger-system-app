@@ -2,7 +2,7 @@ import { DetailRow } from '../../../components/ui/DetailView';
 import { SectionHeader } from '../../../components/ui/Section';
 import { Modal } from '../../../components/ui/Modal';
 import { getFeaturePhoneHistoryAction } from '../../../app/actions/device';
-import { FeaturePhone, FeaturePhoneUsageHistory } from '../device.types';
+import { FeaturePhone, FeaturePhoneUsageHistory } from '../../../lib/types';
 import { Employee, Address } from '../../../lib/types';
 import { Phone, MapPin, Calendar, FileText, User, Building, History, ArrowLeft } from 'lucide-react';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
@@ -51,7 +51,7 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
 
     if (!item) return null;
 
-    const employeeName = employees.find(e => e.code === item.employeeId)?.name || '-';
+    const employeeName = employees.find(e => e.code === item.employeeCode)?.name || '-';
     // Helper to resolve employee name in history
     const getEmployeeName = (code: string) => employees.find(e => e.code === code)?.name || code;
 
@@ -196,7 +196,7 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                             <SectionHeader icon={<User size={18} />} title="使用者情報" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <DetailRow label="社員名" value={employeeName} subValue={item.employeeId} icon={<User size={14} className="text-gray-400" />} />
+                                    <DetailRow label="社員名" value={employeeName} subValue={item.employeeCode} icon={<User size={14} className="text-gray-400" />} />
                                     <DetailRow label="事業所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
                                 </div>
                                 <DetailRow label="負担先" value={item.costCompany} />

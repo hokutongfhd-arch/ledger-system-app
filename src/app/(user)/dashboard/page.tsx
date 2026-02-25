@@ -43,8 +43,8 @@ function UserDashboardContent() {
 
         // 1. Identify devices assigned to this user
         const userDeviceIds = new Set<string>();
-        iPhones.forEach(d => { if (d.employeeId === user.code) userDeviceIds.add(d.id); });
-        featurePhones.forEach(d => { if (d.employeeId === user.code) userDeviceIds.add(d.id); });
+        iPhones.forEach(d => { if (d.employeeCode === user.code) userDeviceIds.add(d.id); });
+        featurePhones.forEach(d => { if (d.employeeCode === user.code) userDeviceIds.add(d.id); });
         tablets.forEach(d => { if (d.employeeCode === user.code) userDeviceIds.add(d.id); });
         routers.forEach(d => { if (d.employeeCode === user.code) userDeviceIds.add(d.id); });
 

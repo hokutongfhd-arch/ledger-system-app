@@ -239,7 +239,9 @@ export const parseAndValidateEmployees = (
             password: password,
             companyNo: '',
             departmentCode: '',
-            email: email
+            email: email,
+            version: 1,
+            updatedAt: '',
         };
 
         importData.push(emp as Employee);

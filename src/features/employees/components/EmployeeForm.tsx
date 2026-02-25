@@ -41,6 +41,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
         monthsHasuu: 0,
         areaCode: '',
         addressCode: '',
+        version: 1,
+        updatedAt: '',
     });
 
     // Splitting name and nameKana for the form UI

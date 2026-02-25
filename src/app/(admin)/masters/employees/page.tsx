@@ -240,7 +240,7 @@ function EmployeeListContent() {
 
         if (confirmed) {
             try {
-                await deleteEmployee(item.id);
+                await deleteEmployee(item.id, item.version);
             } catch (error) {
                 console.error(error);
             }

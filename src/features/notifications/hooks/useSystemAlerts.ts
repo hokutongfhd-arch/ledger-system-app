@@ -95,27 +95,27 @@ export const useSystemAlerts = () => {
         // 1. Unregistered Employee Code
         // iPhone
         iPhones.forEach(d => {
-            if (d.employeeId && !employeeCodes.has(d.employeeId)) {
+            if (d.employeeCode && !employeeCodes.has(d.employeeCode)) {
                 result.push({
                     id: `unreg-emp-iphone-${d.id}`,
                     type: 'unregistered_employee',
                     source: 'iPhone',
-                    message: `登録されていない社員コード「${d.employeeId}」が使用されています`,
+                    message: `登録されていない社員コード「${d.employeeCode}」が使用されています`,
                     recordId: d.id,
-                    path: `/devices/iphones?highlight=${d.id}&field=employeeId`
+                    path: `/devices/iphones?highlight=${d.id}&field=employeeCode`
                 });
             }
         });
         // FeaturePhone
         featurePhones.forEach(d => {
-            if (d.employeeId && !employeeCodes.has(d.employeeId)) {
+            if (d.employeeCode && !employeeCodes.has(d.employeeCode)) {
                 result.push({
                     id: `unreg-emp-fp-${d.id}`,
                     type: 'unregistered_employee',
                     source: 'FeaturePhone',
-                    message: `登録されていない社員コード「${d.employeeId}」が使用されています`,
+                    message: `登録されていない社員コード「${d.employeeCode}」が使用されています`,
                     recordId: d.id,
-                    path: `/devices/feature-phones?highlight=${d.id}&field=employeeId`
+                    path: `/devices/feature-phones?highlight=${d.id}&field=employeeCode`
                 });
             }
         });
@@ -197,11 +197,11 @@ export const useSystemAlerts = () => {
 
         // 6. Missing Code Checks
         // iPhone
-        checkMissing(iPhones, 'employeeId', 'iPhone', '/devices/iphones', '社員コード', 'missing_employee_code');
+        checkMissing(iPhones, 'employeeCode', 'iPhone', '/devices/iphones', '社員コード', 'missing_employee_code');
         checkMissing(iPhones, 'addressCode', 'iPhone', '/devices/iphones', '事業所コード', 'missing_address_code');
 
         // FeaturePhone
-        checkMissing(featurePhones, 'employeeId', 'FeaturePhone', '/devices/feature-phones', '社員コード', 'missing_employee_code');
+        checkMissing(featurePhones, 'employeeCode', 'FeaturePhone', '/devices/feature-phones', '社員コード', 'missing_employee_code');
         checkMissing(featurePhones, 'addressCode', 'FeaturePhone', '/devices/feature-phones', '事業所コード', 'missing_address_code');
 
         // Tablet

@@ -196,7 +196,9 @@ export const validateAddressImportRow = (
         labelZip: formatZipCode(labelZip || ''),
         labelAddress: String(rowData['宛名ラベル用住所'] || ''),
         attentionNote: String(rowData['注意書き'] || ''),
-        type: ''
+        type: '',
+        version: 1,
+        updatedAt: '',
     };
 
     return { errors, data: newAddress };

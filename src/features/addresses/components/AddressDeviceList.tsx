@@ -66,7 +66,7 @@ export const AddressDeviceList: React.FC<AddressDeviceListProps> = ({ addressCod
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">使用者名</p>
                                         <p className="font-medium text-gray-900">
-                                            {employees.find(e => e.code === device.employeeId)?.name || '-'}
+                                            {employees.find(e => e.code === device.employeeCode)?.name || '-'}
                                         </p>
                                     </div>
                                     <div>
@@ -115,7 +115,7 @@ export const AddressDeviceList: React.FC<AddressDeviceListProps> = ({ addressCod
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">使用者名</p>
                                         <p className="font-medium text-gray-900">
-                                            {employees.find(e => e.code === device.employeeId)?.name || '-'}
+                                            {employees.find(e => e.code === device.employeeCode)?.name || '-'}
                                         </p>
                                     </div>
                                     <div>

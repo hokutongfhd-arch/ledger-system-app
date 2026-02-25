@@ -17,26 +17,45 @@ export interface Tablet {
     updatedAt: string;
 }
 
+export interface TabletUsageHistory {
+    id: string;
+    tabletId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
+}
+
 export interface IPhone {
     id: string;
     carrier: string;
     phoneNumber: string;
     managementNumber: string;
     employeeCode: string;
-
     addressCode: string;
     costBearer: string;
     smartAddressId: string;
     smartAddressPw: string;
     lendDate: string;
     receiptDate: string;
-    notes: string; // notes1
+    notes: string;
     returnDate: string;
     modelName: string;
     status: DeviceStatus;
     contractYears?: string;
     version: number;
     updatedAt: string;
+}
+
+export interface IPhoneUsageHistory {
+    id: string;
+    iphoneId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
 }
 
 export interface FeaturePhone {
@@ -45,12 +64,11 @@ export interface FeaturePhone {
     phoneNumber: string;
     managementNumber: string;
     employeeCode: string;
-
     addressCode: string;
     costCompany: string;
     lendDate: string;
     receiptDate: string;
-    notes: string; // notes1
+    notes: string;
     returnDate: string;
     modelName: string;
     status: DeviceStatus;
@@ -59,35 +77,55 @@ export interface FeaturePhone {
     updatedAt: string;
 }
 
+export interface FeaturePhoneUsageHistory {
+    id: string;
+    featurePhoneId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
+}
+
 export interface Router {
     id: string;
-    no: string; // №
-    biller: string; // 請求元
-    terminalCode: string; // 端末ＣＤ
-    modelNumber: string; // 機種型番
-    carrier: string; // 通信キャリア
-    cost: number; // 費用
-    costTransfer: string; // 費用振替
-    dataCapacity: string; // 通信容量
-    simNumber: string; // SIM電番
-    ipAddress: string; // ＩＰアドレス
-    subnetMask: string; // サブネットマスク
-    startIp: string; // 開始ＩＰ
-    endIp: string; // 終了ＩＰ
-    company: string; // 会社
-    addressCode: string; // 住所コード
-    actualLender: string; // 実貸与先
-    costBearer: string; // 負担先
-    actualLenderName: string; // 実貸与先名
-    lendingHistory: string; // 貸与履歴
-    notes: string; // 備考
-    returnDate: string; // 返却日 (part of notes requirement but good to have separate)
+    no: string; 
+    biller: string; 
+    terminalCode: string; 
+    modelNumber: string; 
+    carrier: string; 
+    cost: number; 
+    costTransfer: string; 
+    dataCapacity: string; 
+    simNumber: string; 
+    ipAddress: string; 
+    subnetMask: string; 
+    startIp: string; 
+    endIp: string; 
+    company: string; 
+    addressCode: string; 
+    actualLender: string; 
+    costBearer: string; 
+    actualLenderName: string; 
+    lendingHistory: string; 
+    notes: string; 
+    returnDate: string; 
     status: DeviceStatus;
-    contractStatus: string; // 契約状況
+    contractStatus: string; 
     contractYears?: string;
     employeeCode: string;
     version: number;
     updatedAt: string;
+}
+
+export interface RouterUsageHistory {
+    id: string;
+    routerId: string;
+    employeeCode: string;
+    officeCode: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
 }
 
 

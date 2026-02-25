@@ -3,7 +3,7 @@ import { SectionHeader } from '../../../components/ui/Section';
 import { Modal } from '../../../components/ui/Modal';
 import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { getTabletHistoryAction } from '../../../app/actions/device';
-import { Tablet, TabletUsageHistory, DeviceStatus } from '../device.types';
+import { Tablet, TabletUsageHistory, DeviceStatus } from '../../../lib/types';
 import { Employee, Address } from '../../../lib/types';
 import { Tablet as TabletIcon, MapPin, FileText, User, Building, History, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';

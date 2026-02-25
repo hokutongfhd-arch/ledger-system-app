@@ -2,7 +2,7 @@ import { DetailRow } from '../../../components/ui/DetailView';
 import { SectionHeader } from '../../../components/ui/Section';
 import { Modal } from '../../../components/ui/Modal';
 import { getRouterHistoryAction } from '../../../app/actions/device';
-import { Router, RouterUsageHistory } from '../device.types';
+import { Router, RouterUsageHistory } from '../../../lib/types';
 import { Employee, Address } from '../../../lib/types';
 import { Wifi, MapPin, Calendar, FileText, User, Server, DollarSign, History, Phone, ArrowLeft } from 'lucide-react';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';

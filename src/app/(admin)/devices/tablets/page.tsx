@@ -6,7 +6,7 @@ import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
 import { Table } from '../../../../components/ui/Table';
-import type { Tablet } from '../../../../features/devices/device.types';
+import type { Tablet } from '../../../../lib/types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { TabletForm } from '../../../../features/devices/components/TabletForm';
@@ -220,6 +220,8 @@ function TabletListContent() {
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     costBearer: String(rowData['負担先'] || ''),
                     address: '',
+                    version: 1,
+                    updatedAt: '',
                 };
 
 
@@ -292,7 +294,7 @@ function TabletListContent() {
 
         if (confirmed) {
             try {
-                await deleteTablet(item.id, false, false);
+                await deleteTablet(item.id, item.version, false, false);
             } catch (error) {
                 console.error(error);
             }
@@ -550,14 +552,8 @@ function TabletListContent() {
                 <TabletForm initialData={editingItem} onSubmit={async (data) => {
                     if (editingItem) {
                         await updateTablet({ ...data, id: editingItem.id } as Tablet);
-                        if (editingItem.id === highlightId) {
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('highlight');
-                            params.delete('field');
-                            router.replace(`${pathname}?${params.toString()}`);
-                        }
                     } else {
-                        await addTablet(data as Omit<Tablet, 'id'>);
+                        await addTablet(data as any);
                     }
                     setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />

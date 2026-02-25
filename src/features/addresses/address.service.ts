@@ -43,6 +43,8 @@ export const addressService = {
         labelAddress: s(d.label_address),
         attentionNote: s(d.caution),
         accountingCode: s(d.accounting_code),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
     }),
 
     mapAddressToDb: (t: Partial<Address>) => ({

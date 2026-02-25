@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Router } from '../device.types';
+import type { Router } from '../../../lib/types';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
@@ -15,7 +15,7 @@ import { SectionHeader } from '../../../components/ui/Section';
 
 interface RouterFormProps {
     initialData?: Router;
-    onSubmit: (data: Omit<Router, 'id'>) => void;
+    onSubmit: (data: Omit<Router, 'id'> & { id?: string }) => void;
     onCancel: () => void;
 }
 
@@ -27,7 +27,9 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
     const simPart2Ref = useRef<HTMLInputElement>(null);
     const simPart3Ref = useRef<HTMLInputElement>(null);
     const { handleAutoTab } = useAutoFocus();
-    const [formData, setFormData] = useState<Omit<Router, 'id'>>({
+    const [formData, setFormData] = useState<Omit<Router, 'id'> & { id?: string }>({
+        id: '',
+        no: '',
         biller: '',
         terminalCode: '',
         modelNumber: '',
@@ -40,15 +42,20 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         subnetMask: '',
         startIp: '',
         endIp: '',
+        company: '',
         addressCode: '',
+        actualLender: '',
+        actualLenderName: '',
         costBearer: '',
         lendingHistory: '',
         notes: '',
+        status: 'available',
         contractStatus: '',
         returnDate: '',
-        status: 'available',
         contractYears: '',
         employeeCode: '',
+        version: 1,
+        updatedAt: '',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
     const [is14Digit, setIs14Digit] = useState(false);

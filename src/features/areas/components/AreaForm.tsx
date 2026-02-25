@@ -16,6 +16,8 @@ export const AreaForm: React.FC<AreaFormProps> = ({ initialData, onSubmit, onCan
     const [formData, setFormData] = useState<Omit<Area, 'id'>>({
         areaCode: '',
         areaName: '',
+        version: 1,
+        updatedAt: '',
     });
     const { areas } = useData();
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());

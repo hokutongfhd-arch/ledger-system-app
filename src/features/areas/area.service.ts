@@ -27,6 +27,8 @@ export const areaService = {
         id: d.area_code,
         areaCode: s(d.area_code),
         areaName: s(d.area_name),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
     }),
 
     mapAreaToDb: (t: Partial<Area>) => ({

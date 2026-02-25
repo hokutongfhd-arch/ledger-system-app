@@ -6,7 +6,7 @@ import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
 import { Table } from '../../../../components/ui/Table';
-import type { FeaturePhone } from '../../../../features/devices/device.types';
+import type { FeaturePhone } from '../../../../lib/types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { FeaturePhoneForm } from '../../../../features/devices/components/FeaturePhoneForm';
@@ -302,7 +302,7 @@ function FeaturePhoneListContent() {
 
         if (confirmed) {
             try {
-                await deleteFeaturePhone(item.id, false, false);
+                await deleteFeaturePhone(item.id, item.version, false, false);
             } catch (error) {
                 console.error(error);
             }

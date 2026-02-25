@@ -6,7 +6,7 @@ import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
 import { Table } from '../../../../components/ui/Table';
-import type { IPhone } from '../../../../features/devices/device.types';
+import type { IPhone } from '../../../../lib/types';
 import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { IPhoneForm } from '../../../../features/devices/components/IPhoneForm';
@@ -337,7 +337,7 @@ function IPhoneListContent() {
 
         if (confirmed) {
             try {
-                await deleteIPhone(item.id);
+                await deleteIPhone(item.id, item.version);
             } catch (error) {
                 console.error(error);
             }

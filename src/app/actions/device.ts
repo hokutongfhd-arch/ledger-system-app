@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { IPhone, IPhoneUsageHistory, FeaturePhone, FeaturePhoneUsageHistory, Tablet, TabletUsageHistory, Router, RouterUsageHistory } from '@/features/devices/device.types';
+import { IPhone, IPhoneUsageHistory, FeaturePhone, FeaturePhoneUsageHistory, Tablet, TabletUsageHistory, Router, RouterUsageHistory } from '@/lib/types';
 import { normalizePhoneNumber } from '@/lib/utils/phoneUtils';
 
 const getSupabase = async () => {
@@ -28,7 +28,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     // Let's use the exact logic from service to minimize drift. 
     // note: I need to import formatPhoneNumber if I want to use it.
     management_number: t.managementNumber,
-    employee_code: t.employeeId,
+    employee_code: t.employeeCode,
     address_code: t.addressCode,
     smart_address_id: t.smartAddressId,
     smart_address_pw: t.smartAddressPw,
@@ -74,10 +74,10 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>, vers
 
     // 2. Check for User Change
     // 2. Check for User Change
-    // current.employee_code vs data.employeeId
+    // current.employee_code vs data.employeeCode
     // 2. Check for User Change
-    // current.employee_code vs data.employeeId
-    if (data.employeeId !== current.employee_code && current.employee_code) {
+    // current.employee_code vs data.employeeCode
+    if (data.employeeCode !== current.employee_code && current.employee_code) {
         // User changed, save history
         const historyData = {
             iphone_id: id,
@@ -106,13 +106,13 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>, vers
     const dbData = mapIPhoneToDb(data);
 
     // If User Changed, Update Lend Date to Today to prevent history overlap
-    if (data.employeeId !== current.employee_code) {
+    if (data.employeeCode !== current.employee_code) {
         // If data doesn't explicitly have a new lendDate, set it to Today
         // Form sends lendDate. If Form has old date, we should override or Form should handle.
         // Server side enforcement is safer. 
         // If unassigning (Return), lend_date is irrelevant or can be cleared? 
         // Usually clearing it is cleaner.
-        if (!data.employeeId) {
+        if (!data.employeeCode) {
             (dbData as any).lend_date = null; // Clear lend date on return
         } else {
             // If Assigning New User, set lend_date to Today IF NOT provided or same as old?
@@ -221,7 +221,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     carrier: t.carrier,
     phone_number: t.phoneNumber ? normalizePhoneNumber(t.phoneNumber) : t.phoneNumber,
     management_number: t.managementNumber,
-    employee_code: t.employeeId,
+    employee_code: t.employeeCode,
     address_code: t.addressCode,
     cost_company: t.costCompany,
     lend_date: t.lendDate,
@@ -248,7 +248,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
     }
 
     // 2. Check for User Change
-    if (data.employeeId !== current.employee_code && current.employee_code) {
+    if (data.employeeCode !== current.employee_code && current.employee_code) {
         // User changed, save history
         const historyData = {
             featurephone_id: id,
@@ -271,8 +271,8 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
     const dbData = mapFeaturePhoneToDb(data);
 
     // If User Changed, Update Lend Date to Today
-    if (data.employeeId !== current.employee_code) {
-        if (!data.employeeId) {
+    if (data.employeeCode !== current.employee_code) {
+        if (!data.employeeCode) {
             (dbData as any).lend_date = null;
         } else {
             (dbData as any).lend_date = new Date().toISOString().split('T')[0];

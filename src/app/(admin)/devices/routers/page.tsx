@@ -6,7 +6,7 @@ import { useData } from '../../../../features/context/DataContext';
 import { useAuth } from '../../../../features/context/AuthContext';
 import { Pagination } from '../../../../components/ui/Pagination';
 import { Table } from '../../../../components/ui/Table';
-import type { Router } from '../../../../features/devices/device.types';
+import type { Router } from '../../../../lib/types';
 import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { RouterForm } from '../../../../features/devices/components/RouterForm';
@@ -201,6 +201,7 @@ function RouterListContent() {
                 }
 
                 const newRouter: Omit<Router, 'id'> = {
+                    no: String(rowData['管理番号'] || '').trim(),
                     contractStatus: String(rowData['契約状況'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['通信キャリア'] || ''),
@@ -221,7 +222,12 @@ function RouterListContent() {
                     lendingHistory: String(rowData['貸与履歴'] || ''),
                     notes: String(rowData['備考(返却日)'] || ''),
                     returnDate: '',
-                    status: finalStatus
+                    status: finalStatus,
+                    company: '',
+                    actualLender: '',
+                    actualLenderName: '',
+                    version: 1,
+                    updatedAt: '',
                 };
 
                 importData.push(newRouter);

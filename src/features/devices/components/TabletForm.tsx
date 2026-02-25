@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Tablet } from '../device.types';
+import type { Tablet } from '../../../lib/types';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { normalizeContractYear } from '../../../lib/utils/stringUtils';
@@ -12,7 +12,7 @@ import { SectionHeader } from '../../../components/ui/Section';
 
 interface TabletFormProps {
     initialData?: Tablet;
-    onSubmit: (data: Omit<Tablet, 'id'>) => void;
+    onSubmit: (data: Omit<Tablet, 'id'> & { id?: string }) => void;
     onCancel: () => void;
 }
 
@@ -21,7 +21,8 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
     const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
     const terminalCodeRef = useRef<HTMLInputElement>(null);
     const modelNumberRef = useRef<HTMLInputElement>(null);
-    const [formData, setFormData] = useState<Omit<Tablet, 'id'>>({
+    const [formData, setFormData] = useState<Omit<Tablet, 'id'> & { id?: string }>({
+        id: '',
         terminalCode: '',
         maker: '富士通',
         modelNumber: '',
@@ -33,6 +34,8 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         employeeCode: '',
         contractYears: '',
         costBearer: '',
+        version: 1,
+        updatedAt: '',
     });
 
     // Prepare Options
