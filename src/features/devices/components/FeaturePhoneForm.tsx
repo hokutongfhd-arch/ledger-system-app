@@ -133,6 +133,17 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                 if (name === 'employeeId') updates.addressCode = '';
                 if (name === 'addressCode') updates.employeeId = '';
             }
+
+            // Status Automation
+            const currentEmployeeId = name === 'employeeId' ? value : prev.employeeId;
+            const currentAddressCode = name === 'addressCode' ? value : prev.addressCode;
+
+            if (currentEmployeeId || currentAddressCode) {
+                updates.status = 'in-use';
+            } else if (value === '') {
+                updates.status = 'available';
+            }
+
             return { ...prev, ...updates };
         });
     };
@@ -330,6 +341,8 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
+                                disabled={!!formData.employeeId || !!formData.addressCode}
+                                className={!!formData.employeeId || !!formData.addressCode ? "bg-gray-100" : ""}
                             >
                                 <option value="in-use">使用中</option>
                                 <option value="backup">予備機</option>

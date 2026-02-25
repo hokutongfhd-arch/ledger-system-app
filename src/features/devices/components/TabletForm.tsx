@@ -86,6 +86,17 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                 if (name === 'employeeCode') updates.addressCode = '';
                 if (name === 'addressCode') updates.employeeCode = '';
             }
+
+            // Status Automation
+            const currentEmployeeCode = name === 'employeeCode' ? value : prev.employeeCode;
+            const currentAddressCode = name === 'addressCode' ? value : prev.addressCode;
+
+            if (currentEmployeeCode || currentAddressCode) {
+                updates.status = 'in-use';
+            } else if (value === '') {
+                updates.status = 'available';
+            }
+
             return { ...prev, ...updates };
         });
     };
@@ -194,6 +205,8 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
+                                disabled={!!formData.employeeCode || !!formData.addressCode}
+                                className={!!formData.employeeCode || !!formData.addressCode ? "bg-gray-100" : ""}
                             >
                                 <option value="in-use">使用中</option>
                                 <option value="backup">予備機</option>

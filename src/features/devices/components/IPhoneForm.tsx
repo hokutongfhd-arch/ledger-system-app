@@ -135,6 +135,18 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                 if (name === 'employeeId') updates.addressCode = '';
                 if (name === 'addressCode') updates.employeeId = '';
             }
+
+            // Status Automation
+            const currentEmployeeId = name === 'employeeId' ? value : prev.employeeId;
+            const currentAddressCode = name === 'addressCode' ? value : prev.addressCode;
+
+            if (currentEmployeeId || currentAddressCode) {
+                updates.status = 'in-use';
+            } else if (value === '') {
+                // If both are cleared by this change, or were already cleared
+                updates.status = 'available';
+            }
+
             return { ...prev, ...updates };
         });
     };
@@ -342,6 +354,8 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
+                                disabled={!!formData.employeeId || !!formData.addressCode}
+                                className={!!formData.employeeId || !!formData.addressCode ? "bg-gray-100" : ""}
                             >
                                 <option value="in-use">使用中</option>
                                 <option value="backup">予備機</option>

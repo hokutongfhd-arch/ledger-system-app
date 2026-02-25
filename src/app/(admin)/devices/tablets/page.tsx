@@ -504,7 +504,7 @@ function TabletListContent() {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>使用事業所{getSortIcon('addressCode')}</div>,
                         accessor: (item) => {
                             const addr = addresses.find(a => a.addressCode === item.addressCode);
-                            return addr ? `${addr.officeName} (${item.addressCode})` : item.addressCode || '';
+                            return addr ? addr.officeName : item.addressCode || '';
                         }
                     },
                     {
