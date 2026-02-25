@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useAuditDashboard } from '../../../features/audit/useAuditDashboard';
-import { useNotification } from '../../../features/notifications/NotificationContext';
+import { useAuditDashboard } from '../../../../features/audit/useAuditDashboard';
+import { useNotification } from '../../../../features/notifications/NotificationContext';
 import {
     Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid
@@ -10,11 +10,11 @@ import {
 import { Activity, AlertTriangle, ShieldAlert, ArrowRight, ShieldCheck, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import LogDetailModal from '../../../features/logs/components/LogDetailModal';
-import { useAuditLogs } from '../../../features/logs/useAuditLogs';
-import { ReportGenerationModal } from '../../../features/audit/components/ReportGenerationModal';
-import { fetchAuditLogByIdServer } from '../../../features/logs/logs.server';
-import { logService } from '../../../features/logs/log.service';
+import LogDetailModal from '../../../../features/logs/components/LogDetailModal';
+import { useAuditLogs } from '../../../../features/logs/useAuditLogs';
+import { ReportGenerationModal } from '../../../../features/audit/components/ReportGenerationModal';
+import { fetchAuditLogByIdServer } from '../../../../features/logs/logs.server';
+import { logService } from '../../../../features/logs/log.service';
 
 export default function AuditDashboardPage() {
     const { data, loading, range, setRange, refresh } = useAuditDashboard();

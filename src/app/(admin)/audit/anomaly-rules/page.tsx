@@ -109,7 +109,7 @@ export default function AnomalyRulesPage() {
                     hasError = true;
                 }
                 if (window < 1 || window > 999) {
-                    showToast('判定ウィンドウ (分)で設定できるのは1~999分までです', 'error');
+                    showToast('判定ウィンドウ (分) で設定できるのは1~999分までです', 'error');
                     hasError = true;
                 }
             }
@@ -143,29 +143,29 @@ export default function AnomalyRulesPage() {
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 border-l-4 border-accent-electric pl-6">
                 <div className="flex items-center gap-3">
                     <Shield className="text-accent-electric" size={28} />
-                    <h1 className="text-3xl font-display font-bold text-ink">不正検知ルール設定</h1>
+                    <h1 className="text-3xl font-display font-bold text-ink tracking-tight">不正検知ルール設定</h1>
                 </div>
-                <p className="text-ink-light font-sans pl-10">
-                    監査ログの不正検知アルゴリズムと重要度判定を管理します。
+                <p className="text-ink-light font-sans">
+                    監査ログの不正検知アルゴリズムと重要度判定を管理します。変更はリアルタイムで反映されます。
                 </p>
             </div>
 
-            <div className="grid gap-6">
+            <div className="grid gap-8">
                 {rules.map(rule => (
-                    <div key={rule.id} className="bg-white border-2 border-ink shadow-card rounded-xl overflow-hidden group">
+                    <div key={rule.id} className="bg-white border-2 border-ink shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none overflow-hidden group">
                         {/* Header */}
-                        <div className="px-6 py-4 bg-ink text-white flex justify-between items-center group-hover:bg-ink-light transition-colors">
+                        <div className="px-6 py-4 bg-ink text-white flex justify-between items-center transition-colors">
                             <div className="flex items-center gap-3">
                                 <Settings size={20} className="text-accent-electric" />
                                 <span className="font-display font-bold tracking-wider">{rule.rule_key}</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <span className={clsx(
-                                    "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest border-2",
-                                    rule.enabled ? "bg-accent-electric text-ink border-white" : "bg-gray-500 text-white border-white"
+                                    "text-[10px] font-bold px-3 py-1 rounded-none uppercase tracking-widest border-2",
+                                    rule.enabled ? "bg-accent-electric text-ink border-ink" : "bg-gray-700 text-white border-white"
                                 )}>
                                     {rule.enabled ? 'ACTIVE' : 'DISABLED'}
                                 </span>
@@ -184,82 +184,88 @@ export default function AnomalyRulesPage() {
                         {/* Content */}
                         <div className="p-8 grid md:grid-cols-2 gap-10 bg-paper">
                             {/* Info */}
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 <div>
-                                    <h3 className="text-xs font-bold text-ink-light uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <h3 className="text-xs font-bold text-ink uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                                         DESCRIPTION
-                                        <div className="h-[1px] flex-1 bg-gray-200"></div>
+                                        <span className="h-[2px] w-6 bg-accent-coral"></span>
                                     </h3>
-                                    <p className="text-ink font-sans leading-relaxed">{rule.description}</p>
+                                    <p className="text-ink font-sans leading-relaxed text-sm bg-white p-4 border-2 border-ink-light rounded-none italic">
+                                        "{rule.description}"
+                                    </p>
                                 </div>
 
                                 <div>
-                                    <h3 className="text-xs font-bold text-ink-light uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <h3 className="text-xs font-bold text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                                         SEVERITY LEVEL
-                                        <div className="h-[1px] flex-1 bg-gray-200"></div>
+                                        <span className="h-[2px] w-6 bg-accent-coral"></span>
                                     </h3>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                         {(['low', 'medium', 'high', 'critical'] as const).map(sev => (
                                             <button
                                                 key={sev}
                                                 onClick={() => handleUpdateSeverity(rule.id, sev)}
                                                 className={clsx(
-                                                    "px-4 py-2 rounded font-display font-bold text-[10px] tracking-widest uppercase transition-all duration-300 border-2",
+                                                    "px-5 py-2.5 rounded-none font-display font-bold text-[10px] tracking-widest uppercase transition-all duration-300 border-2",
                                                     (pendingSeverity[rule.id] || rule.severity) === sev
                                                         ? {
-                                                            'low': 'bg-blue-100 text-blue-700 border-blue-400 scale-105',
-                                                            'medium': 'bg-yellow-100 text-yellow-700 border-yellow-400 scale-105',
-                                                            'high': 'bg-orange-100 text-orange-700 border-orange-400 scale-105',
-                                                            'critical': 'bg-red-100 text-red-700 border-red-400 scale-105 animate-pulse'
+                                                            'low': 'bg-blue-500 text-white border-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -translate-y-1',
+                                                            'medium': 'bg-yellow-400 text-ink border-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -translate-y-1',
+                                                            'high': 'bg-orange-500 text-white border-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -translate-y-1',
+                                                            'critical': 'bg-red-600 text-white border-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -translate-y-1 animate-pulse'
                                                         }[sev]
-                                                        : "bg-white text-ink-light border-gray-200 hover:bg-gray-50 hover:border-ink opacity-60"
+                                                        : "bg-white text-ink-light border-gray-200 hover:bg-gray-50 hover:border-ink hover:text-ink"
                                                 )}
                                             >
                                                 {sev}
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-ink-light mt-3 italic">
-                                        ※ この重要度はルール検知時の初期値として使用されます。
+                                    <p className="text-[10px] text-ink-light mt-4 font-sans flex items-center gap-2">
+                                        <Bell size={12} className="text-accent-coral" />
+                                        <span>検知時のトースト通知とバッジの色に影響します。</span>
                                     </p>
                                 </div>
                             </div>
 
                             {/* Parameters */}
-                            <div className="bg-white border-2 border-ink-light rounded-lg p-6 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                    <Settings size={64} />
-                                </div>
-                                <h3 className="text-xs font-bold text-ink-light uppercase tracking-widest mb-6 flex items-center gap-2 bg-white relative z-10">
-                                    PARAMETERS
-                                    <div className="h-[1px] flex-1 bg-gray-200"></div>
+                            <div className="bg-white border-4 border-ink p-8 relative">
+                                <h3 className="text-xs font-bold text-ink uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                                    RULE PARAMETERS
+                                    <span className="h-[2px] w-6 bg-accent-electric"></span>
                                 </h3>
 
-                                <div className="space-y-6 relative z-10">
+                                <div className="space-y-8">
                                     {rule.rule_key === 'AFTER_HOURS_ACCESS' && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-ink-light uppercase mb-2">Start Time (JST)</label>
-                                                <input
-                                                    type="time"
-                                                    value={pendingParams[rule.id]?.start || rule.params.start}
-                                                    onChange={(e) => handleLocalParamChange(rule.id, 'start', e.target.value)}
-                                                    className="w-full px-4 py-2 border-2 border-ink rounded font-display font-bold focus:ring-2 focus:ring-accent-electric outline-none transition-all"
-                                                />
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-ink uppercase mb-2 tracking-widest">Start Time (JST)</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="time"
+                                                            value={pendingParams[rule.id]?.start || rule.params.start}
+                                                            onChange={(e) => handleLocalParamChange(rule.id, 'start', e.target.value)}
+                                                            className="w-full px-4 py-3 border-2 border-ink rounded-none font-display font-bold focus:bg-accent-electric/10 outline-none transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-ink uppercase mb-2 tracking-widest">End Time (JST)</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="time"
+                                                            value={pendingParams[rule.id]?.end || rule.params.end}
+                                                            onChange={(e) => handleLocalParamChange(rule.id, 'end', e.target.value)}
+                                                            className="w-full px-4 py-3 border-2 border-ink rounded-none font-display font-bold focus:bg-accent-electric/10 outline-none transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-ink-light uppercase mb-2">End Time (JST)</label>
-                                                <input
-                                                    type="time"
-                                                    value={pendingParams[rule.id]?.end || rule.params.end}
-                                                    onChange={(e) => handleLocalParamChange(rule.id, 'end', e.target.value)}
-                                                    className="w-full px-4 py-2 border-2 border-ink rounded font-display font-bold focus:ring-2 focus:ring-accent-electric outline-none transition-all"
-                                                />
-                                            </div>
-                                            <div className="col-span-2 flex justify-end">
+                                            <div className="flex justify-end pt-2">
                                                 <button
                                                     onClick={() => handleSaveParams(rule)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded font-bold text-xs hover:bg-zinc-800 transition-colors"
+                                                    className="flex items-center gap-2 px-6 py-2 bg-ink text-white font-display font-bold text-xs border-2 border-ink hover:bg-accent-electric hover:text-ink transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                                                 >
                                                     <CheckCircle size={14} />
                                                     OK
@@ -269,33 +275,35 @@ export default function AnomalyRulesPage() {
                                     )}
 
                                     {rule.rule_key === 'MULTIPLE_FAILED_LOGINS' && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-ink-light uppercase mb-2">失敗回数しきい値 (回)</label>
-                                                <input
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    pattern="[0-9]*"
-                                                    value={pendingParams[rule.id]?.threshold ?? rule.params.threshold ?? 5}
-                                                    onChange={(e) => handleLocalParamChange(rule.id, 'threshold', e.target.value)}
-                                                    className="w-full px-4 py-2 border-2 border-ink rounded font-display font-bold focus:ring-2 focus:ring-accent-electric outline-none transition-all"
-                                                />
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-ink uppercase mb-2 tracking-widest">失敗回数しきい値 (回)</label>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
+                                                        value={pendingParams[rule.id]?.threshold ?? rule.params.threshold ?? 5}
+                                                        onChange={(e) => handleLocalParamChange(rule.id, 'threshold', e.target.value)}
+                                                        className="w-full px-4 py-3 border-2 border-ink rounded-none font-display font-bold focus:bg-accent-electric/10 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-ink uppercase mb-2 tracking-widest">判定ウィンドウ (分)</label>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
+                                                        value={pendingParams[rule.id]?.window_minutes ?? rule.params.window_minutes ?? 10}
+                                                        onChange={(e) => handleLocalParamChange(rule.id, 'window_minutes', e.target.value)}
+                                                        className="w-full px-4 py-3 border-2 border-ink rounded-none font-display font-bold focus:bg-accent-electric/10 outline-none transition-all"
+                                                    />
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-ink-light uppercase mb-2">判定ウィンドウ (分)</label>
-                                                <input
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    pattern="[0-9]*"
-                                                    value={pendingParams[rule.id]?.window_minutes ?? rule.params.window_minutes ?? 10}
-                                                    onChange={(e) => handleLocalParamChange(rule.id, 'window_minutes', e.target.value)}
-                                                    className="w-full px-4 py-2 border-2 border-ink rounded font-display font-bold focus:ring-2 focus:ring-accent-electric outline-none transition-all"
-                                                />
-                                            </div>
-                                            <div className="col-span-2 flex justify-end">
+                                            <div className="flex justify-end pt-2">
                                                 <button
                                                     onClick={() => handleSaveParams(rule)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded font-bold text-xs hover:bg-zinc-800 transition-colors"
+                                                    className="flex items-center gap-2 px-6 py-2 bg-ink text-white font-display font-bold text-xs border-2 border-ink hover:bg-accent-electric hover:text-ink transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                                                 >
                                                     <CheckCircle size={14} />
                                                     OK
@@ -304,26 +312,16 @@ export default function AnomalyRulesPage() {
                                         </div>
                                     )}
 
-                                    {/* Fallback for generic/complex parameters */}
                                     {rule.rule_key !== 'AFTER_HOURS_ACCESS' && rule.rule_key !== 'MULTIPLE_FAILED_LOGINS' && (
-                                        <div className="bg-gray-50 p-4 border-2 border-dashed border-gray-200 rounded">
+                                        <div className="bg-gray-50 p-6 border-2 border-dashed border-gray-300 rounded-none">
                                             <pre className="text-xs font-mono text-ink-light overflow-x-auto">
                                                 {JSON.stringify(rule.params, null, 2)}
                                             </pre>
-                                            <p className="text-[10px] mt-4 text-center italic">
-                                                このルールの詳細編集は未対応です。
+                                            <p className="text-[10px] mt-6 text-center italic text-ink-light font-sans">
+                                                このルールの詳細編集インターフェースは現在準備中です。
                                             </p>
                                         </div>
                                     )}
-                                </div>
-
-                                <div className="mt-8 flex justify-center">
-                                    <div className="px-4 py-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-3">
-                                        <AlertTriangle size={14} className="text-yellow-600" />
-                                        <span className="text-[10px] text-yellow-800 font-bold">
-                                            設定変更は即座にDBトリガーに反映されます。
-                                        </span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -331,15 +329,14 @@ export default function AnomalyRulesPage() {
                 ))}
             </div>
 
-            <div className="bg-ink text-white p-6 rounded-xl border-4 border-accent-electric shadow-[0_0_20px_rgba(42,243,246,0.3)] flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-accent-electric text-ink rounded-lg shadow-[0_0_10px_rgba(42,243,246,0.5)]">
-                        <AlertTriangle size={24} />
-                    </div>
-                    <div>
-                        <h4 className="font-display font-bold tracking-wider">運用上の注意</h4>
-                        <p className="text-xs text-gray-300 font-sans mt-1">ルールを無効にすると、重要度に基づいた通知も一切行われなくなります。</p>
-                    </div>
+            <div className="bg-paper border-2 border-ink p-6 flex items-start gap-4">
+                <AlertTriangle className="text-accent-coral shrink-0" size={20} />
+                <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-ink font-display uppercase tracking-wider">セキュリティに関する重要事項</h4>
+                    <p className="text-xs text-ink-light font-sans leading-relaxed">
+                        ルールの無効化や重要度の変更は、監査ログの信頼性に影響を与える可能性があります。
+                        設定変更は即座にデータベースのトリガーに反映され、以降に記録される全てのログに適用されます。
+                    </p>
                 </div>
             </div>
 

@@ -132,8 +132,8 @@ export const Sidebar = () => {
                             <SidebarItem to="/dashboard" icon={User} label="My Page" />
                             {user?.role === 'admin' && (
                                 <>
-                                    <SidebarItem to="/audit-dashboard" icon={Activity} label="Audit Dashboard" />
-                                    <SidebarItem to="/admin/audit/anomaly-rules" icon={Shield} label="Anomaly Rules" indent />
+                                    <SidebarItem to="/audit/dashboard" icon={Activity} label="Audit Dashboard" />
+                                    <SidebarItem to="/audit/anomaly-rules" icon={Shield} label="Anomaly Rules" indent />
                                 </>
                             )}
                         </SidebarSection>
