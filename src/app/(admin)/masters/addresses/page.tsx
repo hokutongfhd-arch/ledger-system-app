@@ -191,7 +191,7 @@ function AddressListContent() {
 
             if (errors.length > 0) {
                 await confirm({
-                    title: 'インポート結果 (一部スキップ)',
+                    title: 'インポートエラー',
                     description: (
                         <div className="max-h-60 overflow-y-auto">
                             <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
@@ -205,8 +205,8 @@ function AddressListContent() {
                 });
             }
 
-            if (successCount > 0 || errorCount > 0) {
-                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            if (successCount > 0 && errorCount === 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
             }
         }
     });

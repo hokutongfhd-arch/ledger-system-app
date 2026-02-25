@@ -192,7 +192,7 @@ function EmployeeListContent() {
                 } else {
                     // Partial success
                     await confirm({
-                        title: 'インポート完了 (一部エラー)',
+                        title: 'インポートエラー',
                         description: (
                             <div className="max-h-60 overflow-y-auto">
                                 <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>

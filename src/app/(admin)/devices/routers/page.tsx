@@ -265,7 +265,7 @@ function RouterListContent() {
 
             if (errors.length > 0) {
                 await confirm({
-                    title: 'インポート結果',
+                    title: 'インポートエラー',
                     description: (
                         <div className="max-h-60 overflow-y-auto">
                             <p className="mb-2 font-bold text-red-600">一部のデータの登録に失敗しました。</p>
@@ -279,8 +279,8 @@ function RouterListContent() {
                 });
             }
 
-            if (successCount > 0 || errorCount > 0) {
-                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, errorCount > 0 ? 'warning' : 'success');
+            if (successCount > 0 && errorCount === 0) {
+                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
             }
         }
     });
