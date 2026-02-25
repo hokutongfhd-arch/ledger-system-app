@@ -26,9 +26,16 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
-    const { tablets, iPhones, featurePhones, routers } = useData();
+    const { tablets, iPhones, featurePhones, routers, fetchIPhones, fetchTablets, fetchFeaturePhones, fetchRouters } = useData();
     const alerts = useSystemAlerts();
     const router = useRouter();
+
+    useEffect(() => {
+        fetchIPhones();
+        fetchTablets();
+        fetchFeaturePhones();
+        fetchRouters();
+    }, [fetchIPhones, fetchTablets, fetchFeaturePhones, fetchRouters]);
 
     // 1. iPhone Logic
     const iPhoneTotal = iPhones.length;

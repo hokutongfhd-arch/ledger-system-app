@@ -38,7 +38,7 @@ export default function IPhoneListPage() {
 }
 
 function IPhoneListContent() {
-    const { iPhones, addIPhone, updateIPhone, deleteIPhone, deleteManyIPhones, employees, addresses } = useData();
+    const { iPhones, addIPhone, updateIPhone, deleteIPhone, deleteManyIPhones, employees, addresses, employeeMap, addressMap, fetchIPhones } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -50,6 +50,10 @@ function IPhoneListContent() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<IPhone | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<IPhone | undefined>(undefined);
+
+    useEffect(() => {
+        fetchIPhones();
+    }, [fetchIPhones]);
 
     const {
         searchTerm, setSearchTerm,
@@ -64,8 +68,8 @@ function IPhoneListContent() {
         searchKeys: ['managementNumber', 'phoneNumber', 'modelName', 'carrier', 'notes'],
         sortConfig: {
             employeeId: (a, b) => { // User Name Sort
-                const nameA = employees.find(e => e.code === a.employeeId)?.name || '';
-                const nameB = employees.find(e => e.code === b.employeeId)?.name || '';
+                const nameA = employeeMap.get(a.employeeId)?.name || '';
+                const nameB = employeeMap.get(b.employeeId)?.name || '';
                 return nameA.localeCompare(nameB);
             },
             contractYears: (a, b) => {
@@ -605,11 +609,11 @@ function IPhoneListContent() {
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('modelName')}>機種名{getSortIcon('modelName')}</div>, accessor: 'modelName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: (item) => formatPhoneNumber(item.phoneNumber) },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者{getSortIcon('employeeId')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || '' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者{getSortIcon('employeeId')}</div>, accessor: (item) => employeeMap.get(item.employeeId)?.name || '' },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>使用事業所{getSortIcon('addressCode')}</div>,
                         accessor: (item) => {
-                            const addr = addresses.find(a => a.addressCode === item.addressCode);
+                            const addr = addressMap.get(item.addressCode);
                             return addr ? addr.officeName : item.addressCode || '';
                         }
                     },

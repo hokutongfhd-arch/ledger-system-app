@@ -59,7 +59,7 @@ export default function TabletListPage() {
 }
 
 function TabletListContent() {
-    const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses } = useData();
+    const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses, employeeMap, addressMap, fetchTablets } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -71,6 +71,10 @@ function TabletListContent() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Tablet | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Tablet | undefined>(undefined);
+
+    useEffect(() => {
+        fetchTablets();
+    }, [fetchTablets]);
 
     const {
         searchTerm, setSearchTerm,
@@ -85,8 +89,8 @@ function TabletListContent() {
         searchKeys: ['terminalCode', 'maker', 'modelNumber', 'status', 'addressCode', 'notes'],
         sortConfig: {
             employeeCode: (a, b) => { // User Name Sort
-                const nameA = employees.find(e => e.code === a.employeeCode)?.name || '';
-                const nameB = employees.find(e => e.code === b.employeeCode)?.name || '';
+                const nameA = employeeMap.get(a.employeeCode)?.name || '';
+                const nameB = employeeMap.get(b.employeeCode)?.name || '';
                 return nameA.localeCompare(nameB);
             },
             status: (a, b) => {
@@ -506,12 +510,11 @@ function TabletListContent() {
                         className: "w-10 px-4"
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('terminalCode')}>端末CD{getSortIcon('terminalCode')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.terminalCode}</button> },
-
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeCode)?.name || '' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者{getSortIcon('userName')}</div>, accessor: (item) => employeeMap.get(item.employeeCode)?.name || '' },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>使用事業所{getSortIcon('addressCode')}</div>,
                         accessor: (item) => {
-                            const addr = addresses.find(a => a.addressCode === item.addressCode);
+                            const addr = addressMap.get(item.addressCode);
                             return addr ? addr.officeName : item.addressCode || '';
                         }
                     },

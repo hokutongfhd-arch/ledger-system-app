@@ -21,6 +21,15 @@ interface DataContextType {
     employees: Employee[];
     areas: Area[];
     addresses: Address[];
+    employeeMap: Map<string, Employee>;
+    addressMap: Map<string, Address>;
+    fetchIPhones: () => Promise<void>;
+    fetchTablets: () => Promise<void>;
+    fetchFeaturePhones: () => Promise<void>;
+    fetchRouters: () => Promise<void>;
+    fetchEmployees: () => Promise<void>;
+    fetchAddresses: () => Promise<void>;
+    fetchAreas: () => Promise<void>;
     addTablet: (item: Omit<Tablet, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateTablet: (item: Tablet, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     deleteTablet: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
@@ -337,29 +346,118 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [areas, setAreas] = useState<Area[]>([]);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [logs, setLogs] = useState<Log[]>([]);
+    const [fetchStatus, setFetchStatus] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({
+        iphones: 'idle',
+        tablets: 'idle',
+        featurephones: 'idle',
+        routers: 'idle',
+        employees: 'idle',
+        addresses: 'idle',
+        areas: 'idle',
+    });
     const { user } = useAuth();
     const { showToast, dismissToast } = useToast();
 
-    const fetchData = useCallback(async () => {
-        const toastId = showToast('データ読み込み中...', 'loading', undefined, 0);
+    const fetchIPhones = useCallback(async () => {
+        if (fetchStatus.iphones === 'loading' || fetchStatus.iphones === 'success') return;
+        setFetchStatus(prev => ({ ...prev, iphones: 'loading' }));
         try {
-            // Use Server Actions to fetch data (bypassing RLS issues for imported users)
-            const [
-                iPhoneData,
-                tabletData,
-                featurePhoneData,
-                routerData,
-                employeeData,
-                areaData,
-                addressData
-            ] = await Promise.all([
-                fetchIPhonesAction(),
-                fetchTabletsAction(),
-                fetchFeaturePhonesAction(),
-                fetchRoutersAction(),
-                fetchEmployeesAction(),
-                fetchAreasAction(),
-                fetchAddressesAction(),
+            const data = await fetchIPhonesAction();
+            if (data) setIPhones(data.map(mapIPhoneFromDb));
+            setFetchStatus(prev => ({ ...prev, iphones: 'success' }));
+        } catch (error) {
+            console.error('Failed to fetch iPhones:', error);
+            setFetchStatus(prev => ({ ...prev, iphones: 'error' }));
+        }
+    }, [fetchStatus.iphones]);
+
+    const fetchTablets = useCallback(async () => {
+        if (fetchStatus.tablets === 'loading' || fetchStatus.tablets === 'success') return;
+        setFetchStatus(prev => ({ ...prev, tablets: 'loading' }));
+        try {
+            const data = await fetchTabletsAction();
+            if (data) setTablets(data.map(mapTabletFromDb));
+            setFetchStatus(prev => ({ ...prev, tablets: 'success' }));
+        } catch (error) {
+            console.error('Failed to fetch Tablets:', error);
+            setFetchStatus(prev => ({ ...prev, tablets: 'error' }));
+        }
+    }, [fetchStatus.tablets]);
+
+    const fetchFeaturePhones = useCallback(async () => {
+        if (fetchStatus.featurephones === 'loading' || fetchStatus.featurephones === 'success') return;
+        setFetchStatus(prev => ({ ...prev, featurephones: 'loading' }));
+        try {
+            const data = await fetchFeaturePhonesAction();
+            if (data) setFeaturePhones(data.map(mapFeaturePhoneFromDb));
+            setFetchStatus(prev => ({ ...prev, featurephones: 'success' }));
+        } catch (error) {
+            console.error('Failed to fetch FeaturePhones:', error);
+            setFetchStatus(prev => ({ ...prev, featurephones: 'error' }));
+        }
+    }, [fetchStatus.featurephones]);
+
+    const fetchRouters = useCallback(async () => {
+        if (fetchStatus.routers === 'loading' || fetchStatus.routers === 'success') return;
+        setFetchStatus(prev => ({ ...prev, routers: 'loading' }));
+        try {
+            const data = await fetchRoutersAction();
+            if (data) setRouters(data.map(mapRouterFromDb));
+            setFetchStatus(prev => ({ ...prev, routers: 'success' }));
+        } catch (error) {
+            console.error('Failed to fetch Routers:', error);
+            setFetchStatus(prev => ({ ...prev, routers: 'error' }));
+        }
+    }, [fetchStatus.routers]);
+
+    const fetchEmployees = useCallback(async () => {
+        if (fetchStatus.employees === 'loading' || fetchStatus.employees === 'success') return;
+        setFetchStatus(prev => ({ ...prev, employees: 'loading' }));
+        try {
+            const data = await fetchEmployeesAction();
+            if (data) setEmployees(data.map(mapEmployeeFromDb));
+            setFetchStatus(prev => ({ ...prev, employees: 'success' }));
+        } catch (error) {
+            console.error('Failed to fetch Employees:', error);
+            setFetchStatus(prev => ({ ...prev, employees: 'error' }));
+            throw error;
+        }
+    }, [fetchStatus.employees]);
+
+    const fetchAddresses = useCallback(async () => {
+        if (fetchStatus.addresses === 'loading' || fetchStatus.addresses === 'success') return;
+        setFetchStatus(prev => ({ ...prev, addresses: 'loading' }));
+        try {
+            const data = await fetchAddressesAction();
+            if (data) setAddresses(data.map(mapAddressFromDb));
+            setFetchStatus(prev => ({ ...prev, addresses: 'success' }));
+        } catch (error) {
+            console.error('Failed to fetch Addresses:', error);
+            setFetchStatus(prev => ({ ...prev, addresses: 'error' }));
+        }
+    }, [fetchStatus.addresses]);
+
+    const fetchAreas = useCallback(async () => {
+        if (fetchStatus.areas === 'loading' || fetchStatus.areas === 'success') return;
+        setFetchStatus(prev => ({ ...prev, areas: 'loading' }));
+        try {
+            const data = await fetchAreasAction();
+            if (data) setAreas(data.map(mapAreaFromDb));
+            setFetchStatus(prev => ({ ...prev, areas: 'success' }));
+        } catch (error) {
+            console.error('Failed to fetch Areas:', error);
+            setFetchStatus(prev => ({ ...prev, areas: 'error' }));
+        }
+    }, [fetchStatus.areas]);
+
+    const fetchData = useCallback(async () => {
+        const toastId = showToast('マスターデータ読み込み中...', 'loading', undefined, 0);
+        try {
+            // Fetch core master data concurrently on initialization
+            await Promise.all([
+                fetchEmployees(),
+                fetchAddresses(),
+                fetchAreas(),
             ]);
 
             // Default fetch: Current week's logs from audit_logs
@@ -370,13 +468,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .lte('occurred_at', end.toISOString())
                 .order('occurred_at', { ascending: false });
 
-            if (tabletData) setTablets(tabletData.map(mapTabletFromDb));
-            if (iPhoneData) setIPhones(iPhoneData.map(mapIPhoneFromDb));
-            if (featurePhoneData) setFeaturePhones(featurePhoneData.map(mapFeaturePhoneFromDb));
-            if (routerData) setRouters(routerData.map(mapRouterFromDb));
-            if (employeeData) setEmployees(employeeData.map(mapEmployeeFromDb));
-            if (areaData) setAreas(areaData.map(mapAreaFromDb));
-            if (addressData) setAddresses(addressData.map(mapAddressFromDb));
             if (logData) setLogs(logData.map(logService.mapLogFromDb));
 
         } catch (error) {
@@ -944,7 +1035,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             deleteManyEmployees, deleteManyAreas, deleteManyAddresses,
             fetchLogRange,
             fetchLogMinDate,
-            logs
+            logs,
+            employeeMap: React.useMemo(() => new Map(employees.map(e => [e.code, e])), [employees]),
+            addressMap: React.useMemo(() => new Map(addresses.map(a => [a.addressCode, a])), [addresses]),
+            fetchIPhones,
+            fetchTablets,
+            fetchFeaturePhones,
+            fetchRouters,
+            fetchEmployees,
+            fetchAddresses,
+            fetchAreas,
         }}>
             {children}
         </DataContext.Provider>

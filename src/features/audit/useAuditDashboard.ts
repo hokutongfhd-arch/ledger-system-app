@@ -34,137 +34,21 @@ export const useAuditDashboard = () => {
                     break;
             }
 
-            // 1. Fetch Logs via Server Action (Bypass RLS)
-            const { logs: logsData, loginFailcount24h, unacknowledgedAnomalyCount, recentAnomalies: rAnomaliesRaw, error } = await fetchDashboardStatsServer(startDate.toISOString());
+            // 1. Fetch Aggregated Stats via Server Action
+            const result = await fetchDashboardStatsServer(startDate.toISOString(), range);
 
-            if (error) {
-                throw new Error(error);
+            if (result.error) {
+                throw new Error(result.error);
             }
 
-            // Map raw server data to Log type using central service
-            const logs: Log[] = (logsData || []).map(logService.mapLogFromDb);
+            const { kpi, trend, distribution, topActors, topAnomalyActors, recentAnomalies: rAnomaliesRaw } = result;
 
-            // --- Aggregation ---
-
-            // KPI: Range-based numbers
-            const kpi: KPIStats = {
-                todayActionCount: logs.length,
-                todayFailureCount: logs.filter((l: any) => l.result === 'failure').length,
-                loginFailureCount24h: logs.filter((l: any) => l.actionRaw === 'LOGIN_FAILURE' && l.result === 'failure').length,
-                unacknowledgedAnomalyCount: unacknowledgedAnomalyCount || 0,
-                adminActionCount: logs.filter((l: any) =>
-                    ['CREATE', 'UPDATE', 'DELETE'].includes(l.actionRaw)
-                ).length
-            };
-
-            // Chart: Trend (Logs per day/hour) - Multi-axis
-            const trendMap = new Map<string, { count: number; failureCount: number; anomalyCount: number }>();
-
-            if (range === 'today') {
-                // Hourly aggregation for business hours (08:00 - 20:00)
-                for (let h = 8; h <= 20; h++) {
-                    const hourStr = `${h.toString().padStart(2, '0')}:00`;
-                    trendMap.set(hourStr, { count: 0, failureCount: 0, anomalyCount: 0 });
-                }
-
-                logs.forEach((log: any) => {
-                    const date = new Date(log.timestamp);
-                    const hour = date.getHours();
-                    if (hour >= 8 && hour <= 20) {
-                        const hourStr = `${hour.toString().padStart(2, '0')}:00`;
-                        const current = trendMap.get(hourStr) || { count: 0, failureCount: 0, anomalyCount: 0 };
-                        current.count++;
-                        if (log.result === 'failure') current.failureCount++;
-                        if (log.actionRaw === 'ANOMALY_DETECTED') current.anomalyCount++;
-                        trendMap.set(hourStr, current);
-                    }
-                });
-            } else {
-                // Daily aggregation
-                logs.forEach((log: any) => {
-                    const day = log.timestamp.split('T')[0];
-                    const current = trendMap.get(day) || { count: 0, failureCount: 0, anomalyCount: 0 };
-                    current.count++;
-                    if (log.result === 'failure') current.failureCount++;
-                    if (log.actionRaw === 'ANOMALY_DETECTED') current.anomalyCount++;
-                    trendMap.set(day, current);
-                });
-            }
-
-            const trend: DayStat[] = Array.from(trendMap.entries())
-                .map(([date, stats]) => ({ date, ...stats }))
-                .sort((a, b) => a.date.localeCompare(b.date));
-
-            // Chart: Action Distribution
-            const actionMap = new Map<string, number>();
-            logs.forEach((log: any) => {
-                const action = log.actionRaw;
-                actionMap.set(action, (actionMap.get(action) || 0) + 1);
-            });
-
-            const ACTION_COLOR_MAP: Record<string, string> = {
-                LOGIN_SUCCESS: '#0088FE', // Blue
-                LOGIN_FAILURE: '#7C3AED', // Violet
-                LOGOUT: '#82ca9d',        // Light Green
-                CREATE: '#FF8042',        // Orange
-                UPDATE: '#00C49F',        // Green
-                DELETE: '#8884d8',        // Purple
-
-                EXPORT: '#FFBB28',        // Yellow
-                GENERATE: '#FFBB28',      // Yellow (Same category as Export)
-                IMPORT: '#FFBB28',
-                DOWNLOAD_TEMPLATE: '#FFBB28',
-
-                ANOMALY_DETECTED: '#FF6B6B', // Coral
-                ANOMALY_RESPONSE: '#E76F51', // Burnt Orange
-
-                VIEW_PAGE: '#E5E7EB',     // Gray (Noise)
-                TEST_TRIGGER: '#9CA3AF'   // Gray
-            };
-
-            const ACTION_ORDER = [
-                'LOGIN_SUCCESS',
-                'LOGIN_FAILURE',
-                'LOGOUT',
-                'CREATE',
-                'UPDATE',
-                'DELETE',
-                'EXPORT',
-                'GENERATE',
-                'IMPORT',
-                'DOWNLOAD_TEMPLATE',
-                'ANOMALY_DETECTED',
-                'ANOMALY_RESPONSE'
-            ];
-
-            const distribution: ActionTypeStat[] = Array.from(actionMap.entries())
-                .sort((a, b) => {
-                    const idxA = ACTION_ORDER.indexOf(a[0]);
-                    const idxB = ACTION_ORDER.indexOf(b[0]);
-
-                    // If both are in the known list, sort by index
-                    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-
-                    // If one is known, it comes first
-                    if (idxA !== -1) return -1;
-                    if (idxB !== -1) return 1;
-
-                    // If neither, sort by count descending
-                    return b[1] - a[1];
-                })
-                .map(([action, count], index) => {
-                    let fill = ACTION_COLOR_MAP[action] || COLORS[index % COLORS.length];
-
-                    return {
-                        action,
-                        count,
-                        fill
-                    };
-                });
+            // Map Recent Anomalies using central service (Severity distribution is also derived from anomalies)
+            const recentAnomalies: Log[] = (rAnomaliesRaw || []).map(logService.mapLogFromDb);
 
             // Chart: Severity Distribution (Anomaly Only)
             const severityDistribution: SeverityStat[] = [];
-            const anomalyLogs = logs.filter((l: any) => l.actionRaw === 'ANOMALY_DETECTED');
+            const anomalyLogs = recentAnomalies; // We now only have anomalies in recentAnomalies
 
             if (anomalyLogs.length > 0) {
                 const severityMap = new Map<string, number>();
@@ -193,52 +77,42 @@ export const useAuditDashboard = () => {
                 });
             }
 
-            // Top Actors
-            const actorMap = new Map<string, { count: number; name: string }>();
-            const anomalyActorMap = new Map<string, { count: number; name: string }>();
+            // Color mapping for distribution
+            const ACTION_COLOR_MAP: Record<string, string> = {
+                LOGIN_SUCCESS: '#0088FE',
+                LOGIN_FAILURE: '#7C3AED',
+                LOGOUT: '#82ca9d',
+                CREATE: '#FF8042',
+                UPDATE: '#00C49F',
+                DELETE: '#8884d8',
+                EXPORT: '#FFBB28',
+                GENERATE: '#FFBB28',
+                IMPORT: '#FFBB28',
+                DOWNLOAD_TEMPLATE: '#FFBB28',
+                ANOMALY_DETECTED: '#FF6B6B',
+                ANOMALY_RESPONSE: '#E76F51',
+                VIEW_PAGE: '#E5E7EB',
+                TEST_TRIGGER: '#9CA3AF'
+            };
 
-            logs.forEach((log: any) => {
-                const code = log.actorEmployeeCode;
-                const name = log.actorName;
-                if (!code) return;
-
-                const current = actorMap.get(code) || { count: 0, name };
-                current.count++;
-                actorMap.set(code, current);
-
-                if (log.actionRaw === 'ANOMALY_DETECTED') {
-                    const currentA = anomalyActorMap.get(code) || { count: 0, name };
-                    currentA.count++;
-                    anomalyActorMap.set(code, currentA);
-                }
-            });
-
-            const topActors = Array.from(actorMap.entries())
-                .map(([code, stats]) => ({ code, ...stats }))
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 5);
-
-            const topAnomalyActors = Array.from(anomalyActorMap.entries())
-                .map(([code, stats]) => ({ code, ...stats }))
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 5);
-
-            // Map Recent Anomalies using central service
-            const recentAnomalies: Log[] = (rAnomaliesRaw || []).map(logService.mapLogFromDb);
+            const distributionWithColors: ActionTypeStat[] = (distribution || []).map((item: any, index: number) => ({
+                ...item,
+                fill: ACTION_COLOR_MAP[item.action] || COLORS[index % COLORS.length]
+            }));
 
             setData({
-                kpi,
-                trend,
-                distribution,
+                kpi: kpi!,
+                trend: trend!,
+                distribution: distributionWithColors,
                 severityDistribution,
-                topActors,
-                topAnomalyActors,
+                topActors: topActors!,
+                topAnomalyActors: topAnomalyActors!,
                 recentAnomalies
             });
 
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
-            // Fallback empty data to stop loading and prevent 'No Data' crash
+            // Fallback empty data
             setData({
                 kpi: { todayActionCount: 0, todayFailureCount: 0, loginFailureCount24h: 0, unacknowledgedAnomalyCount: 0, adminActionCount: 0 },
                 trend: [],

@@ -36,7 +36,7 @@ export default function FeaturePhoneListPage() {
 }
 
 function FeaturePhoneListContent() {
-    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, deleteManyFeaturePhones, employees, addresses } = useData();
+    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, deleteManyFeaturePhones, employees, addresses, employeeMap, addressMap, fetchFeaturePhones } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -48,6 +48,10 @@ function FeaturePhoneListContent() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<FeaturePhone | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<FeaturePhone | undefined>(undefined);
+
+    useEffect(() => {
+        fetchFeaturePhones();
+    }, [fetchFeaturePhones]);
 
     const {
         searchTerm, setSearchTerm,
@@ -62,8 +66,8 @@ function FeaturePhoneListContent() {
         searchKeys: ['managementNumber', 'phoneNumber', 'modelName', 'carrier', 'notes'],
         sortConfig: {
             employeeId: (a, b) => {
-                const nameA = employees.find(e => e.code === a.employeeId)?.name || '';
-                const nameB = employees.find(e => e.code === b.employeeId)?.name || '';
+                const nameA = employeeMap.get(a.employeeId)?.name || '';
+                const nameB = employeeMap.get(b.employeeId)?.name || '';
                 return nameA.localeCompare(nameB);
             },
             contractYears: (a, b) => {
@@ -568,11 +572,11 @@ function FeaturePhoneListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('managementNumber')}>管理番号{getSortIcon('managementNumber')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.managementNumber}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('modelName')}>機種名{getSortIcon('modelName')}</div>, accessor: 'modelName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: (item) => formatPhoneNumber(item.phoneNumber) },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者{getSortIcon('userName')}</div>, accessor: (item) => employees.find(e => e.code === item.employeeId)?.name || '' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者{getSortIcon('userName')}</div>, accessor: (item) => employeeMap.get(item.employeeId)?.name || '' },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>使用事業所{getSortIcon('addressCode')}</div>,
                         accessor: (item) => {
-                            const addr = addresses.find(a => a.addressCode === item.addressCode);
+                            const addr = addressMap.get(item.addressCode);
                             return addr ? addr.officeName : item.addressCode || '';
                         }
                     },
