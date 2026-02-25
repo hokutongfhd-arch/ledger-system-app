@@ -190,12 +190,25 @@ function FeaturePhoneListContent() {
                     return cleanCode;
                 };
 
+                const rawStatus = String(rowData['状況'] || '').trim();
+                const employeeId = String(rowData['社員コード'] || '').trim();
+                const addressCode = formatAddressCode(rowData['事業所コード']);
+
+                let finalStatus: any;
+                if (employeeId || addressCode) {
+                    finalStatus = 'in-use';
+                } else if (rawStatus === '') {
+                    finalStatus = 'available';
+                } else {
+                    finalStatus = statusMap[rawStatus] || 'available';
+                }
+
                 const newFeaturePhone: Omit<FeaturePhone, 'id'> = {
                     carrier: String(rowData['キャリア'] || ''),
                     phoneNumber: phoneNumber,
                     managementNumber: managementNumber,
-                    employeeId: String(rowData['社員コード'] || ''),
-                    addressCode: formatAddressCode(rowData['事業所コード']),
+                    employeeId: employeeId,
+                    addressCode: addressCode,
                     lendDate: formatDate(rowData['貸与日']),
                     receiptDate: formatDate(rowData['受領書提出日']),
                     notes: String(rowData['備考'] || ''),
@@ -203,7 +216,7 @@ function FeaturePhoneListContent() {
                     modelName: String(rowData['機種名'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     costCompany: String(rowData['負担先'] || ''),
-                    status: (statusMap[rowData['状況']] || 'available') as any
+                    status: finalStatus
                 };
 
 

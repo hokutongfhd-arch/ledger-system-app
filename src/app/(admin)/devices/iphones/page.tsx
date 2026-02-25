@@ -223,15 +223,28 @@ function IPhoneListContent() {
                     return cleanCode;
                 };
 
+                const rawStatus = String(rowData['状況'] || '').trim();
+                const employeeId = String(rowData['社員コード'] || '').trim();
+                const addressCode = formatAddressCode(rowData['事業所コード']);
+
+                let finalStatus: any;
+                if (employeeId || addressCode) {
+                    finalStatus = 'in-use';
+                } else if (rawStatus === '') {
+                    finalStatus = 'available';
+                } else {
+                    finalStatus = statusMap[rawStatus] || 'available';
+                }
+
                 const newIPhone: Omit<IPhone, 'id'> & { id?: string } = {
                     managementNumber: managementNumber,
                     phoneNumber: phoneNumber,
                     modelName: String(rowData['機種名'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['キャリア'] || ''),
-                    status: (statusMap[rowData['状況']] || 'available') as any,
-                    employeeId: String(rowData['社員コード'] || ''),
-                    addressCode: formatAddressCode(rowData['事業所コード']),
+                    status: finalStatus,
+                    employeeId: employeeId,
+                    addressCode: addressCode,
                     costBearer: String(rowData['負担先'] || ''),
                     receiptDate: formatDate(rowData['受領書提出日']),
                     lendDate: formatDate(rowData['貸与日']),
@@ -241,20 +254,6 @@ function IPhoneListContent() {
                     notes: String(rowData['備考'] || ''),
                     id: rowData['ID'] ? String(rowData['ID']) : undefined,
                 };
-
-                if (newIPhone.employeeId && !newIPhone.status) newIPhone.status = 'in-use'; // Only default to in-use if status is missing AND employee exists?
-                // Actually user said "Import what is selected".
-                // If the user selected "Stock" but assigned an employee, it should be "Stock" (as they requested "correctly imported as selected").
-                // If they left it EMPTY, `statusMap` defaults to `available`.
-                // If they have employee but no status, maybe `in-use` is better default?
-                // But the code `status: (statusMap[rowData['状況']] || 'available')` handles default.
-                // The current code forces `in-use` even if `rowData['状況']` was valid.
-                // I will simply REMOVE the override.
-                // But wait, if they leave Status EMPTY but provide Employee, should it be Available or In Use?
-                // Usually In Use.
-                // But `statusMap` defaults to `available` if key missing.
-                // I should probably allow the passed status to win.
-                // I will just remove the line `if (newIPhone.employeeId) newIPhone.status = 'in-use';`.
 
 
                 importData.push(newIPhone);

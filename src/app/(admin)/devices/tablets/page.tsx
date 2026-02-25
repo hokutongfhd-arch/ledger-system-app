@@ -186,27 +186,30 @@ function TabletListContent() {
 
                 if (validation.managementNumber) processedTerminalCodes.add(validation.managementNumber);
 
-                const status = reverseStatusMap[String(rowData['状況'] || '').trim()] || 'available';
-
-                // Re-construct data (Validation ensures format is mostly correct, but we might need to trim/normalize again if validator didn't expose it all)
-                // Validator exposed `managementNumber` (terminalCode).
-                // We need others.
-
-                const rawModelNumber = String(rowData['型番(必須)'] || '');
+                const rawStatusAtFile = String(rowData['状況'] || '').trim();
                 const employeeCode = String(rowData['社員コード'] || '').trim();
-                const officeCode = String(rowData['事業所コード'] || '').trim();
+                const addressCode = String(rowData['事業所コード'] || '').trim();
+
+                let finalStatus: any;
+                if (employeeCode || addressCode) {
+                    finalStatus = 'in-use';
+                } else if (rawStatusAtFile === '') {
+                    finalStatus = 'available';
+                } else {
+                    finalStatus = reverseStatusMap[rawStatusAtFile] || 'available';
+                }
 
                 const newTablet: Omit<Tablet, 'id'> = {
                     terminalCode: validation.managementNumber || toHalfWidth(String(rowData['端末CD(必須)'] || '')).trim(),
                     maker: String(rowData['メーカー'] || ''),
-                    modelNumber: rawModelNumber,
-                    status: status as any,
-                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
+                    modelNumber: toHalfWidth(String(rowData['型番(必須)'] || '')).trim(),
+                    addressCode: addressCode,
                     employeeCode: employeeCode,
-                    addressCode: officeCode,
-                    costBearer: String(rowData['負担先'] || ''),
-                    history: String(rowData['過去貸与履歴'] || ''),
                     notes: String(rowData['備考'] || ''),
+                    history: String(rowData['過去貸与履歴'] || ''),
+                    status: finalStatus,
+                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
+                    costBearer: String(rowData['負担先'] || ''),
                     address: '',
                 };
 

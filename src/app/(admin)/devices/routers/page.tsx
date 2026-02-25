@@ -207,6 +207,19 @@ function RouterListContent() {
                 processedTerminalCodes.add(terminalCode);
                 if (simNumberNormalized) processedSimNumbers.add(simNumberNormalized);
 
+                const rawStatus = String(rowData['状況'] || '').trim();
+                const employeeCode = String(rowData['社員コード'] || '').trim();
+                const addressCode = String(rowData['事業所コード'] || '').trim();
+
+                let finalStatus: any;
+                if (employeeCode || addressCode) {
+                    finalStatus = 'in-use';
+                } else if (rawStatus === '') {
+                    finalStatus = 'available';
+                } else {
+                    finalStatus = statusMap[rawStatus] || 'available';
+                }
+
                 const newRouter: Omit<Router, 'id'> = {
                     contractStatus: String(rowData['契約状況'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
@@ -215,8 +228,8 @@ function RouterListContent() {
                     simNumber: formatPhoneNumber(simNumberNormalized),
                     dataCapacity: String(rowData['通信容量'] || ''),
                     terminalCode: terminalCode,
-                    employeeCode: String(rowData['社員コード'] || ''),
-                    addressCode: String(rowData['事業所コード'] || ''),
+                    employeeCode: employeeCode,
+                    addressCode: addressCode,
                     ipAddress: String(rowData['IPアドレス'] || ''),
                     subnetMask: String(rowData['サブネットマスク'] || ''),
                     startIp: String(rowData['開始IP'] || ''),
@@ -228,7 +241,7 @@ function RouterListContent() {
                     lendingHistory: String(rowData['貸与履歴'] || ''),
                     notes: String(rowData['備考(返却日)'] || ''),
                     returnDate: '',
-                    status: (statusMap[rowData['状況']] || 'available') as any
+                    status: finalStatus
                 };
 
 
