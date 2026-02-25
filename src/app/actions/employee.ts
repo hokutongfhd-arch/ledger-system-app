@@ -82,6 +82,9 @@ export async function createEmployeeAction(data: any) {
             }
         }
 
+        if (error.code === '23505') {
+            throw new Error('DuplicateError');
+        }
         throw new Error(error.message);
     }
 
@@ -161,20 +164,24 @@ export async function updateEmployeeAction(id: string, data: any) {
     // 3. Update DB Record
     const { data: result, error } = await supabaseAdmin
         .from('employees')
-        .update(dbItem)
+        .update({ ...dbItem, version: data.version + 1 })
         .eq('id', id)
-        .select()
-        .single();
+        .eq('version', data.version)
+        .select();
 
     if (error) {
-        console.error('Update Employee Action Error:', error);
+        if (error.code === '23505') throw new Error('DuplicateError');
         throw new Error(error.message);
     }
 
-    return result;
+    if (!result || result.length === 0) {
+        throw new Error('ConcurrencyError');
+    }
+
+    return result[0];
 }
 
-export async function deleteEmployeeAction(id: string) {
+export async function deleteEmployeeAction(id: string, version: number) {
     const cookieStore = await cookies();
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
 
@@ -245,17 +252,21 @@ export async function deleteEmployeeAction(id: string) {
     }
 
     // 4. Delete DB Record (after Auth is gone)
-    // Revert to using supabaseAdmin to bypass potential RLS recursion
-    const { error: deleteError } = await supabaseAdmin
+    const { count, error: deleteError } = await supabaseAdmin
         .from('employees')
-        .delete()
-        .eq('id', id);
+        .delete({ count: 'exact' })
+        .eq('id', id)
+        .eq('version', version);
 
     if (deleteError) {
-        throw new Error(`DB Delete failed: ${deleteError.message}`);
+        throw new Error(deleteError.message);
     }
 
-    // 5. Fix Audit Log Actor -> REMOVED.
+    if (count === 0) {
+        throw new Error('NotFoundError');
+    }
+
+    // 5. Audit Log Actor -> REMOVED.
     // User requested to separate Audit/Operation logs.
     if (currentUser) {
         // Run async without awaiting to not block UI response
@@ -266,87 +277,11 @@ export async function deleteEmployeeAction(id: string) {
     return { success: true };
 }
 
-export async function deleteManyEmployeesAction(ids: string[]) {
-    const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
-
-    // 1. Verify Authentication
-    let currentUser: any = null;
-    const setupUser = await getSetupUserServer();
-    if (setupUser) {
-        currentUser = setupUser;
-    } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            throw new Error('Unauthenticated');
-        }
-        currentUser = user;
+export async function deleteManyEmployeesAction(items: { id: string, version: number }[]) {
+    // We must respect ID + version for each delete as per Rule 6.
+    // Loop through individual deletes to ensure version check for each.
+    for (const item of items) {
+        await deleteEmployeeAction(item.id, item.version);
     }
-
-    const supabaseAdmin = getSupabaseAdmin();
-
-    // 2. Fetch Employees to get Auth IDs
-    const { data: employees, error: fetchError } = await supabaseAdmin
-        .from('employees')
-        .select('auth_id, employee_code, email')
-        .in('id', ids);
-
-    if (fetchError) {
-        throw new Error(`Employees fetch failed: ${fetchError.message}`);
-    }
-
-    // 3. Delete Auth Users FIRST
-    if (employees && employees.length > 0) {
-        // Pre-fetch all users for fallback efficiency
-        let allAuthUsers: any[] = [];
-        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        if (!listError && users) allAuthUsers = users;
-
-        await Promise.all(employees.map(async (emp) => {
-            let targetAuthId = emp.auth_id;
-
-            // Fallback Lookup if no auth_id
-            if (!targetAuthId) {
-                const targetCode = String(emp.employee_code).trim().toLowerCase();
-                const targetEmail = emp.email?.trim().toLowerCase();
-
-                const foundOrphan = allAuthUsers.find(u => {
-                    const metaCode = u.user_metadata?.employee_code;
-                    const matchesCode = metaCode && (String(metaCode).trim().toLowerCase() === targetCode);
-                    const matchesEmail = targetEmail && u.email?.trim().toLowerCase() === targetEmail;
-                    return matchesCode || matchesEmail;
-                });
-                if (foundOrphan) targetAuthId = foundOrphan.id;
-            }
-
-            if (targetAuthId) {
-                const { error } = await supabaseAdmin.rpc('force_delete_auth_user', { target_user_id: targetAuthId });
-                if (error) {
-                    console.error(`Failed to delete Auth User ${targetAuthId} (Code: ${emp.employee_code}):`, error);
-                    // Continue deletion of others even if one fails? Or stop?
-                    // For bulk delete, we usually try best effort or stop.
-                    // Let's log and continue to cleanup DB.
-                }
-            }
-        }));
-    }
-
-    // 4. Delete DB Records (Only if Auth delete succeeded - attempted)
-    const { error: deleteError } = await supabaseAdmin
-        .from('employees')
-        .delete()
-        .in('id', ids);
-
-    if (deleteError) {
-        throw new Error(`DB Bulk Delete failed: ${deleteError.message}`);
-    }
-
-    // 5. Fix Audit Log Actor -> REMOVED.
-    if (currentUser) {
-        for (const id of ids) {
-            await fixOperationLogActor(supabaseAdmin, id, 'employees', currentUser, 'DELETE');
-        }
-    }
-
     return { success: true };
 }

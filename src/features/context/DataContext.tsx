@@ -8,10 +8,21 @@ import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { logService } from '../logs/log.service';
-import { createEmployeeBySetupAdmin, updateEmployeeBySetupAdmin, deleteEmployeeBySetupAdmin, deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
 import { createEmployeeAction, fetchEmployeesAction, deleteEmployeeAction, deleteManyEmployeesAction, updateEmployeeAction } from '@/app/actions/employee';
-import { updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction } from '@/app/actions/device';
+import {
+    updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction,
+    createIPhoneAction, deleteIPhoneAction,
+    createFeaturePhoneAction, deleteFeaturePhoneAction,
+    createTabletAction, deleteTabletAction,
+    createRouterAction, deleteRouterAction
+} from '@/app/actions/device';
 import { fetchIPhonesAction, fetchTabletsAction, fetchFeaturePhonesAction, fetchRoutersAction, fetchAreasAction, fetchAddressesAction } from '@/app/actions/device_fetch';
+import {
+    createAreaAction, updateAreaAction, deleteAreaAction,
+    createAddressAction, updateAddressAction, deleteAddressAction
+} from '@/app/actions/master';
+import { deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
+import { fetchAuditLogsAction, fetchLogMinDateAction } from '@/app/actions/audit';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -30,27 +41,27 @@ interface DataContextType {
     fetchEmployees: () => Promise<void>;
     fetchAddresses: () => Promise<void>;
     fetchAreas: () => Promise<void>;
-    addTablet: (item: Omit<Tablet, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    addTablet: (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateTablet: (item: Tablet, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteTablet: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    addIPhone: (item: Omit<IPhone, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteTablet: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    addIPhone: (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateIPhone: (item: IPhone, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteIPhone: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    addFeaturePhone: (item: Omit<FeaturePhone, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteIPhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    addFeaturePhone: (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateFeaturePhone: (item: FeaturePhone, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteFeaturePhone: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    addRouter: (item: Omit<Router, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteFeaturePhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    addRouter: (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateRouter: (item: Router, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteRouter: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    addEmployee: (item: Omit<Employee, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteRouter: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    addEmployee: (item: Omit<Employee, 'id' | 'version' | 'updatedAt'> & { id?: string, password?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateEmployee: (item: Employee, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteEmployee: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    addArea: (item: Omit<Area, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteEmployee: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    addArea: (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateArea: (item: Area, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteArea: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    addAddress: (item: Omit<Address, 'id'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteArea: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    addAddress: (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateAddress: (item: Address, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteAddress: (id: string, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteAddress: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     deleteManyIPhones: (ids: string[]) => Promise<void>;
     deleteManyFeaturePhones: (ids: string[]) => Promise<void>;
     deleteManyTablets: (ids: string[]) => Promise<void>;
@@ -82,6 +93,8 @@ const mapTabletFromDb = (d: any): Tablet => ({
     status: (d.status as DeviceStatus) || 'available',
     contractYears: s(d.contract_years),
     employeeCode: s(d.employee_code),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 const mapTabletToDb = (t: Partial<Tablet>) => ({
@@ -96,6 +109,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     status: t.status,
     contract_years: t.contractYears,
     employee_code: t.employeeCode,
+    version: t.version,
 });
 
 const mapIPhoneFromDb = (d: any): IPhone => ({
@@ -106,7 +120,7 @@ const mapIPhoneFromDb = (d: any): IPhone => ({
     employeeId: s(d.employee_code),
 
     addressCode: s(d.address_code),
-    costBearer: s(d.cost_bearer),
+    costBearer: s(d.payer),
     smartAddressId: s(d.smart_address_id),
     smartAddressPw: s(d.smart_address_pw),
     lendDate: s(d.lend_date),
@@ -116,6 +130,8 @@ const mapIPhoneFromDb = (d: any): IPhone => ({
     modelName: s(d.model_name),
     status: (d.status as DeviceStatus) || 'available',
     contractYears: s(d.contract_years),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 const mapIPhoneToDb = (t: Partial<IPhone>) => ({
@@ -125,7 +141,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     employee_code: t.employeeId,
 
     address_code: t.addressCode,
-    cost_bearer: t.costBearer,
+    payer: t.costBearer,
     smart_address_id: t.smartAddressId,
     smart_address_pw: t.smartAddressPw,
     lend_date: t.lendDate,
@@ -135,6 +151,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     model_name: t.modelName,
     status: t.status,
     contract_years: t.contractYears,
+    version: t.version,
 });
 
 const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
@@ -143,7 +160,6 @@ const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
     phoneNumber: s(d.phone_number),
     managementNumber: s(d.management_number),
     employeeId: s(d.employee_code),
-
     addressCode: s(d.address_code),
     costCompany: s(d.cost_company),
     lendDate: s(d.lend_date),
@@ -153,6 +169,8 @@ const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
     modelName: s(d.model_name),
     status: (d.status as DeviceStatus) || 'available',
     contractYears: s(d.contract_years),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
@@ -160,7 +178,6 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     phone_number: t.phoneNumber,
     management_number: t.managementNumber,
     employee_code: t.employeeId,
-
     address_code: t.addressCode,
     cost_company: t.costCompany,
     lend_date: t.lendDate,
@@ -170,6 +187,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     model_name: t.modelName,
     status: t.status,
     contract_years: t.contractYears,
+    version: t.version,
 });
 
 const mapRouterFromDb = (d: any): Router => ({
@@ -199,6 +217,8 @@ const mapRouterFromDb = (d: any): Router => ({
     returnDate: '', // Missing in DB
     contractYears: s(d.contract_years),
     employeeCode: s(d.employee_code),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 const mapRouterToDb = (t: Partial<Router>) => ({
@@ -226,6 +246,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     contract_years: t.contractYears,
     status: t.status,
     employee_code: t.employeeCode,
+    version: t.version,
 });
 
 const mapEmployeeFromDb = (d: any): Employee => ({
@@ -236,7 +257,6 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     companyNo: '', // Missing
     departmentCode: '', // Missing
     email: s(d.email),
-
     gender: s(d.gender),
     birthDate: s(d.birthday),
     joinDate: s(d.join_date),
@@ -248,12 +268,13 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
     profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
     authId: s(d.auth_id),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     employee_code: t.code,
     auth_id: t.auth_id,
-    // password: t.password, // Password is NOT stored in DB, strictly used for Auth User creation
     name: t.name,
     name_kana: t.nameKana,
     email: t.email,
@@ -266,17 +287,21 @@ const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     area_code: t.areaCode,
     address_code: t.addressCode,
     authority: t.role,
+    version: t.version,
 });
 
 const mapAreaFromDb = (d: any): Area => ({
-    id: d.area_code, // Use code as ID if PK
+    id: d.area_code,
     areaCode: s(d.area_code),
     areaName: s(d.area_name),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 const mapAreaToDb = (t: Partial<Area>) => ({
     area_code: t.areaCode,
     area_name: t.areaName,
+    version: t.version,
 });
 
 const mapAddressFromDb = (d: any): Address => ({
@@ -300,6 +325,8 @@ const mapAddressFromDb = (d: any): Address => ({
     labelAddress: s(d.label_address),
     attentionNote: s(d.caution),
     accountingCode: s(d.accounting_code),
+    version: Number(d.version) || 1,
+    updatedAt: s(d.updated_at),
 });
 
 const mapAddressToDb = (t: Partial<Address>) => ({
@@ -322,6 +349,7 @@ const mapAddressToDb = (t: Partial<Address>) => ({
     label_address: t.labelAddress,
     caution: t.attentionNote,
     accounting_code: t.accountingCode,
+    version: t.version,
 });
 
 // Local mapLogFromDb removed in favor of logService.mapLogFromDb
@@ -358,8 +386,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { user } = useAuth();
     const { showToast, dismissToast } = useToast();
 
-    const fetchIPhones = useCallback(async () => {
-        if (fetchStatus.iphones === 'loading' || fetchStatus.iphones === 'success') return;
+    const fetchIPhones = useCallback(async (force: boolean = false) => {
+        if (!force && (fetchStatus.iphones === 'loading' || fetchStatus.iphones === 'success')) return;
         setFetchStatus(prev => ({ ...prev, iphones: 'loading' }));
         try {
             const data = await fetchIPhonesAction();
@@ -371,8 +399,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [fetchStatus.iphones]);
 
-    const fetchTablets = useCallback(async () => {
-        if (fetchStatus.tablets === 'loading' || fetchStatus.tablets === 'success') return;
+    const fetchTablets = useCallback(async (force: boolean = false) => {
+        if (!force && (fetchStatus.tablets === 'loading' || fetchStatus.tablets === 'success')) return;
         setFetchStatus(prev => ({ ...prev, tablets: 'loading' }));
         try {
             const data = await fetchTabletsAction();
@@ -384,8 +412,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [fetchStatus.tablets]);
 
-    const fetchFeaturePhones = useCallback(async () => {
-        if (fetchStatus.featurephones === 'loading' || fetchStatus.featurephones === 'success') return;
+    const fetchFeaturePhones = useCallback(async (force: boolean = false) => {
+        if (!force && (fetchStatus.featurephones === 'loading' || fetchStatus.featurephones === 'success')) return;
         setFetchStatus(prev => ({ ...prev, featurephones: 'loading' }));
         try {
             const data = await fetchFeaturePhonesAction();
@@ -397,8 +425,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [fetchStatus.featurephones]);
 
-    const fetchRouters = useCallback(async () => {
-        if (fetchStatus.routers === 'loading' || fetchStatus.routers === 'success') return;
+    const fetchRouters = useCallback(async (force: boolean = false) => {
+        if (!force && (fetchStatus.routers === 'loading' || fetchStatus.routers === 'success')) return;
         setFetchStatus(prev => ({ ...prev, routers: 'loading' }));
         try {
             const data = await fetchRoutersAction();
@@ -410,8 +438,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [fetchStatus.routers]);
 
-    const fetchEmployees = useCallback(async () => {
-        if (fetchStatus.employees === 'loading' || fetchStatus.employees === 'success') return;
+    const fetchEmployees = useCallback(async (force: boolean = false) => {
+        if (!force && (fetchStatus.employees === 'loading' || fetchStatus.employees === 'success')) return;
         setFetchStatus(prev => ({ ...prev, employees: 'loading' }));
         try {
             const data = await fetchEmployeesAction();
@@ -424,8 +452,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [fetchStatus.employees]);
 
-    const fetchAddresses = useCallback(async () => {
-        if (fetchStatus.addresses === 'loading' || fetchStatus.addresses === 'success') return;
+    const fetchAddresses = useCallback(async (force: boolean = false) => {
+        if (!force && (fetchStatus.addresses === 'loading' || fetchStatus.addresses === 'success')) return;
         setFetchStatus(prev => ({ ...prev, addresses: 'loading' }));
         try {
             const data = await fetchAddressesAction();
@@ -437,8 +465,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [fetchStatus.addresses]);
 
-    const fetchAreas = useCallback(async () => {
-        if (fetchStatus.areas === 'loading' || fetchStatus.areas === 'success') return;
+    const fetchAreas = useCallback(async (force: boolean = false) => {
+        if (!force && (fetchStatus.areas === 'loading' || fetchStatus.areas === 'success')) return;
         setFetchStatus(prev => ({ ...prev, areas: 'loading' }));
         try {
             const data = await fetchAreasAction();
@@ -460,14 +488,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 fetchAreas(),
             ]);
 
-            // Default fetch: Current week's logs from audit_logs
+            // Default fetch: Current week's logs
             const { start, end } = getWeekRange(new Date());
-            const { data: logData } = await supabase.from('audit_logs')
-                .select('*')
-                .gte('occurred_at', start.toISOString())
-                .lte('occurred_at', end.toISOString())
-                .order('occurred_at', { ascending: false });
-
+            const logData = await fetchAuditLogsAction(start.toISOString(), end.toISOString());
             if (logData) setLogs(logData.map(logService.mapLogFromDb));
 
         } catch (error) {
@@ -484,236 +507,198 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [user, fetchData]);
 
-    // Generic CRUD helpers
-    const addItem = useCallback(async <T,>(
+    const refreshTable = useCallback(async (table: string) => {
+        switch (table) {
+            case 'tablets': await fetchTablets(true); break;
+            case 'iphones': await fetchIPhones(true); break;
+            case 'featurephones': await fetchFeaturePhones(true); break;
+            case 'routers': await fetchRouters(true); break;
+            case 'employees': await fetchEmployees(true); break;
+            case 'areas': await fetchAreas(true); break;
+            case 'addresses': await fetchAddresses(true); break;
+        }
+    }, [fetchTablets, fetchIPhones, fetchFeaturePhones, fetchRouters, fetchEmployees, fetchAreas, fetchAddresses]);
+
+    // Generic CRUD helpers (Deprecated in favor of specific server actions)
+    // Removed to ensure all logic goes through Server Actions as per "Don't trust app side" principle
+    // Added user and supabase to dependencies
+
+    // Unified delete many helper using ID + version
+    const deleteManyItems = useCallback(async (
         table: string,
-        item: any,
-        mapperToDb: (i: any) => any,
-        mapperFromDb: (i: any) => T,
-        setState: React.Dispatch<React.SetStateAction<T[]>>,
-        skipLog: boolean = false,
-        skipToast: boolean = false
+        itemsToProcess: { id: string, version: number }[],
+        setState: React.Dispatch<React.SetStateAction<any[]>>,
+        deleteAction: (id: string, version: number) => Promise<any>
     ) => {
+        const toastId = showToast('削除中...', 'loading');
         try {
-            const dbItem = mapperToDb(item);
-            const { data, error } = await supabase.from(table).insert(dbItem).select().single();
-            if (error) throw error;
+            // Sequential or Parallel deletes with ID + version check
+            await Promise.all(itemsToProcess.map(item => deleteAction(item.id, item.version)));
 
-            const newItem = mapperFromDb(data);
-            setState(prev => [...prev, newItem]);
-
-            if (!skipToast) {
-                showToast('登録しました', 'success');
-            }
-        } catch (error: any) {
-            console.error(`Failed to add item to ${table}:`, JSON.stringify(error, null, 2));
-            if (!skipToast) {
-                showToast('登録に失敗しました', 'error', error?.message || '不明なエラー');
-            }
-            throw error;
-        }
-    }, [showToast]);
-
-    const updateItem = useCallback(async <T extends { id: string }>(
-        table: string,
-        item: T,
-        mapperToDb: (i: T) => any,
-        currentData: T[],
-        setState: React.Dispatch<React.SetStateAction<T[]>>,
-        skipLog: boolean = false,
-        skipToast: boolean = false
-    ) => {
-        try {
-            const dbItem = mapperToDb(item);
-            const { error } = await supabase.from(table).update(dbItem).eq('id', item.id);
-            if (error) throw error;
-
-            setState(prev => prev.map(p => p.id === item.id ? item : p));
-
-            if (!skipToast) {
-                showToast('更新しました', 'success');
-            }
-        } catch (error: any) {
-            console.error(`Failed to update item in ${table}:`, error);
-            const errorMessage = error?.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
-            if (!skipToast) {
-                showToast('更新に失敗しました', 'error', errorMessage);
-            }
-            throw error;
-        }
-    }, [showToast]);
-
-    const deleteItem = useCallback(async <T extends { id: string }>(table: string, id: string, setState: React.Dispatch<React.SetStateAction<T[]>>, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            const { error } = await supabase.from(table).delete().eq('id', id);
-            if (error) throw error;
-
-            setState(prev => prev.filter(p => p.id !== id));
-
-            // Removed to separate Audit/Operation logs. DB Triggers handle 'logs' (Operation Log).
-            /*
-            if (!skipLog) {
-                const targetType = TARGET_MAP[table] || 'unknown';
-                await logger.info({
-                    action: 'DELETE',
-                    targetType,
-                    targetId: id,
-                    message: `${table} から ID: ${id} を削除しました`,
-                    actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
-                });
-            }
-            */
-
-            if (!skipToast) {
-                showToast('削除しました', 'success');
-            }
-        } catch (error: any) {
-            console.error(`Failed to delete item from ${table}:`, error);
-            if (!skipToast) {
-                showToast('削除に失敗しました', 'error', error.message);
-            }
-            throw error;
-        }
-    }, [showToast, user, supabase]); // Added user and supabase to dependencies
-
-    const deleteItems = useCallback(async <T extends { id: string }>(table: string, ids: string[], setState: React.Dispatch<React.SetStateAction<T[]>>, isArea: boolean = false, skipLog: boolean = false) => {
-        try {
-            if (table === 'employees') {
-                // Special handling for Employee bulk delete to sync Auth User deletion
-                if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
-                    await deleteManyEmployeesBySetupAdmin(ids);
-                } else {
-                    await deleteManyEmployeesAction(ids);
-                }
-            } else {
-                // Default generic delete
-                const pkField = isArea ? 'area_code' : 'id';
-                const { error } = await supabase.from(table).delete().in(pkField, ids);
-                if (error) throw error;
-            }
-
+            const ids = itemsToProcess.map(i => i.id);
             setState(prev => prev.filter(p => !ids.includes(p.id)));
-
-            // Removed to separate Audit/Operation logs. DB Triggers handle 'logs' (Operation Log).
-            /*
-            if (!skipLog) {
-                const targetType = TARGET_MAP[table] || 'unknown';
-                await logger.info({
-                    action: 'DELETE',
-                    targetType,
-                    message: `${table} から ${ids.length} 件を一括削除しました`,
-                    metadata: { deletedIds: ids },
-                    actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
-                });
-            }
-            */
-
             showToast(`${ids.length}件、削除しました`, 'success');
         } catch (error: any) {
-            console.error(`Failed to delete items from ${table}:`, error);
-            showToast('削除に失敗しました', 'error', error.message);
-            throw error;
+            console.error(`Bulk delete failed for ${table}:`, error);
+            await handleCRUDError(table, error, false);
+        } finally {
+            dismissToast(toastId);
         }
-    }, [showToast, user, supabase]); // Added user and supabase to dependencies
+    }, [showToast, dismissToast, refreshTable]);
 
     // Specific implementations
-    const addTablet = (item: Omit<Tablet, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('tablets', item, mapTabletToDb, mapTabletFromDb, setTablets, skipLog, skipToast);
+    const handleCRUDError = useCallback(async (table: string, error: any, skipToast: boolean) => {
+        const isDuplicate = error?.message?.includes('DuplicateError');
+        const isConflict = error?.message?.includes('ConcurrencyError');
+        const isNotFound = error?.message?.includes('NotFoundError');
+
+        if (!skipToast) {
+            if (isDuplicate) {
+                showToast('競合エラー', 'error', '既に登録済みのデータです。最新状態に同期します。');
+            } else if (isConflict) {
+                showToast('更新競合', 'error', '他のユーザーが更新しました。最新状態に同期します。');
+            } else if (isNotFound) {
+                showToast('データ不在', 'error', 'データが既に削除されています。最新状態に同期します。');
+            } else {
+                showToast('エラーが発生しました', 'error', error.message);
+            }
+        }
+        if (isDuplicate || isConflict || isNotFound) {
+            await refreshTable(table);
+        }
+    }, [showToast, refreshTable]);
+
+    const addTablet = async (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const result = await createTabletAction(item);
+            setTablets(prev => [...prev, mapTabletFromDb(result)]);
+            if (!skipToast) showToast('登録しました', 'success');
+        } catch (error) {
+            await handleCRUDError('tablets', error, skipToast);
+            throw error;
+        }
+    };
 
     const updateTablet = async (item: Tablet, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
-            // Use Server Action for Tablet updates to handle usage history
             const { id, ...data } = item;
-            const result = await updateTabletAction(id, data);
-
-            const newItem = mapTabletFromDb(result);
-            setTablets(prev => prev.map(p => p.id === item.id ? newItem : p));
-
-            if (!skipToast) {
-                showToast('更新しました', 'success');
-            }
-        } catch (error: any) {
-            console.error('Failed to update Tablet:', error);
-            if (!skipToast) {
-                showToast('更新に失敗しました', 'error', error.message);
-            }
+            const result = await updateTabletAction(id, data, item.version);
+            setTablets(prev => prev.map(p => p.id === item.id ? mapTabletFromDb(result) : p));
+            if (!skipToast) showToast('更新しました', 'success');
+        } catch (error) {
+            await handleCRUDError('tablets', error, skipToast);
             throw error;
         }
     };
-    const deleteTablet = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('tablets', id, setTablets, skipLog, skipToast);
+    const deleteTablet = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            await deleteTabletAction(id, version);
+            setTablets(prev => prev.filter(p => p.id !== id));
+            if (!skipToast) showToast('削除しました', 'success');
+        } catch (error) {
+            await handleCRUDError('tablets', error, skipToast);
+            throw error;
+        }
+    };
 
-    const addIPhone = (item: Omit<IPhone, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('iphones', item, mapIPhoneToDb, mapIPhoneFromDb, setIPhones, skipLog, skipToast);
+    const addIPhone = async (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const result = await createIPhoneAction(item);
+            setIPhones(prev => [...prev, mapIPhoneFromDb(result)]);
+            if (!skipToast) showToast('登録しました', 'success');
+        } catch (error) {
+            await handleCRUDError('iphones', error, skipToast);
+            throw error;
+        }
+    };
     const updateIPhone = async (item: IPhone, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
-            // Use Server Action for IPhone updates to handle history tracking
             const { id, ...data } = item;
-
-            const result = await updateIPhoneAction(id, data);
-
-            // Map the result (raw DB data) back to IPhone type
-            const newItem = mapIPhoneFromDb(result);
-            setIPhones(prev => prev.map(p => p.id === item.id ? newItem : p));
-
-            if (!skipToast) {
-                showToast('更新しました', 'success');
-            }
-        } catch (error: any) {
-            console.error('Failed to update iPhone:', error);
-            if (!skipToast) {
-                showToast('更新に失敗しました', 'error', error.message);
-            }
+            const result = await updateIPhoneAction(id, data, item.version);
+            setIPhones(prev => prev.map(p => p.id === item.id ? mapIPhoneFromDb(result) : p));
+            if (!skipToast) showToast('更新しました', 'success');
+        } catch (error) {
+            await handleCRUDError('iphones', error, skipToast);
             throw error;
         }
     };
-    const deleteIPhone = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('iphones', id, setIPhones, skipLog, skipToast);
+    const deleteIPhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            await deleteIPhoneAction(id, version);
+            setIPhones(prev => prev.filter(p => p.id !== id));
+            if (!skipToast) showToast('削除しました', 'success');
+        } catch (error) {
+            await handleCRUDError('iphones', error, skipToast);
+            throw error;
+        }
+    };
 
-    const addFeaturePhone = (item: Omit<FeaturePhone, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('featurephones', item, mapFeaturePhoneToDb, mapFeaturePhoneFromDb, setFeaturePhones, skipLog, skipToast);
+    const addFeaturePhone = async (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const result = await createFeaturePhoneAction(item);
+            setFeaturePhones(prev => [...prev, mapFeaturePhoneFromDb(result)]);
+            if (!skipToast) showToast('登録しました', 'success');
+        } catch (error) {
+            await handleCRUDError('featurephones', error, skipToast);
+            throw error;
+        }
+    };
     const updateFeaturePhone = async (item: FeaturePhone, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
-            // Use Server Action for FeaturePhone updates to handle usage history
             const { id, ...data } = item;
-            const result = await updateFeaturePhoneAction(id, data);
-
-            const newItem = mapFeaturePhoneFromDb(result);
-            setFeaturePhones(prev => prev.map(p => p.id === item.id ? newItem : p));
-
-            if (!skipToast) {
-                showToast('更新しました', 'success');
-            }
-        } catch (error: any) {
-            console.error('Failed to update FeaturePhone:', error);
-            if (!skipToast) {
-                showToast('更新に失敗しました', 'error', error.message);
-            }
+            const result = await updateFeaturePhoneAction(id, data, item.version);
+            setFeaturePhones(prev => prev.map(p => p.id === item.id ? mapFeaturePhoneFromDb(result) : p));
+            if (!skipToast) showToast('更新しました', 'success');
+        } catch (error) {
+            await handleCRUDError('featurephones', error, skipToast);
             throw error;
         }
     };
-    const deleteFeaturePhone = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('featurephones', id, setFeaturePhones, skipLog, skipToast);
+    const deleteFeaturePhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            await deleteFeaturePhoneAction(id, version);
+            setFeaturePhones(prev => prev.filter(p => p.id !== id));
+            if (!skipToast) showToast('削除しました', 'success');
+        } catch (error) {
+            await handleCRUDError('featurephones', error, skipToast);
+            throw error;
+        }
+    };
 
-    const addRouter = (item: Omit<Router, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('routers', item, mapRouterToDb, mapRouterFromDb, setRouters, skipLog, skipToast);
+    const addRouter = async (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const result = await createRouterAction(item);
+            setRouters(prev => [...prev, mapRouterFromDb(result)]);
+            if (!skipToast) showToast('登録しました', 'success');
+        } catch (error) {
+            await handleCRUDError('routers', error, skipToast);
+            throw error;
+        }
+    };
     const updateRouter = async (item: Router, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
-            // Use Server Action for Router updates to handle usage history
             const { id, ...data } = item;
-            const result = await updateRouterAction(id, data);
-
-            const newItem = mapRouterFromDb(result);
-            setRouters(prev => prev.map(p => p.id === item.id ? newItem : p));
-
-            if (!skipToast) {
-                showToast('更新しました', 'success');
-            }
-        } catch (error: any) {
-            console.error('Failed to update Router:', error);
-            if (!skipToast) {
-                showToast('更新に失敗しました', 'error', error.message);
-            }
+            const result = await updateRouterAction(id, data, item.version);
+            setRouters(prev => prev.map(p => p.id === item.id ? mapRouterFromDb(result) : p));
+            if (!skipToast) showToast('更新しました', 'success');
+        } catch (error) {
+            await handleCRUDError('routers', error, skipToast);
             throw error;
         }
     };
-    const deleteRouter = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('routers', id, setRouters, skipLog, skipToast);
+    const deleteRouter = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            await deleteRouterAction(id, version);
+            setRouters(prev => prev.filter(p => p.id !== id));
+            if (!skipToast) showToast('削除しました', 'success');
+        } catch (error) {
+            await handleCRUDError('routers', error, skipToast);
+            throw error;
+        }
+    };
 
 
-    const addEmployee = async (item: Omit<Employee, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addEmployee = async (item: Omit<Employee, 'id' | 'version' | 'updatedAt'> & { id?: string, password?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
             // 1. Create Auth User via API
             const response = await fetch('/api/auth/register', {
@@ -724,297 +709,167 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`Auth Registration Failed (${response.status}):`, errorText);
-                try {
-                    const errRes = JSON.parse(errorText);
-                    console.error('Parsed Error Details:', errRes);
-                } catch (e) {
-                    // Not JSON
-                }
-                if (!skipToast) showToast('Authユーザー作成に失敗しました', 'error');
                 throw new Error(`Auth Registration Failed: ${errorText}`);
-            } else {
-                const authResult = await response.json();
-                if (authResult.userId) {
-                    (item as any).auth_id = authResult.userId;
-                    // Security event: Auth User creation remains in Audit Logs
-                    await logger.info({
-                        action: 'CREATE',
-                        targetType: 'auth',
-                        message: `管理者特権による認証ユーザー作成: ${authResult.userId} (社員CD: ${item.code})`,
-                        actor: user ? { employeeCode: user.code, name: user.name } : undefined
-                    });
-                }
             }
-        } catch (e) {
-            console.error('Registration API Error:', e);
+
+            const authResult = await response.json();
+            if (authResult.userId) {
+                (item as any).auth_id = authResult.userId;
+            }
+
+            // 2. Insert into DB (via Server Action with compensation logic)
+            const result = await createEmployeeAction(item);
+            setEmployees(prev => [...prev, mapEmployeeFromDb(result)]);
+            if (!skipToast) showToast('登録しました', 'success');
+        } catch (error) {
+            await handleCRUDError('employees', error, skipToast);
+            throw error;
         }
-
-        // 2. Insert into DB (now includes auth_id if successful)
-        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
-            try {
-                const result = await createEmployeeBySetupAdmin(item);
-                const newItem = mapEmployeeFromDb(result);
-                setEmployees(prev => [...prev, newItem]);
-                if (!skipToast) showToast('登録しました (Setup)', 'success');
-                return;
-            } catch (error: any) {
-                console.error('Setup Admin DB Insert Failed:', error);
-                if (!skipToast) showToast('DB登録に失敗しました', 'error', error.message);
-                throw error;
-            }
-        }
-
-        return (async () => {
-            try {
-                // Use Server Action to bypass RLS
-                const result = await createEmployeeAction(item);
-
-                const newItem = mapEmployeeFromDb(result);
-                setEmployees(prev => [...prev, newItem]);
-
-                if (!skipToast) {
-                    showToast('登録しました', 'success');
-                }
-            } catch (error: any) {
-                console.error(`Failed to add employee:`, error);
-                if (!skipToast) {
-                    showToast('登録に失敗しました', 'error', error.message || '不明なエラー');
-                }
-                throw error;
-            }
-        })();
     };
     const updateEmployee = async (item: Employee, skipLog: boolean = false, skipToast: boolean = false) => {
-        // Intercept to save profile image to localStorage
-        if (item.profileImage) {
-            try {
-                localStorage.setItem(`profile_image_${item.id}`, item.profileImage);
-            } catch (e) {
-                console.error('Failed to save profile image to localStorage', e);
-            }
-        }
-
-        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
-            try {
-                await updateEmployeeBySetupAdmin(item);
-                setEmployees(prev => prev.map(p => p.id === item.id ? item : p));
-                if (!skipToast) showToast('更新しました (Setup)', 'success');
-                return;
-            } catch (error: any) {
-                console.error('Setup Admin DB Update Failed:', error);
-                if (!skipToast) showToast('更新に失敗しました', 'error', error.message);
-                throw error;
-            }
-        }
-
-        // 1. Auth Sync (similar to addEmployee)
         try {
-            // Find current employee to check for changes
-            const currentEmployee = employees.find(e => e.id === item.id);
-            const isEmailChanged = currentEmployee && currentEmployee.email !== item.email;
-
-            // Only sync if important fields changed or if we want to ensure consistency
-            // We always sync to ensure Auth DB is up to date (e.g. password, name, role) or if email changed
-
-            // Note: We need to send authId if available to ensure we update the correct user
-            // If item.authId is missing, maybe we can get it from currentEmployee?
-            const authIds = item.authId || (item as any).auth_id || currentEmployee?.authId || (currentEmployee as any)?.auth_id;
-            console.log(`[DEBUG] ID Check: ItemID=${item.id}, AuthID=${authIds}, CurrentEmpAuth=${currentEmployee?.authId}`);
-
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...item,
-                    authId: authIds // Ensure authId is passed for update
-                }),
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.warn(`Auth Update Warning (${response.status}):`, errorText);
-                // Suppress toast since DB update is primary and will trigger sync
-                // showToast('Auth情報の更新に失敗しました', 'error');
-            } else {
-                const authResult = await response.json();
-                // If we got a userId back (and we didn't have one or it changed?), update it
-                if (authResult.userId && item.authId !== authResult.userId) {
-                    (item as any).authId = authResult.userId;
-                    (item as any).auth_id = authResult.userId; // For DB mapper
-                }
-            }
-
-            // 2. DB Update (Use Server Action to bypass RLS/Email issues)
-            await updateEmployeeAction(item.id, item);
-
-            // Update local state manually since we bypassed updateItem
-            setEmployees(prev => prev.map(p => p.id === item.id ? { ...p, ...item } : p));
+            const result = await updateEmployeeAction(item.id, item);
+            setEmployees(prev => prev.map(p => p.id === item.id ? mapEmployeeFromDb(result) : p));
             if (!skipToast) showToast('更新しました', 'success');
-
-            // 3. Logging (Explicitly for Employee Update)
-            // Removed to separate Audit/Operation logs. DB Triggers handle 'logs' (Operation Log).
-            /*
-            if (!skipLog) {
-                let message = `社員情報を更新しました: ${item.name}`;
-                if (isEmailChanged) {
-                    message += ` (メールアドレス変更: ${currentEmployee?.email} -> ${item.email})`;
-                }
-
-                await logger.info({
-                    action: 'UPDATE',
-                    targetType: 'employee',
-                    targetId: item.id,
-                    message: message,
-                    actor: user ? { employeeCode: user.code, name: user.name } : undefined,
-                    metadata: {
-                        changedFields: isEmailChanged ? ['email'] : [],
-                        oldEmail: currentEmployee?.email,
-                        newEmail: item.email
-                    }
-                });
-            }
-            */
-
-        } catch (error: any) {
-            console.error('Update Employee Failed:', error);
-            if (!skipToast) showToast('更新に失敗しました', 'error', error.message);
+        } catch (error) {
+            await handleCRUDError('employees', error, skipToast);
             throw error;
         }
     };
-    const deleteEmployee = (id: string, skipLog: boolean = false, skipToast: boolean = false) => {
-        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
-            return (async () => {
-                try {
-                    await deleteEmployeeBySetupAdmin(id);
-                    setEmployees(prev => prev.filter(p => p.id !== id));
-                    if (!skipToast) showToast('削除しました (Setup)', 'success');
-                } catch (error: any) {
-                    console.error('Setup Admin DB Delete Failed:', error);
-                    if (!skipToast) showToast('削除に失敗しました', 'error', error.message);
-                    throw error;
-                }
-            })();
+    const deleteEmployee = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            await deleteEmployeeAction(id, version);
+            setEmployees(prev => prev.filter(p => p.id !== id));
+            if (!skipToast) showToast('削除しました', 'success');
+        } catch (error) {
+            await handleCRUDError('employees', error, skipToast);
+            throw error;
         }
-        // Use Server Action for Employee deletion to also remove Auth User
-        return (async () => {
-            try {
-                await deleteEmployeeAction(id);
-                setEmployees(prev => prev.filter(p => p.id !== id));
-
-                if (!skipLog) {
-                    await logger.info({
-                        action: 'DELETE',
-                        targetType: 'employee',
-                        targetId: id,
-                        message: `employees から ID: ${id} を削除しました (Auth User含む)`,
-                        actor: user ? { employeeCode: user.code, name: user.name, authId: user.authId } : undefined
-                    });
-                }
-
-                if (!skipToast) showToast('削除しました', 'success');
-            } catch (error: any) {
-                console.error('Delete Employee Failed:', error);
-                if (!skipToast) showToast('削除に失敗しました', 'error', error.message);
-                throw error;
-            }
-        })();
     };
 
-    const addArea = (item: Omit<Area, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('areas', item, mapAreaToDb, mapAreaFromDb, setAreas, skipLog, skipToast);
+    const addArea = async (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const result = await createAreaAction(item);
+            setAreas(prev => [...prev, mapAreaFromDb(result)]);
+            if (!skipToast) showToast('登録しました', 'success');
+        } catch (error) {
+            await handleCRUDError('areas', error, skipToast);
+            throw error;
+        }
+    };
     const updateArea = async (item: Area, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
-            const dbItem = mapAreaToDb(item);
-            // DB PK is area_code. TS Area.id matches areaCode.
-            const { error } = await supabase.from('areas').update(dbItem).eq('area_code', item.id);
-            if (error) throw error;
-
-            setAreas(prev => prev.map(p => p.id === item.id ? item : p));
-
-            if (!skipToast) {
-                showToast('更新しました', 'success');
-            }
-        } catch (error: any) {
-            console.error(`Failed to update item in areas:`, error);
-            if (!skipToast) {
-                showToast('更新に失敗しました', 'error', error.message);
-            }
+            const result = await updateAreaAction(item.areaCode, item, item.version);
+            setAreas(prev => prev.map(p => p.id === item.id ? mapAreaFromDb(result) : p));
+            if (!skipToast) showToast('更新しました', 'success');
+        } catch (error) {
+            await handleCRUDError('areas', error, skipToast);
             throw error;
         }
     };
-    // Areas delete handling - assuming area_code is unique and we use it as ID for deletion if id matches areaCode
-    const deleteArea = async (id: string, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteArea = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
-            // Note: DB PK is area_code. TS Area.id is areaCode.
-            const { error } = await supabase.from('areas').delete().eq('area_code', id);
-            if (error) throw error;
+            await deleteAreaAction(id, version);
             setAreas(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) {
-                showToast('削除しました', 'success');
-            }
-        } catch (error: any) {
-            console.error(`Failed to delete item from areas:`, error);
-            if (!skipToast) {
+            if (!skipToast) showToast('削除しました', 'success');
+        } catch (error) {
+            await handleCRUDError('areas', error, skipToast);
+            throw error;
+        }
+    };
+
+    const addAddress = async (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const result = await createAddressAction(item);
+            setAddresses(prev => [...prev, mapAddressFromDb(result)]);
+            if (!skipToast) showToast('登録しました', 'success');
+        } catch (error) {
+            await handleCRUDError('addresses', error, skipToast);
+            throw error;
+        }
+    };
+    const updateAddress = async (item: Address, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            const result = await updateAddressAction(item.id, item, item.version);
+            setAddresses(prev => prev.map(p => p.id === item.id ? mapAddressFromDb(result) : p));
+            if (!skipToast) showToast('更新しました', 'success');
+        } catch (error) {
+            await handleCRUDError('addresses', error, skipToast);
+            throw error;
+        }
+    };
+    const deleteAddress = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+        try {
+            await deleteAddressAction(id, version);
+            setAddresses(prev => prev.filter(p => p.id !== id));
+            if (!skipToast) showToast('削除しました', 'success');
+        } catch (error) {
+            await handleCRUDError('addresses', error, skipToast);
+            throw error;
+        }
+    };
+
+    const deleteManyIPhones = async (ids: string[]) => {
+        const items = iPhones.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
+        await deleteManyItems('iphones', items, setIPhones, deleteIPhoneAction);
+    };
+    const deleteManyFeaturePhones = async (ids: string[]) => {
+        const items = featurePhones.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
+        await deleteManyItems('featurephones', items, setFeaturePhones, deleteFeaturePhoneAction);
+    };
+    const deleteManyTablets = async (ids: string[]) => {
+        const items = tablets.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
+        await deleteManyItems('tablets', items, setTablets, deleteTabletAction);
+    };
+    const deleteManyRouters = async (ids: string[]) => {
+        const items = routers.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
+        await deleteManyItems('routers', items, setRouters, deleteRouterAction);
+    };
+    const deleteManyEmployees = async (ids: string[]) => {
+        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
+            try {
+                await deleteManyEmployeesBySetupAdmin(ids);
+                setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
+                showToast(`${ids.length}件、削除しました (Setup)`, 'success');
+            } catch (error: any) {
                 showToast('削除に失敗しました', 'error', error.message);
             }
-            throw error;
+            return;
+        }
+        const items = employees.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
+        // Employee deleteManyAction already loops deleteEmployeeAction which we need.
+        const toastId = showToast('削除中...', 'loading');
+        try {
+            await deleteManyEmployeesAction(items);
+            setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
+            showToast(`${ids.length}件、削除しました`, 'success');
+        } catch (error) {
+            await handleCRUDError('employees', error, false);
+        } finally {
+            dismissToast(toastId);
         }
     };
-
-    const addAddress = (item: Omit<Address, 'id'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => addItem('addresses', item, mapAddressToDb, mapAddressFromDb, setAddresses, skipLog, skipToast);
-    const updateAddress = (item: Address, skipLog: boolean = false, skipToast: boolean = false) => updateItem('addresses', item, mapAddressToDb, addresses, setAddresses, skipLog, skipToast);
-    const deleteAddress = (id: string, skipLog: boolean = false, skipToast: boolean = false) => deleteItem('addresses', id, setAddresses, skipLog, skipToast);
-
-    const deleteManyIPhones = (ids: string[]) => deleteItems('iphones', ids, setIPhones);
-    const deleteManyFeaturePhones = (ids: string[]) => deleteItems('featurephones', ids, setFeaturePhones);
-    const deleteManyTablets = (ids: string[]) => deleteItems('tablets', ids, setTablets);
-    const deleteManyRouters = (ids: string[]) => deleteItems('routers', ids, setRouters);
-    const deleteManyEmployees = (ids: string[]) => {
-        if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
-            return (async () => {
-                try {
-                    await deleteManyEmployeesBySetupAdmin(ids);
-                    setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
-                    showToast(`${ids.length}件、削除しました (Setup)`, 'success');
-                } catch (error: any) {
-                    console.error('Setup Admin DB Bulk Delete Failed:', error);
-                    showToast('削除に失敗しました', 'error', error.message);
-                    throw error;
-                }
-            })();
-        }
-        return deleteItems('employees', ids, setEmployees);
+    const deleteManyAreas = async (ids: string[]) => {
+        const items = areas.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
+        await deleteManyItems('areas', items, setAreas, deleteAreaAction);
     };
-    const deleteManyAreas = (ids: string[]) => deleteItems('areas', ids, setAreas, true);
-    const deleteManyAddresses = (ids: string[]) => deleteItems('addresses', ids, setAddresses);
+    const deleteManyAddresses = async (ids: string[]) => {
+        const items = addresses.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
+        await deleteManyItems('addresses', items, setAddresses, deleteAddressAction);
+    };
 
     const fetchLogRange = useCallback(async (startDate: string, endDate: string) => {
         try {
-            const { data, error } = await supabase
-                .from('audit_logs')
-                .select('*')
-                .gte('occurred_at', startDate)
-                .lte('occurred_at', endDate)
-                .order('occurred_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await fetchAuditLogsAction(startDate, endDate);
             if (data) setLogs(data.map(logService.mapLogFromDb));
         } catch (error: any) {
-            console.error('Failed to fetch log range:', error.message || JSON.stringify(error));
+            console.error('Failed to fetch log range:', error.message);
         }
     }, []);
 
     const fetchLogMinDate = useCallback(async (): Promise<string | null> => {
         try {
-            const { data, error } = await supabase
-                .from('audit_logs')
-                .select('occurred_at')
-                .order('occurred_at', { ascending: true })
-                .limit(1)
-                .single();
-
-            if (error) return null; // Likely no logs
-            return data?.occurred_at || null;
+            return await fetchLogMinDateAction();
         } catch (error) {
             console.error('Failed to fetch min log date:', error);
             return null;

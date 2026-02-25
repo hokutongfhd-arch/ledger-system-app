@@ -251,7 +251,8 @@ function RouterListContent() {
                     await addRouter(data as any, true, true);
                     successCount++;
                 } catch (error: any) {
-                    errors.push(`登録エラー: ${data.terminalCode} - ${error.message || '不明なエラー'}`);
+                    const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
+                    errors.push(`登録エラー: ${data.terminalCode} - ${errorMsg}`);
                     errorCount++;
                 }
             }
@@ -291,7 +292,7 @@ function RouterListContent() {
 
         if (confirmed) {
             try {
-                await deleteRouter(item.id, false, false);
+                await deleteRouter(item.id, item.version, false, false);
             } catch (error) {
                 console.error(error);
             }

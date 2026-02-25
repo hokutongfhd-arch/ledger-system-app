@@ -13,6 +13,8 @@ export interface Tablet {
     status: DeviceStatus;
     contractYears?: string;
     employeeCode: string;
+    version: number;
+    updatedAt: string;
 }
 
 export interface IPhone {
@@ -33,6 +35,8 @@ export interface IPhone {
     modelName: string;
     status: DeviceStatus;
     contractYears?: string;
+    version: number;
+    updatedAt: string;
 }
 
 export interface FeaturePhone {
@@ -51,6 +55,8 @@ export interface FeaturePhone {
     modelName: string;
     status: DeviceStatus;
     contractYears?: string;
+    version: number;
+    updatedAt: string;
 }
 
 export interface Router {
@@ -80,6 +86,8 @@ export interface Router {
     contractStatus: string; // 契約状況
     contractYears?: string;
     employeeCode: string;
+    version: number;
+    updatedAt: string;
 }
 
 
@@ -105,12 +113,16 @@ export interface Employee {
     role: 'admin' | 'user';
     profileImage?: string;
     authId?: string;
+    version: number;
+    updatedAt: string;
 }
 
 export interface Area {
     id: string;
     areaCode: string;
     areaName: string;
+    version: number;
+    updatedAt: string;
 }
 
 export interface Address {
@@ -135,6 +147,8 @@ export interface Address {
     labelAddress: string;
     attentionNote: string;
     accountingCode: string;
+    version: number;
+    updatedAt: string;
 }
 
 export type AnomalyResponseStatus = 'pending' | 'investigating' | 'completed';

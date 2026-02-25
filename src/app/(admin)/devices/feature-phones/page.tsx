@@ -259,7 +259,8 @@ function FeaturePhoneListContent() {
                     await addFeaturePhone(data as Omit<FeaturePhone, 'id'>, true, true);
                     successCount++;
                 } catch (error: any) {
-                    errors.push(`登録エラー: ${data.managementNumber} - ${error.message || '不明なエラー'}`);
+                    const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
+                    errors.push(`登録エラー: ${data.managementNumber} - ${errorMsg}`);
                     errorCount++;
                 }
             }

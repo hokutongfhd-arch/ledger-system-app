@@ -1,0 +1,155 @@
+'use server';
+
+import { createClient } from '@supabase/supabase-js';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { Area, Address } from '@/lib/types';
+
+const getSupabase = async () => {
+    try {
+        const cookieStore = await cookies();
+        return createServerActionClient({ cookies: () => cookieStore as any });
+    } catch (e) {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        return createClient(url, key);
+    }
+};
+
+// --- Area Actions ---
+
+export async function createAreaAction(data: Partial<Area>) {
+    const supabase = await getSupabase();
+    const { data: result, error } = await supabase
+        .from('areas')
+        .insert({ area_code: data.areaCode, area_name: data.areaName, version: 1 })
+        .select()
+        .single();
+
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+    return result;
+}
+
+export async function updateAreaAction(id: string, data: Partial<Area>, version: number) {
+    const supabase = await getSupabase();
+    const { data: updated, error } = await supabase
+        .from('areas')
+        .update({ area_name: data.areaName, version: version + 1 })
+        .eq('area_code', id)
+        .eq('version', version)
+        .select();
+
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+
+    if (!updated || updated.length === 0) {
+        throw new Error('ConcurrencyError');
+    }
+
+    return updated[0];
+}
+
+export async function deleteAreaAction(id: string, version: number) {
+    const supabase = await getSupabase();
+    const { count, error } = await supabase
+        .from('areas')
+        .delete({ count: 'exact' })
+        .eq('area_code', id)
+        .eq('version', version);
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    if (count === 0) {
+        throw new Error('NotFoundError');
+    }
+
+    return { success: true };
+}
+
+// --- Address Actions ---
+
+const mapAddressToDb = (t: Partial<Address>) => ({
+    no: t.no,
+    address_code: t.addressCode,
+    office_name: t.officeName,
+    tel: t.tel,
+    fax: t.fax,
+    category: t.type,
+    zip: t.zipCode,
+    address: t.address,
+    notes: t.notes,
+    department: t.division,
+    area: t.area,
+    supervisor: t.mainPerson,
+    branch_no: t.branchNumber,
+    remarks: t.specialNote,
+    label_name: t.labelName,
+    label_zip: t.labelZip,
+    label_address: t.labelAddress,
+    caution: t.attentionNote,
+    accounting_code: t.accountingCode,
+});
+
+export async function createAddressAction(data: Partial<Address>) {
+    const supabase = await getSupabase();
+    const dbData = mapAddressToDb(data);
+    const { data: result, error } = await supabase
+        .from('addresses')
+        .insert({ ...dbData, version: 1 })
+        .select()
+        .single();
+
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+    return result;
+}
+
+export async function updateAddressAction(id: string, data: Partial<Address>, version: number) {
+    const supabase = await getSupabase();
+    const dbData = mapAddressToDb(data);
+    const { data: updated, error } = await supabase
+        .from('addresses')
+        .update({ ...dbData, version: version + 1 })
+        .eq('id', id)
+        .eq('version', version)
+        .select();
+
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+
+    if (!updated || updated.length === 0) {
+        throw new Error('ConcurrencyError');
+    }
+
+    return updated[0];
+}
+
+export async function deleteAddressAction(id: string, version: number) {
+    const supabase = await getSupabase();
+    const { count, error } = await supabase
+        .from('addresses')
+        .delete({ count: 'exact' })
+        .eq('id', id)
+        .eq('version', version);
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    if (count === 0) {
+        throw new Error('NotFoundError');
+    }
+
+    return { success: true };
+}

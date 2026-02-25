@@ -30,39 +30,14 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
     } = data;
 
     try {
-
-        // --- Step 0: メールアドレスの重複チェック ---
-        if (email) {
-            const { data: emailConflicts, error: emailCheckError } = await supabaseAdmin
-                .from('employees')
-                .select('id, employee_code, name, email')
-                .ilike('email', email.trim()) // 大文字小文字を区別しない
-                .neq('employee_code', employee_code); // 自分自身（同じ社員コード）は除外
-
-            if (emailCheckError) {
-                console.error('[Upsert] Email check failed:', emailCheckError);
-                // チェック失敗時は続行（DB エラーはStep3でキャッチ）
-            } else if (emailConflicts && emailConflicts.length > 0) {
-                const conflictEmployee = emailConflicts[0];
-                return {
-                    success: false,
-                    error: `既に登録されているメールアドレスです（登録済み社員: ${conflictEmployee.name || conflictEmployee.employee_code}）`,
-                    code: employee_code,
-                };
-            }
-        }
-
         // --- Step 1: Resolve Auth User (Identity Resolution) ---
         let targetAuthId: string | null = null;
         let authAction = 'none';
 
-        // Use real email for Auth if provided, otherwise fallback to Code-based email
-        const authEmail = email || `${employee_code}@ledger-system.local`;
-
-        // 1-A. Check if Employee exists (Primary Check)
+        // 1-A. Check if Employee exists (Primary Check) - version も取得
         const { data: existingEmployee, error: empError } = await supabaseAdmin
             .from('employees')
-            .select('id, auth_id, email')
+            .select('id, auth_id, email, version')
             .eq('employee_code', employee_code)
             .single();
 
@@ -70,8 +45,11 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             throw new Error(`Database verify failed: ${empError.message}`);
         }
 
-        if (existingEmployee && existingEmployee.auth_id) {
-            // Priority 1: Use existing connection
+        const isUpdate = !!existingEmployee;
+        const currentVersion = existingEmployee?.version || 1;
+        const authEmail = email || `${employee_code}@ledger-system.local`;
+
+        if (isUpdate && existingEmployee.auth_id) {
             targetAuthId = existingEmployee.auth_id;
             authAction = 'update_by_id';
         } else {
@@ -82,16 +60,14 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             const existingAuthUser = users.find(u => u.email?.toLowerCase() === authEmail.toLowerCase());
 
             if (existingAuthUser) {
-                // Priority 3: Reuse existing Auth User
                 targetAuthId = existingAuthUser.id;
                 authAction = 'reuse_existing';
             } else {
-                // Priority 4: Create New Auth User
                 const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
                     email: authEmail,
                     password: password || '12345678',
                     email_confirm: true,
-                    user_metadata: { name, employee_code, email: authEmail }, // Store email in metadata too
+                    user_metadata: { name, employee_code, email: authEmail },
                     app_metadata: { role: authority === 'admin' ? 'admin' : 'user' }
                 });
 
@@ -103,57 +79,76 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
 
         // --- Step 2: Update Auth User Metadata/Email ---
         if (authAction !== 'created' && targetAuthId) {
-            console.log(`[Upsert] Updating Auth User ${targetAuthId} with Role: ${authority}`);
             const updates: any = {
                 user_metadata: { name, employee_code },
                 app_metadata: { role: authority === 'admin' ? 'admin' : 'user' },
                 email: authEmail,
                 email_confirm: true
             };
-            // Always update email to match current requirement
             if (password) updates.password = password;
 
-            const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-                targetAuthId,
-                updates
-            );
-            if (updateError) {
-                console.error(`[Upsert] Auth update failed: ${updateError.message}`);
-                throw new Error(`Auth update failed: ${updateError.message}`);
-            } else {
-                console.log(`[Upsert] Auth update success for ${targetAuthId}`);
-            }
+            const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(targetAuthId, updates);
+            if (updateError) throw new Error(`Auth update failed: ${updateError.message}`);
         }
 
-        // --- Step 3: Upsert Employee Record ---
-        const employeeData = {
-            employee_code,
-            auth_id: targetAuthId,
-            name,
-            name_kana,
-            email, // Save real email to DB
-            gender,
-            birthday,
-            join_date,
-            age_at_month_end,
-            years_in_service,
-            months_in_service,
-            area_code,
-            address_code,
-            authority: authority === 'admin' ? 'admin' : 'user',
-        };
+        // --- Step 3: DB Operation (RPC for Update, Insert for New) ---
+        let dbResult: any = null;
+        let dbError: any = null;
 
-        // Use supabaseAdmin (Service Role) to bypass RLS and avoid infinite recursion
-        const { data: upsertResult, error: upsertError } = await supabaseAdmin
-            .from('employees')
-            .upsert(employeeData, { onConflict: 'employee_code' })
-            .select()
-            .single();
+        if (isUpdate) {
+            // 更新時は RPC を利用して楽観ロックを適用
+            const { data: success, error: rpcError } = await supabaseAdmin.rpc('update_employee_safe', {
+                p_id: existingEmployee.id,
+                p_version: currentVersion,
+                p_employee_code: employee_code,
+                p_name: name,
+                p_name_kana: name_kana,
+                p_email: email,
+                p_gender: gender,
+                p_birthday: birthday,
+                p_join_date: join_date,
+                p_area_code: area_code,
+                p_address_code: address_code,
+                p_authority: authority === 'admin' ? 'admin' : 'user'
+            });
 
-        if (upsertError) {
-            // Compensation: If we just created an Auth User but DB failed, delete the Auth User to prevent orphans.
+            if (rpcError) {
+                dbError = rpcError;
+            } else if (!success) {
+                dbError = { message: 'Conflict: 他のユーザーにより更新されています。', code: '409' };
+            } else {
+                // 更新後のデータを再取得（Auditログ対応用）
+                const { data: updated } = await supabaseAdmin.from('employees').select('*').eq('id', existingEmployee.id).single();
+                dbResult = updated;
+            }
+        } else {
+            // 新規登録は直接 INSERT
+            const { data, error } = await supabaseAdmin
+                .from('employees')
+                .insert({
+                    employee_code,
+                    auth_id: targetAuthId,
+                    name,
+                    name_kana,
+                    email,
+                    gender,
+                    birthday,
+                    join_date,
+                    age_at_month_end,
+                    years_in_service,
+                    months_in_service,
+                    area_code,
+                    address_code,
+                    authority: authority === 'admin' ? 'admin' : 'user',
+                })
+                .select()
+                .single();
+            dbResult = data;
+            dbError = error;
+        }
+
+        if (dbError) {
             if (authAction === 'created' && targetAuthId) {
-                console.warn(`Rolling back Auth User ${targetAuthId} due to DB error.`);
                 try {
                     await supabaseAdmin.auth.admin.deleteUser(targetAuthId);
                 } catch (cleanupError) {
@@ -161,40 +156,27 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
                 }
             }
 
-            let jpErrorMessage = `DB登録エラー: ${upsertError.message}`;
-            if (upsertError.message.includes('infinite recursion')) {
-                jpErrorMessage = 'システムエラー: 権限設定の無限ループが発生しました。データベースの修正(is_admin関数の更新)が必要です。';
-            } else if (upsertError.message.includes('row-level security policy')) {
-                jpErrorMessage = '権限エラー: データの書き込み権限がありません。';
-            } else if (upsertError.message.includes('duplicate key')) {
-                jpErrorMessage = '登録エラー: 既に登録されているデータと重複しています。';
+            let jpErrorMessage = `整合性エラー: ${dbError.message}`;
+            if (dbError.code === '23505') {
+                jpErrorMessage = '登録エラー: 社員コードまたはメールアドレスが既に登録されています。';
+            } else if (dbError.code === '409') {
+                jpErrorMessage = '競合エラー: 他のユーザーがこの社員情報を更新しました。画面を読み込み直してください。';
             }
 
             throw new Error(jpErrorMessage);
         }
 
         // --- Step 4: Fix Audit Log Actor ---
-        // Since we used Service Role, the Trigger created a log with 'System' or unknown actor.
-        // We manually patch it to the actual user who requested the import.
-        if (actorUser && upsertResult) {
-            // We fire this asynchronously to not block the response too much, 
-            // or await it if we want to be sure. Await is safer for "one by one" logic.
-            // 1. Fix Audit Log (System Events) -> REMOVED.
-            // User requested to separate Audit/Operation logs. 
-            // Audit Log should NOT record data manipulation. 
-            // If a Trigger creates it, we cannot stop it from here easily, but we shouldn't "fix" it (embellish it) either.
-            // Ideally, we drop the trigger.
-
-            // 2. Fix Operation Log (Data Changes)
-            await fixOperationLogActor(supabaseAdmin, upsertResult.id, 'employees', actorUser, existingEmployee ? 'UPDATE' : 'INSERT');
+        if (actorUser && dbResult) {
+            await fixOperationLogActor(supabaseAdmin, dbResult.id, 'employees', actorUser, isUpdate ? 'UPDATE' : 'INSERT');
         }
 
         return {
             success: true,
-            employee: upsertResult,
+            employee: dbResult,
             authStatus: authAction,
             authId: targetAuthId || undefined,
-            code: upsertResult.employee_code
+            code: dbResult.employee_code
         };
 
     } catch (error: any) {

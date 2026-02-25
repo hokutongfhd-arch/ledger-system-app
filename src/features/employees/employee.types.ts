@@ -18,6 +18,8 @@ export interface Employee {
     role: 'admin' | 'user';
     profileImage?: string;
     authId?: string;
+    version: number;
+    updatedAt: string;
 }
 
 export interface EmployeeInput extends Omit<Employee, 'id'> {

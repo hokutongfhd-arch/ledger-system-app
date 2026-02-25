@@ -23,6 +23,8 @@ export const employeeService = {
         role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
         profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
         authId: s(d.auth_id),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
     }),
 
     mapEmployeeToDb: (t: Partial<Employee>) => ({
@@ -40,6 +42,7 @@ export const employeeService = {
         area_code: t.areaCode,
         address_code: t.addressCode,
         authority: t.role,
+        version: t.version, // optimistic locking check will use this in WHERE clause or RPC
     }),
 
     getEmployees: async () => {
@@ -167,8 +170,8 @@ export const employeeService = {
         return results;
     },
 
-    deleteEmployee: async (id: string) => {
-        return await employeeApi.deleteEmployee(id);
+    deleteEmployee: async (id: string, version: number) => {
+        return await employeeApi.deleteEmployee(id, version);
     },
     deleteEmployees: async (ids: string[]) => {
         return await employeeApi.deleteEmployees(ids);

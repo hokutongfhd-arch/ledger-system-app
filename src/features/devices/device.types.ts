@@ -13,6 +13,8 @@ export interface Tablet {
     status: DeviceStatus;
     contractYears?: string;
     employeeCode: string;
+    version: number;
+    updatedAt: string;
 }
 
 
@@ -42,8 +44,7 @@ export interface IPhone {
     carrier: string;
     phoneNumber: string;
     managementNumber: string;
-    employeeId: string;
-
+    employeeCode: string; // 修正: employeeId から employeeCode へ
     addressCode: string;
     costBearer: string;
     smartAddressId: string;
@@ -55,6 +56,8 @@ export interface IPhone {
     modelName: string;
     status: DeviceStatus;
     contractYears?: string;
+    version: number;
+    updatedAt: string;
 }
 
 export interface IPhoneUsageHistory {
@@ -72,8 +75,7 @@ export interface FeaturePhone {
     carrier: string;
     phoneNumber: string;
     managementNumber: string;
-    employeeId: string;
-
+    employeeCode: string; // 修正: employeeId から employeeCode へ
     addressCode: string;
     costCompany: string;
     lendDate: string;
@@ -83,6 +85,8 @@ export interface FeaturePhone {
     modelName: string;
     status: DeviceStatus;
     contractYears?: string;
+    version: number;
+    updatedAt: string;
 }
 
 
@@ -119,4 +123,6 @@ export interface Router {
     contractStatus: string;
     contractYears?: string;
     employeeCode: string;
+    version: number;
+    updatedAt: string;
 }

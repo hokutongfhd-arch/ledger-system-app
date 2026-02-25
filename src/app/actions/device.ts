@@ -58,7 +58,7 @@ const formatPhoneNumber = (phoneNumber: string) => {
 };
 
 
-export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
+export async function updateIPhoneAction(id: string, data: Partial<IPhone>, version: number) {
     const supabase = await getSupabase();
 
     // 1. Get Current Data
@@ -148,16 +148,44 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>) {
 
     const { data: updated, error: updateError } = await supabase
         .from('iphones')
-        .update(dbData)
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
-        .select()
-        .single();
+        .eq('version', version)
+        .select();
 
     if (updateError) {
+        if (updateError.code === '23505') throw new Error('DuplicateError');
         throw new Error(updateError.message);
     }
 
-    return updated;
+    if (!updated || updated.length === 0) {
+        throw new Error('ConcurrencyError');
+    }
+
+    return updated[0];
+}
+
+export async function createIPhoneAction(data: Partial<IPhone>) {
+    const supabase = await getSupabase();
+    const dbData = mapIPhoneToDb(data);
+    const { data: result, error } = await supabase.from('iphones').insert({ ...dbData, version: 1 }).select().single();
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+    return result;
+}
+
+export async function deleteIPhoneAction(id: string, version: number) {
+    const supabase = await getSupabase();
+    const { count, error } = await supabase.from('iphones').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+    if (error) {
+        throw new Error(error.message);
+    }
+    if (count === 0) {
+        throw new Error('NotFoundError');
+    }
+    return { success: true };
 }
 
 export async function getIPhoneHistoryAction(iphoneId: string) {
@@ -205,7 +233,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     contract_years: t.contractYears,
 });
 
-export async function updateFeaturePhoneAction(id: string, data: Partial<FeaturePhone>) {
+export async function updateFeaturePhoneAction(id: string, data: Partial<FeaturePhone>, version: number) {
     const supabase = await getSupabase();
 
     // 1. Get Current Data
@@ -256,16 +284,44 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
 
     const { data: updated, error: updateError } = await supabase
         .from('featurephones')
-        .update(dbData)
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
-        .select()
-        .single();
+        .eq('version', version)
+        .select();
 
     if (updateError) {
+        if (updateError.code === '23505') throw new Error('DuplicateError');
         throw new Error(updateError.message);
     }
 
-    return updated;
+    if (!updated || updated.length === 0) {
+        throw new Error('ConcurrencyError');
+    }
+
+    return updated[0];
+}
+
+export async function createFeaturePhoneAction(data: Partial<FeaturePhone>) {
+    const supabase = await getSupabase();
+    const dbData = mapFeaturePhoneToDb(data);
+    const { data: result, error } = await supabase.from('featurephones').insert({ ...dbData, version: 1 }).select().single();
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+    return result;
+}
+
+export async function deleteFeaturePhoneAction(id: string, version: number) {
+    const supabase = await getSupabase();
+    const { count, error } = await supabase.from('featurephones').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+    if (error) {
+        throw new Error(error.message);
+    }
+    if (count === 0) {
+        throw new Error('NotFoundError');
+    }
+    return { success: true };
 }
 
 export async function getFeaturePhoneHistoryAction(featurePhoneId: string) {
@@ -310,7 +366,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     employee_code: t.employeeCode,
 });
 
-export async function updateTabletAction(id: string, data: Partial<Tablet>) {
+export async function updateTabletAction(id: string, data: Partial<Tablet>, version: number) {
     const supabase = await getSupabase();
 
     // 1. Get Current Data
@@ -354,16 +410,44 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>) {
 
     const { data: updated, error: updateError } = await supabase
         .from('tablets')
-        .update(dbData)
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
-        .select()
-        .single();
+        .eq('version', version)
+        .select();
 
     if (updateError) {
+        if (updateError.code === '23505') throw new Error('DuplicateError');
         throw new Error(updateError.message);
     }
 
-    return updated;
+    if (!updated || updated.length === 0) {
+        throw new Error('ConcurrencyError');
+    }
+
+    return updated[0];
+}
+
+export async function createTabletAction(data: Partial<Tablet>) {
+    const supabase = await getSupabase();
+    const dbData = mapTabletToDb(data);
+    const { data: result, error } = await supabase.from('tablets').insert({ ...dbData, version: 1 }).select().single();
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+    return result;
+}
+
+export async function deleteTabletAction(id: string, version: number) {
+    const supabase = await getSupabase();
+    const { count, error } = await supabase.from('tablets').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+    if (error) {
+        throw new Error(error.message);
+    }
+    if (count === 0) {
+        throw new Error('NotFoundError');
+    }
+    return { success: true };
 }
 
 export async function getTabletHistoryAction(tabletId: string) {
@@ -418,7 +502,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     employee_code: t.employeeCode,
 });
 
-export async function updateRouterAction(id: string, data: Partial<Router>) {
+export async function updateRouterAction(id: string, data: Partial<Router>, version: number) {
     const supabase = await getSupabase();
 
     // 1. Get Current Data
@@ -464,16 +548,44 @@ export async function updateRouterAction(id: string, data: Partial<Router>) {
 
     const { data: updated, error: updateError } = await supabase
         .from('routers')
-        .update(dbData)
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
-        .select()
-        .single();
+        .eq('version', version)
+        .select();
 
     if (updateError) {
+        if (updateError.code === '23505') throw new Error('DuplicateError');
         throw new Error(updateError.message);
     }
 
-    return updated;
+    if (!updated || updated.length === 0) {
+        throw new Error('ConcurrencyError');
+    }
+
+    return updated[0];
+}
+
+export async function createRouterAction(data: Partial<Router>) {
+    const supabase = await getSupabase();
+    const dbData = mapRouterToDb(data);
+    const { data: result, error } = await supabase.from('routers').insert({ ...dbData, version: 1 }).select().single();
+    if (error) {
+        if (error.code === '23505') throw new Error('DuplicateError');
+        throw new Error(error.message);
+    }
+    return result;
+}
+
+export async function deleteRouterAction(id: string, version: number) {
+    const supabase = await getSupabase();
+    const { count, error } = await supabase.from('routers').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+    if (error) {
+        throw new Error(error.message);
+    }
+    if (count === 0) {
+        throw new Error('NotFoundError');
+    }
+    return { success: true };
 }
 
 export async function getRouterHistoryAction(routerId: string) {

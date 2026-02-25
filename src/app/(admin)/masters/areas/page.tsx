@@ -173,7 +173,7 @@ function AreaListContent() {
                 processedCodes.add(code);
                 processedNames.add(name);
 
-                const newArea: Omit<Area, 'id'> = {
+                const newArea: Omit<Area, 'id' | 'version' | 'updatedAt'> = {
                     areaCode: code,
                     areaName: name
                 };
@@ -202,11 +202,11 @@ function AreaListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addArea(data as Omit<Area, 'id'>, true, true);
+                    await addArea(data as any, true, true);
                     successCount++;
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : '不明なエラー';
-                    errors.push(`登録エラー: ${data.areaCode} - ${message}`);
+                } catch (error: any) {
+                    const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
+                    errors.push(`登録エラー: ${data.areaCode} - ${errorMsg}`);
                     errorCount++;
                 }
             }
@@ -246,7 +246,7 @@ function AreaListContent() {
 
         if (confirmed) {
             try {
-                await deleteArea(item.id);
+                await deleteArea(item.id, item.version);
             } catch (error) {
                 console.error(error);
             }

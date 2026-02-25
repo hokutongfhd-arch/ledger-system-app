@@ -180,11 +180,11 @@ function AddressListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addAddress(data as Omit<Address, 'id'>, true, true);
+                    await addAddress(data as any, true, true);
                     successCount++;
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : '不明なエラー';
-                    errors.push(`登録エラー: ${data.addressCode} - ${message}`);
+                } catch (error: any) {
+                    const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
+                    errors.push(`登録エラー: ${data.addressCode} - ${errorMsg}`);
                     errorCount++;
                 }
             }
@@ -224,7 +224,7 @@ function AddressListContent() {
 
         if (confirmed) {
             try {
-                await deleteAddress(item.id);
+                await deleteAddress(item.id, item.version);
             } catch (error) {
                 console.error(error);
             }
