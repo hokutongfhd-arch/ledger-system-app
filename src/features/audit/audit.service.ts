@@ -29,7 +29,11 @@ export const auditService = {
         return data as AnomalyRule[];
     },
 
-    async updateAnomalyRule(id: string, updates: Partial<AnomalyRule>): Promise<void> {
+    async updateAnomalyRule(
+        id: string,
+        updates: Partial<AnomalyRule>,
+        actor?: { name?: string; employeeCode?: string }
+    ): Promise<void> {
         // Fetch rule key first for better logging
         const { data: rule } = await supabase
             .from('audit_anomaly_rules')
@@ -52,7 +56,11 @@ export const auditService = {
                 targetType: 'audit_rule',
                 targetId: id,
                 message: `不正検知ルール (${rule?.rule_key || id}) の更新に失敗しました`,
-                metadata: { updates, error }
+                metadata: { updates, error },
+                actor: actor ? {
+                    name: actor.name,
+                    employeeCode: actor.employeeCode
+                } : undefined
             });
             throw error;
         }
@@ -63,7 +71,11 @@ export const auditService = {
             targetType: 'audit_rule',
             targetId: id,
             message: `不正検知ルール (${rule?.rule_key || id}) を更新しました`,
-            metadata: { updates }
+            metadata: { updates },
+            actor: actor ? {
+                name: actor.name,
+                employeeCode: actor.employeeCode
+            } : undefined
         });
     }
 };

@@ -1,30 +1,40 @@
-
 import { useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { detectAnomaly } from '../../lib/audit/anomalyDetector';
 import { notifier } from '../../lib/notification/notifier';
 import { logService } from '../logs/log.service';
-import type { Log } from '../../lib/types';
+import { auditService, AnomalyRule } from './audit.service';
 import { subMinutes } from 'date-fns';
 import { sendSlackAlert } from '../../app/actions/slack';
 
-const CHECK_INTERVAL_MS = 5 * 1000; // Check every 5 seconds for near-realtime
-const LOOKBACK_MINUTES = 10; // Look back 10 minutes for anomalies
+const CHECK_INTERVAL_MS = 10 * 1000; // Check every 10 seconds (reduced frequency slightly)
+const DEFAULT_LOOKBACK_MINUTES = 10;
 
 export const useAnomalyMonitor = () => {
     const lastCheckRef = useRef<Date>(new Date());
+    const rulesRef = useRef<AnomalyRule[]>([]);
 
     useEffect(() => {
         console.log('[System Monitor] Anomaly detection service started.');
 
         const checkAnomalies = async () => {
             try {
-                const now = new Date();
-                const fromTime = subMinutes(now, LOOKBACK_MINUTES);
+                // 1. Fetch Rules (Refresh every time for now to be reactive, or we could fetch periodically)
+                const rules = await auditService.fetchAnomalyRules();
+                rulesRef.current = rules;
 
-                // Fetch recent logs
-                // Note: In a real standardized system, we might want to filter only logs NEWER than last check + overlap
-                // But for stateless rule detection (like "5 failures in 10 mins"), we need the window.
+                // 2. Determine Lookback Window
+                // Find maximum window_minutes among enabled rules
+                const maxWindow = rules.reduce((max, rule) => {
+                    if (!rule.enabled) return max;
+                    const window = rule.params.window_minutes || DEFAULT_LOOKBACK_MINUTES;
+                    return Math.max(max, window);
+                }, DEFAULT_LOOKBACK_MINUTES);
+
+                const now = new Date();
+                const fromTime = subMinutes(now, maxWindow);
+
+                // 3. Fetch recent logs
                 const { data: recentLogsData, error } = await supabase
                     .from('audit_logs')
                     .select('*')
@@ -35,18 +45,18 @@ export const useAnomalyMonitor = () => {
 
                 const logs = recentLogsData.map(logService.mapLogFromDb);
 
-                // Run detection
-                const anomalies = detectAnomaly(logs);
+                // 4. Run detection with dynamic rules
+                const anomalies = detectAnomaly(logs, rules);
 
                 for (const anomaly of anomalies) {
                     // Check if we recently alerted this (Simple deduping logic)
-                    // We query if an ANOMALY_DETECTED log exists in the last 5 minutes with the same description
+                    // We query if an ANOMALY_DETECTED log exists in the last 5 minutes with the same type
                     const { data: existingAlerts } = await supabase
                         .from('audit_logs')
                         .select('id')
                         .eq('action_type', 'ANOMALY_DETECTED')
                         .gte('occurred_at', subMinutes(now, 5).toISOString())
-                        .ilike('details', `%${anomaly.type}%`); // Loose check
+                        .ilike('details', `%${anomaly.type}%`);
 
                     if (existingAlerts && existingAlerts.length > 0) {
                         continue; // Already alerted recently
@@ -86,15 +96,6 @@ export const useAnomalyMonitor = () => {
 
                     if (!slackResult.success) {
                         console.error('Slack Notification Failed:', slackResult.error);
-                        // Optional: Log failure to audit_logs
-                        await logService.createLog({
-                            target_type: 'system',
-                            action_type: 'SLACK_NOTIFY_FAILED',
-                            details: `Failed to send slack alert: ${slackResult.error}`,
-                            actor_name: 'System Monitor',
-                            result: 'failure',
-                            metadata: { error: slackResult.error }
-                        });
                     }
                 }
 
@@ -102,7 +103,6 @@ export const useAnomalyMonitor = () => {
 
             } catch (err) {
                 console.error('Anomaly Monitor Error:', err);
-                // Fail-safe: do not crash app
             }
         };
 

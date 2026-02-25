@@ -53,12 +53,13 @@ export interface DashboardData {
 export type AnomalyType =
     | 'LOGIN_BRUTE_FORCE'
     | 'UNAUTHORIZED_ACTION'
-    | 'BULK_UPDATE';
+    | 'BULK_UPDATE'
+    | 'SUSPICIOUS_ACCESS';
 
 export interface AnomalyEvent {
     type: AnomalyType;
     description: string;
     detectedAt: string; // ISO string
     relatedLogIds: string[];
-    riskLevel: 'high' | 'medium' | 'low';
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
 }
