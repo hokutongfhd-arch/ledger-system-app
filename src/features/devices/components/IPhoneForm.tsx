@@ -136,14 +136,13 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                 if (name === 'addressCode') updates.employeeId = '';
             }
 
-            // Status Automation
-            const currentEmployeeId = name === 'employeeId' ? value : prev.employeeId;
-            const currentAddressCode = name === 'addressCode' ? value : prev.addressCode;
+            // Determine final values after this change
+            const finalEmployeeId = updates.employeeId !== undefined ? updates.employeeId : (name === 'employeeId' ? value : prev.employeeId);
+            const finalAddressCode = updates.addressCode !== undefined ? updates.addressCode : (name === 'addressCode' ? value : prev.addressCode);
 
-            if (currentEmployeeId || currentAddressCode) {
+            if (finalEmployeeId || finalAddressCode) {
                 updates.status = 'in-use';
-            } else if (value === '') {
-                // If both are cleared by this change, or were already cleared
+            } else {
                 updates.status = 'available';
             }
 
@@ -357,7 +356,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 disabled={!!formData.employeeId || !!formData.addressCode}
                                 className={!!formData.employeeId || !!formData.addressCode ? "bg-gray-100" : ""}
                             >
-                                <option value="in-use">使用中</option>
+                                {(!!formData.employeeId || !!formData.addressCode) && <option value="in-use">使用中</option>}
                                 <option value="backup">予備機</option>
                                 <option value="available">在庫</option>
                                 <option value="broken">故障</option>
