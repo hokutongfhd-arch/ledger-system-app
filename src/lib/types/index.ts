@@ -22,7 +22,7 @@ export interface IPhone {
     carrier: string;
     phoneNumber: string;
     managementNumber: string;
-    employeeId: string; // Employee Code
+    employeeCode: string;
 
     addressCode: string;
     costBearer: string;
@@ -44,7 +44,7 @@ export interface FeaturePhone {
     carrier: string;
     phoneNumber: string;
     managementNumber: string;
-    employeeId: string;
+    employeeCode: string;
 
     addressCode: string;
     costCompany: string;

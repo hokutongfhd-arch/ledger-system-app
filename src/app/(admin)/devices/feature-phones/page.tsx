@@ -65,9 +65,9 @@ function FeaturePhoneListContent() {
         data: featurePhones,
         searchKeys: ['managementNumber', 'phoneNumber', 'modelName', 'carrier', 'notes'],
         sortConfig: {
-            employeeId: (a, b) => {
-                const nameA = employeeMap.get(a.employeeId)?.name || '';
-                const nameB = employeeMap.get(b.employeeId)?.name || '';
+            employeeCode: (a, b) => {
+                const nameA = employeeMap.get(a.employeeCode)?.name || '';
+                const nameB = employeeMap.get(b.employeeCode)?.name || '';
                 return nameA.localeCompare(nameB);
             },
             contractYears: (a, b) => {
@@ -216,7 +216,7 @@ function FeaturePhoneListContent() {
                     carrier: String(rowData['キャリア'] || ''),
                     phoneNumber: phoneNumber,
                     managementNumber: managementNumber,
-                    employeeId: employeeId,
+                    employeeCode: employeeId,
                     addressCode: addressCode,
                     lendDate: formatDate(rowData['貸与日']),
                     receiptDate: formatDate(rowData['受領書提出日']),
@@ -225,7 +225,9 @@ function FeaturePhoneListContent() {
                     modelName: String(rowData['機種名'] || ''),
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     costCompany: String(rowData['負担先'] || ''),
-                    status: finalStatus
+                    status: finalStatus,
+                    version: 1,
+                    updatedAt: '',
                 };
 
 
@@ -351,7 +353,7 @@ function FeaturePhoneListContent() {
             normalizeContractYear(item.contractYears || ''),
             item.carrier,
             statusLabelMap[item.status] || item.status,
-            item.employeeId,
+            item.employeeCode,
             item.addressCode,
             item.costCompany || '',
             item.receiptDate,
@@ -495,7 +497,7 @@ function FeaturePhoneListContent() {
     };
 
     const isAdmin = user?.role === 'admin';
-    const hasPermission = (item: FeaturePhone) => isAdmin || user?.code === item.employeeId;
+    const hasPermission = (item: FeaturePhone) => isAdmin || user?.code === item.employeeCode;
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -522,7 +524,7 @@ function FeaturePhoneListContent() {
     };
 
     const getSortIcon = (key: keyof FeaturePhone | 'userName') => { // Cast for safety
-        const idx = sortCriteria.findIndex(c => c.key === (key === 'userName' ? 'employeeId' : key));
+        const idx = sortCriteria.findIndex(c => c.key === (key === 'userName' ? 'employeeCode' : key));
         if (idx === -1) return <ArrowUpDown size={14} className="ml-1 text-gray-400" />;
         const c = sortCriteria[idx];
         return (
@@ -573,7 +575,7 @@ function FeaturePhoneListContent() {
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('managementNumber')}>管理番号{getSortIcon('managementNumber')}</div>, accessor: (item) => <button onClick={() => setDetailItem(item)} className="text-blue-600 hover:underline">{item.managementNumber}</button> },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('modelName')}>機種名{getSortIcon('modelName')}</div>, accessor: 'modelName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: (item) => formatPhoneNumber(item.phoneNumber) },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者{getSortIcon('userName')}</div>, accessor: (item) => employeeMap.get(item.employeeId)?.name || '' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者{getSortIcon('userName')}</div>, accessor: (item) => employeeMap.get(item.employeeCode)?.name || '' },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>使用事業所{getSortIcon('addressCode')}</div>,
                         accessor: (item) => {
@@ -611,19 +613,19 @@ function FeaturePhoneListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ガラホ 編集' : 'ガラホ 新規登録'}>
                 <FeaturePhoneForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) {
-                        await updateFeaturePhone({ ...data, id: editingItem.id } as FeaturePhone);
-                        if (editingItem.id === highlightId) {
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('highlight');
-                            params.delete('field');
-                            router.replace(`${pathname}?${params.toString()}`);
+                    try {
+                        if (editingItem) {
+                            await updateFeaturePhone({ ...data, id: editingItem.id, version: editingItem.version } as FeaturePhone);
+                        } else {
+                            await addFeaturePhone({ ...data, id: undefined, version: 1, updatedAt: '' } as any);
                         }
-                    } else {
-                        await addFeaturePhone(data as Omit<FeaturePhone, 'id'>);
+                        setIsModalOpen(false);
+                        setEditingItem(undefined);
+                    } catch (error) {
+                        console.error(error);
                     }
-                    setIsModalOpen(false);
-                }} onCancel={() => setIsModalOpen(false)} />
+                }}
+                    onCancel={() => setIsModalOpen(false)} />
             </Modal>
 
             <FeaturePhoneDetailModal

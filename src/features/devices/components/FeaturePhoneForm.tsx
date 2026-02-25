@@ -32,7 +32,7 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         carrier: 'KDDI',
         phoneNumber: '',
         managementNumber: '',
-        employeeId: '',
+        employeeCode: '',
         addressCode: '',
         costCompany: '',
         lendDate: '',
@@ -42,6 +42,8 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         notes: '',
         contractYears: '',
         status: 'available',
+        version: 1,
+        updatedAt: '',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
 
@@ -130,12 +132,12 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
         setFormData(prev => {
             const updates: any = { [name]: value };
             if (value === '') {
-                if (name === 'employeeId') updates.addressCode = '';
-                if (name === 'addressCode') updates.employeeId = '';
+                if (name === 'employeeCode') updates.addressCode = '';
+                if (name === 'addressCode') updates.employeeCode = '';
             }
 
             // Determine final values after this change
-            const finalEmployeeId = updates.employeeId !== undefined ? updates.employeeId : (name === 'employeeId' ? value : prev.employeeId);
+            const finalEmployeeId = updates.employeeCode !== undefined ? updates.employeeCode : (name === 'employeeCode' ? value : prev.employeeCode);
             const finalAddressCode = updates.addressCode !== undefined ? updates.addressCode : (name === 'addressCode' ? value : prev.addressCode);
 
             if (finalEmployeeId || finalAddressCode) {
@@ -341,10 +343,10 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
-                                disabled={!!formData.employeeId || !!formData.addressCode}
-                                className={!!formData.employeeId || !!formData.addressCode ? "bg-gray-100" : ""}
+                                disabled={!!formData.employeeCode || !!formData.addressCode}
+                                className={!!formData.employeeCode || !!formData.addressCode ? "bg-gray-100" : ""}
                             >
-                                {(!!formData.employeeId || !!formData.addressCode) && <option value="in-use">使用中</option>}
+                                {(!!formData.employeeCode || !!formData.addressCode) && <option value="in-use">使用中</option>}
                                 <option value="backup">予備機</option>
                                 <option value="available">在庫</option>
                                 <option value="broken">故障</option>
@@ -362,8 +364,8 @@ export const FeaturePhoneForm: React.FC<FeaturePhoneFormProps> = ({ initialData,
                             <FormLabel>社員名 (社員コード)</FormLabel>
                             <SearchableSelect
                                 options={employeeOptions}
-                                value={formData.employeeId}
-                                onChange={(val) => handleSelectChange('employeeId', val)}
+                                value={formData.employeeCode}
+                                onChange={(val) => handleSelectChange('employeeCode', val)}
                                 placeholder="社員を検索..."
                             />
                         </div>

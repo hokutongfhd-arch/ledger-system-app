@@ -67,9 +67,9 @@ function IPhoneListContent() {
         data: iPhones,
         searchKeys: ['managementNumber', 'phoneNumber', 'modelName', 'carrier', 'notes'],
         sortConfig: {
-            employeeId: (a, b) => { // User Name Sort
-                const nameA = employeeMap.get(a.employeeId)?.name || '';
-                const nameB = employeeMap.get(b.employeeId)?.name || '';
+            employeeCode: (a, b) => { // User Name Sort
+                const nameA = employeeMap.get(a.employeeCode)?.name || '';
+                const nameB = employeeMap.get(b.employeeCode)?.name || '';
                 return nameA.localeCompare(nameB);
             },
             contractYears: (a, b) => {
@@ -252,7 +252,7 @@ function IPhoneListContent() {
                     contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                     carrier: String(rowData['キャリア'] || ''),
                     status: finalStatus,
-                    employeeId: employeeId,
+                    employeeCode: employeeId,
                     addressCode: addressCode,
                     costBearer: String(rowData['負担先'] || ''),
                     receiptDate: formatDate(rowData['受領書提出日']),
@@ -262,6 +262,8 @@ function IPhoneListContent() {
                     smartAddressPw: rowData['SMARTアドレス帳PW'] !== undefined && rowData['SMARTアドレス帳PW'] !== null ? String(rowData['SMARTアドレス帳PW']) : '',
                     notes: String(rowData['備考'] || ''),
                     id: rowData['ID'] ? String(rowData['ID']) : undefined,
+                    version: 1,
+                    updatedAt: '',
                 };
 
 
@@ -386,7 +388,7 @@ function IPhoneListContent() {
             normalizeContractYear(item.contractYears || ''),
             item.carrier,
             statusLabelMap[item.status] || item.status,
-            item.employeeId,
+            item.employeeCode,
             item.addressCode,
             item.costBearer || '',
             item.receiptDate,
@@ -528,7 +530,7 @@ function IPhoneListContent() {
     };
 
     const isAdmin = user?.role === 'admin';
-    const hasPermission = (item: IPhone) => isAdmin || user?.code === item.employeeId;
+    const hasPermission = (item: IPhone) => isAdmin || user?.code === item.employeeCode;
 
     const getSortIcon = (key: keyof IPhone) => {
         const idx = sortCriteria.findIndex(c => c.key === key);
@@ -610,7 +612,7 @@ function IPhoneListContent() {
                     },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('modelName')}>機種名{getSortIcon('modelName')}</div>, accessor: 'modelName' },
                     { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('phoneNumber')}>電話番号{getSortIcon('phoneNumber')}</div>, accessor: (item) => formatPhoneNumber(item.phoneNumber) },
-                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeId')}>使用者{getSortIcon('employeeId')}</div>, accessor: (item) => employeeMap.get(item.employeeId)?.name || '' },
+                    { header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('employeeCode')}>使用者{getSortIcon('employeeCode')}</div>, accessor: (item) => employeeMap.get(item.employeeCode)?.name || '' },
                     {
                         header: <div className="flex items-center cursor-pointer" onClick={() => toggleSort('addressCode')}>使用事業所{getSortIcon('addressCode')}</div>,
                         accessor: (item) => {
@@ -642,24 +644,23 @@ function IPhoneListContent() {
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}
-                selectedCount={selectedIds.size}
                 onBulkDelete={handleBulkDelete}
+                selectedCount={selectedIds.size}
             />
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'iPhone 編集' : 'iPhone 新規登録'}>
                 <IPhoneForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) {
-                        await updateIPhone({ ...data, id: editingItem.id } as IPhone);
-                        if (editingItem.id === highlightId) {
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('highlight');
-                            params.delete('field');
-                            router.replace(`${pathname}?${params.toString()}`);
+                    try {
+                        if (editingItem) {
+                            await updateIPhone({ ...data, id: editingItem.id, version: editingItem.version } as IPhone);
+                        } else {
+                            await addIPhone({ ...data, id: undefined, version: 1, updatedAt: '' } as any);
                         }
-                    } else {
-                        await addIPhone(data as Omit<IPhone, 'id'>);
+                        setIsModalOpen(false);
+                        setEditingItem(undefined);
+                    } catch (error) {
+                        console.error(error);
                     }
-                    setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 

@@ -27,13 +27,12 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
     const phonePart3Ref = useRef<HTMLInputElement>(null);
 
     const { handleAutoTab } = useAutoFocus();
-
     const [formData, setFormData] = useState<Omit<IPhone, 'id'> & { id?: string }>({
         id: '',
         carrier: 'KDDI',
         phoneNumber: '',
         managementNumber: '',
-        employeeId: '',
+        employeeCode: '',
         addressCode: '',
         smartAddressId: '',
         smartAddressPw: '',
@@ -45,6 +44,8 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         status: 'available',
         costBearer: '',
         contractYears: '',
+        version: 1,
+        updatedAt: '',
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
 
@@ -132,12 +133,12 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         setFormData(prev => {
             const updates: any = { [name]: value };
             if (value === '') {
-                if (name === 'employeeId') updates.addressCode = '';
-                if (name === 'addressCode') updates.employeeId = '';
+                if (name === 'employeeCode') updates.addressCode = '';
+                if (name === 'addressCode') updates.employeeCode = '';
             }
 
             // Determine final values after this change
-            const finalEmployeeId = updates.employeeId !== undefined ? updates.employeeId : (name === 'employeeId' ? value : prev.employeeId);
+            const finalEmployeeId = updates.employeeCode !== undefined ? updates.employeeCode : (name === 'employeeCode' ? value : prev.employeeCode);
             const finalAddressCode = updates.addressCode !== undefined ? updates.addressCode : (name === 'addressCode' ? value : prev.addressCode);
 
             if (finalEmployeeId || finalAddressCode) {
@@ -353,10 +354,10 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
-                                disabled={!!formData.employeeId || !!formData.addressCode}
-                                className={!!formData.employeeId || !!formData.addressCode ? "bg-gray-100" : ""}
+                                disabled={!!formData.employeeCode || !!formData.addressCode}
+                                className={!!formData.employeeCode || !!formData.addressCode ? "bg-gray-100" : ""}
                             >
-                                {(!!formData.employeeId || !!formData.addressCode) && <option value="in-use">使用中</option>}
+                                {(!!formData.employeeCode || !!formData.addressCode) && <option value="in-use">使用中</option>}
                                 <option value="backup">予備機</option>
                                 <option value="available">在庫</option>
                                 <option value="broken">故障</option>
@@ -376,8 +377,8 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                             <FormLabel>社員名 (社員コード)</FormLabel>
                             <SearchableSelect
                                 options={employeeOptions}
-                                value={formData.employeeId}
-                                onChange={(val) => handleSelectChange('employeeId', val)}
+                                value={formData.employeeCode}
+                                onChange={(val) => handleSelectChange('employeeCode', val)}
                                 placeholder="社員を検索..."
                             />
                         </div>
