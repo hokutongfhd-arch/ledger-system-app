@@ -172,11 +172,16 @@ function TabletListContent() {
 
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
+                const validEmployeeCodes = new Set(employees.map(e => e.code));
+                const validOfficeCodes = new Set(addresses.map(a => a.addressCode));
+
                 const validation = validateTabletImportRow(
                     rowData,
                     i,
                     existingTerminalCodes,
-                    processedTerminalCodes
+                    processedTerminalCodes,
+                    validEmployeeCodes,
+                    validOfficeCodes
                 );
 
                 if (!validation.isValid) {

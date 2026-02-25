@@ -151,13 +151,18 @@ function FeaturePhoneListContent() {
                     rowData[header] = row[index];
                 });
 
+                const validEmployeeCodes = new Set(employees.map(e => e.code));
+                const validOfficeCodes = new Set(addresses.map(a => a.addressCode));
+
                 const validation = validateDeviceImportRow(
                     rowData,
                     i,
                     existingPhoneNumbers,
                     processedPhoneNumbers,
                     existingManagementNumbers,
-                    processedManagementNumbers
+                    processedManagementNumbers,
+                    validEmployeeCodes,
+                    validOfficeCodes
                 );
 
                 if (!validation.isValid) {

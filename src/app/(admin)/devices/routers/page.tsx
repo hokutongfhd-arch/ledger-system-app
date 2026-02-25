@@ -141,13 +141,18 @@ function RouterListContent() {
                     rowData[header] = row[index];
                 });
 
+                const validEmployeeCodes = new Set(employees.map(e => e.code));
+                const validOfficeCodes = new Set(addresses.map(a => a.addressCode));
+
                 const validation = validateRouterImportRow(
                     rowData,
                     i,
                     existingSimNumbers,
                     processedSimNumbers,
                     existingTerminalCodes,
-                    processedTerminalCodes
+                    processedTerminalCodes,
+                    validEmployeeCodes,
+                    validOfficeCodes
                 );
 
                 if (!validation.isValid) {
@@ -155,37 +160,10 @@ function RouterListContent() {
                     continue;
                 }
 
-                // If valid, prepare data for import
-                // Note: The validator already normalized phone/terminal code, but we need to reconstruct the object.
-                // Or we can just reuse the logic if it's simple enough or extract it too.
-                // Let's reuse the extraction logic but use the validated values.
-
                 const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
                 const rawModelNumber = String(rowData['機種型番'] || '');
-                const modelNumber = rawModelNumber.trim(); // Validator checked for full-width but here we just trim. Wait, validator didn't check model number?
-                // The original code checked model number for full-width.
-                // My new validator didn't include Model Number check? 
-                // Let me check my validator code in previous turn...
-                // I missed Model Number check in validateRouterImportRow!
-                // I should add it or keep it here. For consistency, strict validation should be in validator.
-                // But for now, to avoid breaking logic, I will add it here or update validator.
-                // Updating validator is better. I will do it in a separate step if needed. 
-                // Actually I can just add the check here for now or trust the user wants SIM validation primarily.
-                // The original code:
-                /*
-                const rawModelNumber = String(rowData['機種型番'] || '');
-                if (/[^\x20-\x7E]/.test(rawModelNumber)) {
-                    errors.push(`${i + 3}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
-                    rowHasError = true;
-                }
-                */
-                // I should probably add this to validator. But let's finish the replacement first.
-                // Wait, if I don't check it, it might pass invalid data.
-                // Let's add the check here for now, or assume validator handles it.
-                // My validator implementation did NOT have Model Number check.
-                // I should update the validator first? Or just proceed.
-                // Let's simple check it here to be safe and consistent with previous behavior.
+                const modelNumber = rawModelNumber.trim();
 
                 const statusMap: Record<string, string> = {
                     '使用中': 'in-use',
@@ -195,8 +173,6 @@ function RouterListContent() {
                     '修理中': 'repairing',
                     '廃棄': 'discarded'
                 };
-
-
 
                 const rawTerminalCode = String(rowData['端末CD(必須)'] || '');
                 const terminalCode = toHalfWidth(rawTerminalCode).trim();
@@ -244,8 +220,6 @@ function RouterListContent() {
                     status: finalStatus
                 };
 
-
-
                 importData.push(newRouter);
             }
 
@@ -280,10 +254,10 @@ function RouterListContent() {
 
             if (errors.length > 0) {
                 await confirm({
-                    title: 'インポート結果 (一部スキップ)',
+                    title: 'インポート結果',
                     description: (
                         <div className="max-h-60 overflow-y-auto">
-                            <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
+                            <p className="mb-2 font-bold text-red-600">一部のデータの登録に失敗しました。</p>
                             <ul className="list-disc pl-5 text-sm text-red-600">
                                 {errors.map((err, idx) => <li key={idx}>{err}</li>)}
                             </ul>
