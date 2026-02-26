@@ -83,8 +83,8 @@ function EmployeeListContent() {
         headerRowIndex: 1, // Header is on the second row
         onValidate: async (rows, headers) => {
             const requiredHeaders = [
-                '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
-                'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
+                '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日',
+                'エリアコード', '事業所コード', '入社年月日',
                 '権限(必須)', 'パスワード(必須)'
             ];
 
@@ -294,8 +294,8 @@ function EmployeeListContent() {
         });
 
         const headers = [
-            '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
-            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日',
+            'エリアコード', '事業所コード', '入社年月日',
             '権限(必須)', 'パスワード(必須)'
         ];
 
@@ -312,12 +312,9 @@ function EmployeeListContent() {
                 firstNameKanaParts.join(' ') || '',
                 item.email || '',
                 item.birthDate || '',
-                item.age || '',
                 item.areaCode || '',
                 item.addressCode || '',
                 item.joinDate || '',
-                (item.yearsOfService !== undefined && item.yearsOfService !== null) ? `${item.yearsOfService}年` : '',
-                item.monthsHasuu || '',
                 item.role === 'admin' ? '管理者' : 'ユーザー',
                 '********' // Do not export raw password
             ];
@@ -326,8 +323,8 @@ function EmployeeListContent() {
 
     const handleDownloadTemplate = async () => {
         const headers = [
-            '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日', '年齢',
-            'エリアコード', '事業所コード', '入社年月日', '勤続年数', '勤続端数月数',
+            '社員コード(必須)', '性別', '苗字(必須)', '名前(必須)', '苗字カナ', '名前カナ', 'メールアドレス(必須)', '生年月日',
+            'エリアコード', '事業所コード', '入社年月日',
             '権限(必須)', 'パスワード(必須)'
         ];
 
@@ -336,8 +333,8 @@ function EmployeeListContent() {
 
         // Headers
         const topHeader = [
-            '基本情報', '', '', '', '', '', '', '', '',
-            '所属・勤務情報', '', '', '', '',
+            '基本情報', '', '', '', '', '', '', '',
+            '所属・勤務情報', '', '',
             'システム情報', ''
         ];
 
@@ -345,9 +342,9 @@ function EmployeeListContent() {
         worksheet.addRow(headers);
 
         // Merge cells for top header
-        worksheet.mergeCells('A1:I1'); // Basic Info (9 columns)
-        worksheet.mergeCells('J1:N1'); // Work Info (5 columns)
-        worksheet.mergeCells('O1:P1'); // System Info (2 columns)
+        worksheet.mergeCells('A1:H1'); // Basic Info (8 columns, A~H)
+        worksheet.mergeCells('I1:K1'); // Work Info (3 columns, I~K)
+        worksheet.mergeCells('L1:M1'); // System Info (2 columns, L~M)
 
         // Styling Top Header (Row 1)
         const topRow = worksheet.getRow(1);
@@ -369,14 +366,14 @@ function EmployeeListContent() {
         };
 
         // Apply background colors
-        setCellColor(1, 9, 'FFFCE4D6'); // Orange (Basic)
-        setCellColor(10, 14, 'FFEBF1DE'); // Olive (Work)
-        setCellColor(15, 16, 'DCE6F1');   // Aqua (System)
+        setCellColor(1, 8, 'FFFCE4D6'); // Orange (Basic)
+        setCellColor(9, 11, 'FFEBF1DE'); // Olive (Work)
+        setCellColor(12, 13, 'DCE6F1');   // Aqua (System)
 
         // Styling Column Headers (Row 2)
         const headerRow = worksheet.getRow(2);
         headerRow.font = { name: 'Yu Gothic', bold: true };
-        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'left' };
 
         for (let i = 1; i <= headers.length; i++) {
             const cell = worksheet.getCell(2, i);
@@ -407,8 +404,8 @@ function EmployeeListContent() {
             };
         }
 
-        // Data Validation for 権限 (Column O)
-        const roleColChar = 'O';
+        // Data Validation for 権限 (Column L)
+        const roleColChar = 'L';
         for (let i = 3; i <= 100; i++) {
             worksheet.getCell(`${roleColChar}${i}`).dataValidation = {
                 type: 'list',

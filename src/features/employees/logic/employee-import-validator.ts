@@ -1,5 +1,5 @@
-
 import { Employee } from '../employee.types';
+import { calculateAge, calculateServicePeriod } from '../../../lib/utils/dateHelpers';
 
 export const parseAndValidateEmployees = (
     rows: any[][],
@@ -122,12 +122,7 @@ export const parseAndValidateEmployees = (
             }
         }
 
-        // 9. Age
-        const rawAge = String(rowData['年齢'] || '').trim();
-        if (rawAge && hasFullWidth(rawAge)) {
-            validationErrors.push(`${excelRowNumber}行目: 年齢「${rawAge}」に全角文字が含まれています`);
-            rowHasError = true;
-        }
+
 
         // 10. Area Code
         const rawAreaCode = String(rowData['エリアコード'] || '').trim();
@@ -170,19 +165,7 @@ export const parseAndValidateEmployees = (
             rowHasError = true;
         }
 
-        // 13. Years of Service
-        const rawYears = String(rowData['勤続年数'] || '').trim();
-        if (rawYears && hasFullWidth(rawYears)) {
-            validationErrors.push(`${excelRowNumber}行目: 勤続年数「${rawYears}」に全角文字が含まれています`);
-            rowHasError = true;
-        }
 
-        // 14. Months of Service
-        const rawMonths = String(rowData['勤続端数月数'] || '').trim();
-        if (rawMonths && hasFullWidth(rawMonths)) {
-            validationErrors.push(`${excelRowNumber}行目: 勤続端数月数「${rawMonths}」に全角文字が含まれています`);
-            rowHasError = true;
-        }
 
         // 15. Role
         const rawRole = String(rowData['権限(必須)'] || '').trim();
@@ -223,18 +206,21 @@ export const parseAndValidateEmployees = (
         const cleanName = `${lastName} ${firstName}`.trim();
         const cleanNameKana = `${lastNameKana} ${firstNameKana}`.trim();
 
+        const computedAge = birthDateValue ? calculateAge(birthDateValue) : 0;
+        const computedService = joinDateValue ? calculateServicePeriod(joinDateValue) : { years: 0, months: 0 };
+
         const emp: Omit<Employee, 'id'> & { id?: string } = {
             code: rawCode,
             gender: String(rowData['性別'] || ''),
             name: cleanName,
             nameKana: cleanNameKana,
             birthDate: birthDateValue,
-            age: parseNumber(rawAge),
+            age: computedAge,
             areaCode: rawAreaCode,
             addressCode: rawAddressCode,
             joinDate: joinDateValue,
-            yearsOfService: parseNumber(rawYears),
-            monthsHasuu: parseNumber(rawMonths),
+            yearsOfService: computedService.years,
+            monthsHasuu: computedService.months,
             role: role,
             password: password,
             companyNo: '',

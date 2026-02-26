@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { Tablet, IPhone, FeaturePhone, Router, Employee, Area, Address, Log, DeviceStatus } from '../../lib/types';
 import { useAuth } from './AuthContext';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { getWeekRange } from '../../lib/utils/dateHelpers';
+import { getWeekRange, calculateAge, calculateServicePeriod } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -252,28 +252,36 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     version: t.version,
 });
 
-const mapEmployeeFromDb = (d: any): Employee => ({
-    id: d.id,
-    code: s(d.employee_code),
-    name: s(d.name),
-    nameKana: s(d.name_kana),
-    companyNo: '', // Missing
-    departmentCode: '', // Missing
-    email: s(d.email),
-    gender: s(d.gender),
-    birthDate: s(d.birthday),
-    joinDate: s(d.join_date),
-    age: Number(d.age_at_month_end) || 0,
-    yearsOfService: Number(d.years_in_service) || 0,
-    monthsHasuu: Number(d.months_in_service) || 0,
-    areaCode: s(d.area_code),
-    addressCode: s(d.address_code),
-    role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
-    profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
-    authId: s(d.auth_id),
-    version: Number(d.version) || 1,
-    updatedAt: s(d.updated_at),
-});
+const mapEmployeeFromDb = (d: any): Employee => {
+    const rawBirthDate = s(d.birthday);
+    const rawJoinDate = s(d.join_date);
+
+    const computedAge = rawBirthDate ? calculateAge(rawBirthDate) : (Number(d.age_at_month_end) || 0);
+    const computedService = rawJoinDate ? calculateServicePeriod(rawJoinDate) : { years: Number(d.years_in_service) || 0, months: Number(d.months_in_service) || 0 };
+
+    return {
+        id: d.id,
+        code: s(d.employee_code),
+        name: s(d.name),
+        nameKana: s(d.name_kana),
+        companyNo: '', // Missing
+        departmentCode: '', // Missing
+        email: s(d.email),
+        gender: s(d.gender),
+        birthDate: rawBirthDate,
+        joinDate: rawJoinDate,
+        age: computedAge,
+        yearsOfService: computedService.years,
+        monthsHasuu: computedService.months,
+        areaCode: s(d.area_code),
+        addressCode: s(d.address_code),
+        role: (d.authority === 'admin' ? 'admin' : 'user') as 'admin' | 'user',
+        profileImage: typeof window !== 'undefined' ? (localStorage.getItem(`profile_image_${d.id}`) || '') : '',
+        authId: s(d.auth_id),
+        version: Number(d.version) || 1,
+        updatedAt: s(d.updated_at),
+    };
+};
 
 const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     employee_code: t.code,

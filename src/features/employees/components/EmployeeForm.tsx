@@ -470,6 +470,9 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 value={formData.age}
                                 onChange={handleChange}
                                 min="0"
+                                disabled
+                                readOnly
+                                className="bg-gray-100 text-gray-500 cursor-not-allowed"
                             />
                         </div>
                     </div>
@@ -516,6 +519,9 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 value={formData.yearsOfService}
                                 onChange={handleChange}
                                 min="0"
+                                disabled
+                                readOnly
+                                className="bg-gray-100 text-gray-500 cursor-not-allowed"
                             />
                         </div>
                         <div>
@@ -526,6 +532,9 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                 value={formData.monthsHasuu}
                                 onChange={handleChange}
                                 min="0"
+                                disabled
+                                readOnly
+                                className="bg-gray-100 text-gray-500 cursor-not-allowed"
                             />
                         </div>
                     </div>
