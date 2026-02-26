@@ -600,6 +600,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             let title = `${operationName}エラー`;
             let errorReason = isDuplicate ? '競合エラー（既に登録済みのデータです）' :
                 isConflict ? '競合エラー（他のユーザーが更新しました）' :
+                    operationName === '削除' ? '他社員がデータの編集を行ったため、削除を中止します。' :
                     `他社員がデータの削除を行ったため、${operationName}を中止します。`;
 
             let isDetailed = false;
