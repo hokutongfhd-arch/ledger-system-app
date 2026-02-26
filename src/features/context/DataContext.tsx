@@ -600,7 +600,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             let title = `${operationName}エラー`;
             let errorReason = isDuplicate ? '競合エラー（既に登録済みのデータです）' :
                 isConflict ? '競合エラー（他のユーザーが更新しました）' :
-                    '競合エラー　他社員がデータの削除を行ったため、編集を中止します。';
+                    `他社員がデータの削除を行ったため、${operationName}を中止します。`;
 
             let isDetailed = false;
             // 詳細な重複情報のパース
@@ -649,8 +649,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     <p className="mb-2 font-bold text-red-600">エラーが存在するため、{operationName}を中止しました。</p>
                     <ul className="list-disc pl-5 text-sm text-red-600">
                         <li>
-                            {operationName}エラー:
-                            {!isDetailed && ` ${itemIdentifier} - `}
+                            {isNotFound ? '競合エラー：' : `${operationName}エラー:`}
+                            {!isDetailed && `${isNotFound ? '' : ' '}${itemIdentifier}${isNotFound ? ' ' : ' - '}`}
                             {errorReason}
                         </li>
                     </ul>
