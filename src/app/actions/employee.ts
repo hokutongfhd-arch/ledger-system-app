@@ -263,7 +263,7 @@ export async function deleteEmployeeAction(id: string, version: number) {
     }
 
     if (count === 0) {
-        throw new Error('NotFoundError');
+        return { success: false, error: 'NotFoundError' };
     }
 
     // 5. Audit Log Actor -> REMOVED.

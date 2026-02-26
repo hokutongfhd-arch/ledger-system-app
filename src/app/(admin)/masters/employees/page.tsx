@@ -240,8 +240,8 @@ function EmployeeListContent() {
 
         if (confirmed) {
             try {
-                await deleteEmployee(item.id, item.version);
-            } catch (error) {
+                await deleteEmployee(item.id, item.version, false, true);
+            } catch (error: any) {
                 console.error(error);
             }
         }

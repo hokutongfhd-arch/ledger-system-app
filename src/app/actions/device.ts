@@ -177,15 +177,19 @@ export async function createIPhoneAction(data: Partial<IPhone>) {
 }
 
 export async function deleteIPhoneAction(id: string, version: number) {
-    const supabase = await getSupabase();
-    const { count, error } = await supabase.from('iphones').delete({ count: 'exact' }).eq('id', id).eq('version', version);
-    if (error) {
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const { count, error } = await supabase.from('iphones').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+        if (error) {
+            return { success: false, error: error.message };
+        }
+        if (count === 0) {
+            return { success: false, error: 'NotFoundError' };
+        }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    if (count === 0) {
-        throw new Error('NotFoundError');
-    }
-    return { success: true };
 }
 
 export async function getIPhoneHistoryAction(iphoneId: string) {
@@ -313,15 +317,19 @@ export async function createFeaturePhoneAction(data: Partial<FeaturePhone>) {
 }
 
 export async function deleteFeaturePhoneAction(id: string, version: number) {
-    const supabase = await getSupabase();
-    const { count, error } = await supabase.from('featurephones').delete({ count: 'exact' }).eq('id', id).eq('version', version);
-    if (error) {
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const { count, error } = await supabase.from('featurephones').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+        if (error) {
+            return { success: false, error: error.message };
+        }
+        if (count === 0) {
+            return { success: false, error: 'NotFoundError' };
+        }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    if (count === 0) {
-        throw new Error('NotFoundError');
-    }
-    return { success: true };
 }
 
 export async function getFeaturePhoneHistoryAction(featurePhoneId: string) {
@@ -439,15 +447,19 @@ export async function createTabletAction(data: Partial<Tablet>) {
 }
 
 export async function deleteTabletAction(id: string, version: number) {
-    const supabase = await getSupabase();
-    const { count, error } = await supabase.from('tablets').delete({ count: 'exact' }).eq('id', id).eq('version', version);
-    if (error) {
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const { count, error } = await supabase.from('tablets').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+        if (error) {
+            return { success: false, error: error.message };
+        }
+        if (count === 0) {
+            return { success: false, error: 'NotFoundError' };
+        }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    if (count === 0) {
-        throw new Error('NotFoundError');
-    }
-    return { success: true };
 }
 
 export async function getTabletHistoryAction(tabletId: string) {
@@ -577,15 +589,19 @@ export async function createRouterAction(data: Partial<Router>) {
 }
 
 export async function deleteRouterAction(id: string, version: number) {
-    const supabase = await getSupabase();
-    const { count, error } = await supabase.from('routers').delete({ count: 'exact' }).eq('id', id).eq('version', version);
-    if (error) {
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const { count, error } = await supabase.from('routers').delete({ count: 'exact' }).eq('id', id).eq('version', version);
+        if (error) {
+            return { success: false, error: error.message };
+        }
+        if (count === 0) {
+            return { success: false, error: 'NotFoundError' };
+        }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    if (count === 0) {
-        throw new Error('NotFoundError');
-    }
-    return { success: true };
 }
 
 export async function getRouterHistoryAction(routerId: string) {

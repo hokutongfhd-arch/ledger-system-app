@@ -302,8 +302,8 @@ function FeaturePhoneListContent() {
 
         if (confirmed) {
             try {
-                await deleteFeaturePhone(item.id, item.version, false, false);
-            } catch (error) {
+                await deleteFeaturePhone(item.id, item.version, false, true);
+            } catch (error: any) {
                 console.error(error);
             }
         }

@@ -298,8 +298,8 @@ function RouterListContent() {
 
         if (confirmed) {
             try {
-                await deleteRouter(item.id, item.version, false, false);
-            } catch (error) {
+                await deleteRouter(item.id, item.version, false, true);
+            } catch (error: any) {
                 console.error(error);
             }
         }

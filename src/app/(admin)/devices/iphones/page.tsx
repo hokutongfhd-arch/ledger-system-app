@@ -337,8 +337,8 @@ function IPhoneListContent() {
 
         if (confirmed) {
             try {
-                await deleteIPhone(item.id, item.version);
-            } catch (error) {
+                await deleteIPhone(item.id, item.version, false, true);
+            } catch (error: any) {
                 console.error(error);
             }
         }

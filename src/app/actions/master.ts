@@ -55,22 +55,26 @@ export async function updateAreaAction(id: string, data: Partial<Area>, version:
 }
 
 export async function deleteAreaAction(id: string, version: number) {
-    const supabase = await getSupabase();
-    const { count, error } = await supabase
-        .from('areas')
-        .delete({ count: 'exact' })
-        .eq('area_code', id)
-        .eq('version', version);
+    try {
+        const supabase = await getSupabase();
+        const { count, error } = await supabase
+            .from('areas')
+            .delete({ count: 'exact' })
+            .eq('area_code', id)
+            .eq('version', version);
 
-    if (error) {
-        throw new Error(error.message);
+        if (error) {
+            return { success: false, error: error.message };
+        }
+
+        if (count === 0) {
+            return { success: false, error: 'NotFoundError' };
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-
-    if (count === 0) {
-        throw new Error('NotFoundError');
-    }
-
-    return { success: true };
 }
 
 // --- Address Actions ---
@@ -136,20 +140,24 @@ export async function updateAddressAction(id: string, data: Partial<Address>, ve
 }
 
 export async function deleteAddressAction(id: string, version: number) {
-    const supabase = await getSupabase();
-    const { count, error } = await supabase
-        .from('addresses')
-        .delete({ count: 'exact' })
-        .eq('id', id)
-        .eq('version', version);
+    try {
+        const supabase = await getSupabase();
+        const { count, error } = await supabase
+            .from('addresses')
+            .delete({ count: 'exact' })
+            .eq('id', id)
+            .eq('version', version);
 
-    if (error) {
-        throw new Error(error.message);
+        if (error) {
+            return { success: false, error: error.message };
+        }
+
+        if (count === 0) {
+            return { success: false, error: 'NotFoundError' };
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-
-    if (count === 0) {
-        throw new Error('NotFoundError');
-    }
-
-    return { success: true };
 }

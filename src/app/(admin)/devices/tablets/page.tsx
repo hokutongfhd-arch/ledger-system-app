@@ -294,8 +294,8 @@ function TabletListContent() {
 
         if (confirmed) {
             try {
-                await deleteTablet(item.id, item.version, false, false);
-            } catch (error) {
+                await deleteTablet(item.id, item.version, false, true);
+            } catch (error: any) {
                 console.error(error);
             }
         }

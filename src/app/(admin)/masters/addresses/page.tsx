@@ -224,8 +224,8 @@ function AddressListContent() {
 
         if (confirmed) {
             try {
-                await deleteAddress(item.id, item.version);
-            } catch (error) {
+                await deleteAddress(item.id, item.version, false, true);
+            } catch (error: any) {
                 console.error(error);
             }
         }

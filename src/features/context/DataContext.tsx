@@ -1,12 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import type { Tablet, IPhone, FeaturePhone, Router, Employee, Area, Address, Log, DeviceStatus } from '../../lib/types';
 import { useAuth } from './AuthContext';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { getWeekRange } from '../../lib/utils/dateHelpers';
 import { logger, LogActionType, TargetType } from '../../lib/logger';
 import { useToast } from './ToastContext';
+import { useConfirm } from '../../hooks/useConfirm';
 import { logService } from '../logs/log.service';
 import { createEmployeeAction, fetchEmployeesAction, deleteEmployeeAction, deleteManyEmployeesAction, updateEmployeeAction } from '@/app/actions/employee';
 import {
@@ -23,6 +25,7 @@ import {
 } from '@/app/actions/master';
 import { deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
 import { fetchAuditLogsAction, fetchLogMinDateAction } from '@/app/actions/audit';
+import { getSyncMetadataAction, type SyncMetadata } from '@/app/actions/sync';
 
 interface DataContextType {
     tablets: Tablet[];
@@ -43,25 +46,25 @@ interface DataContextType {
     fetchAreas: () => Promise<void>;
     addTablet: (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateTablet: (item: Tablet, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteTablet: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteTablet: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
     addIPhone: (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateIPhone: (item: IPhone, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteIPhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteIPhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
     addFeaturePhone: (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateFeaturePhone: (item: FeaturePhone, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteFeaturePhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteFeaturePhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
     addRouter: (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateRouter: (item: Router, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteRouter: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteRouter: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
     addEmployee: (item: Omit<Employee, 'id' | 'version' | 'updatedAt'> & { id?: string, password?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateEmployee: (item: Employee, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteEmployee: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteEmployee: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
     addArea: (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateArea: (item: Area, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteArea: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteArea: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
     addAddress: (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
     updateAddress: (item: Address, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteAddress: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
+    deleteAddress: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
     deleteManyIPhones: (ids: string[]) => Promise<void>;
     deleteManyFeaturePhones: (ids: string[]) => Promise<void>;
     deleteManyTablets: (ids: string[]) => Promise<void>;
@@ -383,6 +386,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const { user } = useAuth();
     const { showToast, dismissToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirm();
+    const pathname = usePathname();
+    const lastSyncMetadata = useRef<Record<string, SyncMetadata>>({});
+    const isFirstLoad = useRef(true);
+
 
     const fetchIPhones = useCallback(async (force: boolean = false) => {
         if (!force && (fetchStatus.iphones === 'loading' || fetchStatus.iphones === 'success')) return;
@@ -476,6 +484,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [fetchStatus.areas]);
 
+    const syncDataIfNeeded = useCallback(async () => {
+        if (!user) return;
+        try {
+            const remoteMetadata = await getSyncMetadataAction();
+            const staleTables: string[] = [];
+
+            remoteMetadata.forEach(remote => {
+                const local = lastSyncMetadata.current[remote.table];
+                if (!local || local.lastUpdated !== remote.lastUpdated || local.count !== remote.count) {
+                    staleTables.push(remote.table);
+                }
+                lastSyncMetadata.current[remote.table] = remote;
+            });
+
+            if (staleTables.length > 0) {
+                console.log('[Sync] Refreshing stale tables:', staleTables);
+                if (staleTables.includes('iphones')) fetchIPhones(true);
+                if (staleTables.includes('tablets')) fetchTablets(true);
+                if (staleTables.includes('featurephones')) fetchFeaturePhones(true);
+                if (staleTables.includes('routers')) fetchRouters(true);
+                if (staleTables.includes('employees')) fetchEmployees(true);
+                if (staleTables.includes('areas')) fetchAreas(true);
+                if (staleTables.includes('addresses')) fetchAddresses(true);
+            }
+        } catch (error) {
+            console.error('Data sync failed:', error);
+        }
+    }, [fetchIPhones, fetchTablets, fetchFeaturePhones, fetchRouters, fetchEmployees, fetchAreas, fetchAddresses, user]);
+
+    // Sync on pathname change
+    useEffect(() => {
+        if (isFirstLoad.current) {
+            isFirstLoad.current = false;
+            return;
+        }
+        syncDataIfNeeded();
+    }, [pathname, syncDataIfNeeded]);
+
     const fetchData = useCallback(async () => {
         const toastId = showToast('マスターデータ読み込み中...', 'loading', undefined, 0);
         try {
@@ -531,11 +577,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const toastId = showToast('削除中...', 'loading');
         try {
             // Sequential or Parallel deletes with ID + version check
-            await Promise.all(itemsToProcess.map(item => deleteAction(item.id, item.version)));
+            const results = await Promise.all(itemsToProcess.map(item => deleteAction(item.id, item.version)));
 
-            const ids = itemsToProcess.map(i => i.id);
-            setState(prev => prev.filter(p => !ids.includes(p.id)));
-            showToast(`${ids.length}件、削除しました`, 'success');
+            const failures = results.filter(r => !r.success);
+            if (failures.length > 0) {
+                // If any failed, show the first failure via handleCRUDError
+                await handleCRUDError(table, new Error(failures[0].error), false);
+                // Even with some failures, we should still refresh to be sure
+            }
+
+            const successIds = itemsToProcess.filter((_, i) => results[i].success).map(i => i.id);
+            if (successIds.length > 0) {
+                setState(prev => prev.filter(p => !successIds.includes(p.id)));
+                showToast(`${successIds.length}件、削除しました`, 'success');
+            }
         } catch (error: any) {
             console.error(`Bulk delete failed for ${table}:`, error);
             await handleCRUDError(table, error, false);
@@ -545,26 +600,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [showToast, dismissToast, refreshTable]);
 
     // Specific implementations
-    const handleCRUDError = useCallback(async (table: string, error: any, skipToast: boolean) => {
+    const handleCRUDError = useCallback(async (table: string, error: any, skipToast: boolean = false) => {
         const isDuplicate = error?.message?.includes('DuplicateError');
         const isConflict = error?.message?.includes('ConcurrencyError');
         const isNotFound = error?.message?.includes('NotFoundError');
 
-        if (!skipToast) {
-            if (isDuplicate) {
-                showToast('競合エラー', 'error', '既に登録済みのデータです。最新状態に同期します。');
-            } else if (isConflict) {
-                showToast('更新競合', 'error', '他のユーザーが更新しました。最新状態に同期します。');
-            } else if (isNotFound) {
-                showToast('データ不在', 'error', 'データが既に削除されています。最新状態に同期します。');
-            } else {
-                showToast('エラーが発生しました', 'error', error.message);
-            }
-        }
         if (isDuplicate || isConflict || isNotFound) {
+            let title = 'エラー';
+            let message: React.ReactNode = error.message || '不明なエラー';
+
+            if (isDuplicate) {
+                title = '競合エラー';
+                message = <>既に登録済みのデータです。<br />データの更新を行います。</>;
+            } else if (isConflict) {
+                title = '競合エラー';
+                message = <>他のユーザーが更新しました。<br />データの更新を行います。</>;
+            } else if (isNotFound) {
+                title = '競合エラー';
+                message = <>対象のデータが見つかりません。既に削除された可能性があります。<br />データの更新を行います。</>;
+            }
+
+            await confirm({
+                title,
+                description: message,
+                confirmText: 'OK',
+                cancelText: ''
+            });
             await refreshTable(table);
+        } else if (!skipToast) {
+            showToast('エラーが発生しました', 'error', error.message || '不明なエラー');
         }
-    }, [showToast, refreshTable]);
+    }, [confirm, showToast, refreshTable]);
 
     const addTablet = async (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
         try {
@@ -589,14 +655,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
     const deleteTablet = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            await deleteTabletAction(id, version);
-            setTablets(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) showToast('削除しました', 'success');
-        } catch (error) {
-            await handleCRUDError('tablets', error, skipToast);
-            throw error;
+        const result = await deleteTabletAction(id, version);
+        if (!result.success) {
+            await handleCRUDError('tablets', new Error(result.error), skipToast);
+            throw new Error(result.error);
         }
+        setTablets(prev => prev.filter(p => p.id !== id));
+        if (!skipToast) showToast('削除しました', 'success');
+        return result;
     };
 
     const addIPhone = async (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
@@ -621,14 +687,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
     const deleteIPhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            await deleteIPhoneAction(id, version);
-            setIPhones(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) showToast('削除しました', 'success');
-        } catch (error) {
-            await handleCRUDError('iphones', error, skipToast);
-            throw error;
+        const result = await deleteIPhoneAction(id, version);
+        if (!result.success) {
+            await handleCRUDError('iphones', new Error(result.error), skipToast);
+            throw new Error(result.error);
         }
+        setIPhones(prev => prev.filter(p => p.id !== id));
+        if (!skipToast) showToast('削除しました', 'success');
+        return result;
     };
 
     const addFeaturePhone = async (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
@@ -653,14 +719,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
     const deleteFeaturePhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            await deleteFeaturePhoneAction(id, version);
-            setFeaturePhones(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) showToast('削除しました', 'success');
-        } catch (error) {
-            await handleCRUDError('featurephones', error, skipToast);
-            throw error;
+        const result = await deleteFeaturePhoneAction(id, version);
+        if (!result.success) {
+            await handleCRUDError('featurephones', new Error(result.error), skipToast);
+            throw new Error(result.error);
         }
+        setFeaturePhones(prev => prev.filter(p => p.id !== id));
+        if (!skipToast) showToast('削除しました', 'success');
+        return result;
     };
 
     const addRouter = async (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
@@ -685,14 +751,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
     const deleteRouter = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            await deleteRouterAction(id, version);
-            setRouters(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) showToast('削除しました', 'success');
-        } catch (error) {
-            await handleCRUDError('routers', error, skipToast);
-            throw error;
+        const result = await deleteRouterAction(id, version);
+        if (!result.success) {
+            await handleCRUDError('routers', new Error(result.error), skipToast);
+            throw new Error(result.error);
         }
+        setRouters(prev => prev.filter(p => p.id !== id));
+        if (!skipToast) showToast('削除しました', 'success');
+        return result;
     };
 
 
@@ -735,14 +801,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
     const deleteEmployee = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            await deleteEmployeeAction(id, version);
-            setEmployees(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) showToast('削除しました', 'success');
-        } catch (error) {
-            await handleCRUDError('employees', error, skipToast);
-            throw error;
+        const result = await deleteEmployeeAction(id, version);
+        if (!result.success) {
+            await handleCRUDError('employees', new Error(result.error), skipToast);
+            throw new Error(result.error);
         }
+        setEmployees(prev => prev.filter(p => p.id !== id));
+        if (!skipToast) showToast('削除しました', 'success');
+        return result;
     };
 
     const addArea = async (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
@@ -766,14 +832,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
     const deleteArea = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            await deleteAreaAction(id, version);
-            setAreas(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) showToast('削除しました', 'success');
-        } catch (error) {
-            await handleCRUDError('areas', error, skipToast);
-            throw error;
+        const result = await deleteAreaAction(id, version);
+        if (!result.success) {
+            await handleCRUDError('areas', new Error(result.error), skipToast);
+            throw new Error(result.error);
         }
+        setAreas(prev => prev.filter(p => p.id !== id));
+        if (!skipToast) showToast('削除しました', 'success');
+        return result;
     };
 
     const addAddress = async (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
@@ -797,14 +863,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
     const deleteAddress = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
-        try {
-            await deleteAddressAction(id, version);
-            setAddresses(prev => prev.filter(p => p.id !== id));
-            if (!skipToast) showToast('削除しました', 'success');
-        } catch (error) {
-            await handleCRUDError('addresses', error, skipToast);
-            throw error;
+        const result = await deleteAddressAction(id, version);
+        if (!result.success) {
+            await handleCRUDError('addresses', new Error(result.error), skipToast);
+            throw new Error(result.error);
         }
+        setAddresses(prev => prev.filter(p => p.id !== id));
+        if (!skipToast) showToast('削除しました', 'success');
+        return result;
     };
 
     const deleteManyIPhones = async (ids: string[]) => {
@@ -900,6 +966,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fetchAreas,
         }}>
             {children}
+            <ConfirmDialog />
         </DataContext.Provider>
     );
 };

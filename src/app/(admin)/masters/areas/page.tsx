@@ -246,8 +246,8 @@ function AreaListContent() {
 
         if (confirmed) {
             try {
-                await deleteArea(item.id, item.version);
-            } catch (error) {
+                await deleteArea(item.id, item.version, false, true);
+            } catch (error: any) {
                 console.error(error);
             }
         }
