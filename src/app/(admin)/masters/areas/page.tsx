@@ -33,7 +33,7 @@ export default function AreaListPage() {
 }
 
 function AreaListContent() {
-    const { areas, addArea, updateArea, deleteArea, deleteManyAreas, handleCRUDError } = useData();
+    const { areas, addArea, updateArea, deleteArea, deleteManyAreas, handleCRUDError, setIsSyncing } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -429,7 +429,14 @@ function AreaListContent() {
                         }
                         setIsModalOpen(false);
                     } catch (error: any) {
-                        // console.error(error);
+                        const isDuplicate = error?.message?.includes('DuplicateError');
+                        const isConflict = error?.message?.includes('ConcurrencyError');
+                        const isNotFound = error?.message?.includes('NotFoundError');
+
+                        if (isDuplicate || isConflict || isNotFound) {
+                            setIsModalOpen(false);
+                            setEditingItem(undefined);
+                        }
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

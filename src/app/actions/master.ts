@@ -28,7 +28,7 @@ export async function createAreaAction(data: Partial<Area>) {
             .single();
 
         if (error) {
-            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
             return { success: false, error: error.message };
         }
         return { success: true, data: result };
@@ -47,7 +47,7 @@ export async function updateAreaAction(id: string, data: Partial<Area>, version:
         .select();
 
     if (error) {
-        if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+        if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
         return { success: false, error: error.message };
     }
 
@@ -116,7 +116,7 @@ export async function createAddressAction(data: Partial<Address>) {
             .single();
 
         if (error) {
-            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
             return { success: false, error: error.message };
         }
         return { success: true, data: result };
@@ -136,7 +136,7 @@ export async function updateAddressAction(id: string, data: Partial<Address>, ve
         .select();
 
     if (error) {
-        if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+        if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
         return { success: false, error: error.message };
     }
 

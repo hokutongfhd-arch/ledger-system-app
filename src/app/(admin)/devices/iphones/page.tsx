@@ -38,7 +38,7 @@ export default function IPhoneListPage() {
 }
 
 function IPhoneListContent() {
-    const { iPhones, addIPhone, updateIPhone, deleteIPhone, deleteManyIPhones, employees, addresses, employeeMap, addressMap, fetchIPhones, handleCRUDError } = useData();
+    const { iPhones, addIPhone, updateIPhone, deleteIPhone, deleteManyIPhones, employees, addresses, employeeMap, addressMap, fetchIPhones, handleCRUDError, setIsSyncing } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -659,7 +659,14 @@ function IPhoneListContent() {
                         setIsModalOpen(false);
                         setEditingItem(undefined);
                     } catch (error: any) {
-                        // console.error(error);
+                        const isDuplicate = error?.message?.includes('DuplicateError');
+                        const isConflict = error?.message?.includes('ConcurrencyError');
+                        const isNotFound = error?.message?.includes('NotFoundError');
+
+                        if (isDuplicate || isConflict || isNotFound) {
+                            setIsModalOpen(false);
+                            setEditingItem(undefined);
+                        }
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

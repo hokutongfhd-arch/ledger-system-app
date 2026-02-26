@@ -36,7 +36,7 @@ export default function RouterListPage() {
 }
 
 function RouterListContent() {
-    const { routers, addRouter, updateRouter, deleteRouter, deleteManyRouters, employees, addresses, employeeMap, addressMap, fetchRouters, handleCRUDError } = useData();
+    const { routers, addRouter, updateRouter, deleteRouter, deleteManyRouters, employees, addresses, employeeMap, addressMap, fetchRouters, handleCRUDError, setIsSyncing } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -610,7 +610,14 @@ function RouterListContent() {
                         }
                         setIsModalOpen(false);
                     } catch (error: any) {
-                        // console.error(error);
+                        const isDuplicate = error?.message?.includes('DuplicateError');
+                        const isConflict = error?.message?.includes('ConcurrencyError');
+                        const isNotFound = error?.message?.includes('NotFoundError');
+
+                        if (isDuplicate || isConflict || isNotFound) {
+                            setIsModalOpen(false);
+                            setEditingItem(undefined);
+                        }
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

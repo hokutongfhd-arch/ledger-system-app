@@ -38,7 +38,7 @@ export default function EmployeeListPage() {
 }
 
 function EmployeeListContent() {
-    const { employees, addEmployee, updateEmployee, deleteEmployee, deleteManyEmployees, areas, addresses, handleCRUDError } = useData();
+    const { employees, addEmployee, updateEmployee, deleteEmployee, deleteManyEmployees, areas, addresses, handleCRUDError, setIsSyncing } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const highlightId = searchParams.get('highlight');
@@ -147,8 +147,6 @@ function EmployeeListContent() {
                 showToast('インポート可能なデータがありませんでした', 'error');
                 return;
             }
-
-            const loadingToast = showToast('インポート中...', 'loading');
 
             try {
                 const { employeeService } = await import('../../../../features/employees/employee.service');
@@ -529,7 +527,14 @@ function EmployeeListContent() {
                         }
                         setIsModalOpen(false);
                     } catch (error: any) {
-                        // console.error(error);
+                        const isDuplicate = error?.message?.includes('DuplicateError');
+                        const isConflict = error?.message?.includes('ConcurrencyError');
+                        const isNotFound = error?.message?.includes('NotFoundError');
+
+                        if (isDuplicate || isConflict || isNotFound) {
+                            setIsModalOpen(false);
+                            setEditingItem(undefined);
+                        }
                     }
                 }} onCancel={() => setIsModalOpen(false)} isSelfEdit={editingItem?.id === user?.id} />
             </Modal>

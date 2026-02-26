@@ -36,7 +36,7 @@ export default function AddressListPage() {
 }
 
 function AddressListContent() {
-    const { addresses, addAddress, updateAddress, deleteAddress, deleteManyAddresses, areas, handleCRUDError } = useData();
+    const { addresses, addAddress, updateAddress, deleteAddress, deleteManyAddresses, areas, handleCRUDError, setIsSyncing } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -482,7 +482,14 @@ function AddressListContent() {
                         }
                         setIsModalOpen(false);
                     } catch (error: any) {
-                        // console.error(error);
+                        const isDuplicate = error?.message?.includes('DuplicateError');
+                        const isConflict = error?.message?.includes('ConcurrencyError');
+                        const isNotFound = error?.message?.includes('NotFoundError');
+
+                        if (isDuplicate || isConflict || isNotFound) {
+                            setIsModalOpen(false);
+                            setEditingItem(undefined);
+                        }
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

@@ -59,7 +59,7 @@ export default function TabletListPage() {
 }
 
 function TabletListContent() {
-    const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses, employeeMap, addressMap, fetchTablets, handleCRUDError } = useData();
+    const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses, employeeMap, addressMap, fetchTablets, handleCRUDError, setIsSyncing } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -558,7 +558,14 @@ function TabletListContent() {
                         }
                         setIsModalOpen(false);
                     } catch (error: any) {
-                        // console.error(error);
+                        const isDuplicate = error?.message?.includes('DuplicateError');
+                        const isConflict = error?.message?.includes('ConcurrencyError');
+                        const isNotFound = error?.message?.includes('NotFoundError');
+
+                        if (isDuplicate || isConflict || isNotFound) {
+                            setIsModalOpen(false);
+                            setEditingItem(undefined);
+                        }
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

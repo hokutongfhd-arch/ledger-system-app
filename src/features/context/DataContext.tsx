@@ -76,6 +76,7 @@ interface DataContextType {
     fetchLogMinDate: () => Promise<string | null>;
     logs: Log[];
     handleCRUDError: (table: string, error: any, skipToast?: boolean, skipDialog?: boolean, operationName?: string, itemIdentifier?: string) => Promise<void>;
+    setIsSyncing: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -376,6 +377,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [areas, setAreas] = useState<Area[]>([]);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [logs, setLogs] = useState<Log[]>([]);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [fetchStatus, setFetchStatus] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({
         iphones: 'idle',
         tablets: 'idle',
@@ -524,7 +526,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [pathname, syncDataIfNeeded]);
 
     const fetchData = useCallback(async () => {
-        const toastId = showToast('マスターデータ読み込み中...', 'loading', undefined, 0);
         try {
             // Fetch core master data concurrently on initialization
             await Promise.all([
@@ -541,10 +542,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
             console.error('Failed to fetch data:', error);
             showToast('データ読み込みに失敗しました', 'error');
-        } finally {
-            dismissToast(toastId);
         }
-    }, [supabase, showToast, useToast]); // useToast added to dep if needed, but showToast is enough if stable
+    }, [supabase, showToast, useToast, fetchEmployees, fetchAddresses, fetchAreas]);
 
     useEffect(() => {
         if (user) {
@@ -568,6 +567,97 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Removed to ensure all logic goes through Server Actions as per "Don't trust app side" principle
     // Added user and supabase to dependencies
 
+    // Specific implementations
+    const handleCRUDError = useCallback(async (table: string, error: any, skipToast: boolean = false, skipDialog: boolean = false, operationName: string = '処理', itemIdentifier: string = '不明なデータ') => {
+        // Ensure we handle various error formats correctly
+        const errorBody = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+        const errorStr = String(errorBody);
+
+        const isDuplicate = errorStr.includes('DuplicateError');
+        const isConflict = errorStr.includes('ConcurrencyError');
+        const isNotFound = errorStr.includes('NotFoundError');
+
+        if (isDuplicate || isConflict || isNotFound) {
+            let title = `${operationName}エラー`;
+            let errorReason = isDuplicate ? '競合エラー（既に登録済みのデータです）' :
+                isConflict ? '競合エラー（他のユーザーが更新しました）' :
+                    '競合エラー（対象のデータが見つかりません）';
+
+            let isDetailed = false;
+            // 詳細な重複情報のパース
+            if (isDuplicate && errorStr.includes(':')) {
+                const parts = errorStr.split('DuplicateError:');
+                const rawDetails = parts[parts.length - 1]?.trim();
+                let details = '';
+
+                // Try parsing as JSON first
+                if (rawDetails.startsWith('{')) {
+                    try {
+                        const parsed = JSON.parse(rawDetails);
+                        details = parsed.details || parsed.detail || parsed.message || '';
+                    } catch (e) {
+                        details = rawDetails;
+                    }
+                } else {
+                    details = rawDetails;
+                }
+
+                // Supabase detail format: "Key (area_name)=(東京) already exists."
+                const match = details?.match(/Key \(([^)]+)\)=\(([^)]+)\)/);
+                if (match) {
+                    const field = match[1].trim();
+                    const value = match[2].trim();
+                    const fieldMap: Record<string, string> = {
+                        'area_code': 'エリアコード',
+                        'area_name': 'エリア名',
+                        'address_code': '拠点コード',
+                        'office_name': '拠点名',
+                        'terminal_code': '端末CD',
+                        'management_number': '管理番号',
+                        'phone_number': '電話番号',
+                        'employee_code': '社員コード',
+                        'email': 'メールアドレス',
+                        'auth_id': '認証ID'
+                    };
+                    const fieldLabel = fieldMap[field] || field;
+                    errorReason = `競合エラー（${fieldLabel}「${value}」は既に登録されています）`;
+                    isDetailed = true;
+                }
+            }
+
+            let descriptionNode = (
+                <div className="max-h-60 overflow-y-auto">
+                    <p className="mb-2 font-bold text-red-600">エラーが存在するため、{operationName}を中止しました。</p>
+                    <ul className="list-disc pl-5 text-sm text-red-600">
+                        <li>
+                            {operationName}エラー:
+                            {!isDetailed && ` ${itemIdentifier} - `}
+                            {errorReason}
+                        </li>
+                    </ul>
+                </div>
+            );
+
+            if (!skipDialog) {
+                await confirm({
+                    title,
+                    description: descriptionNode,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            }
+
+            setIsSyncing(true);
+            try {
+                await refreshTable(table);
+            } finally {
+                setIsSyncing(false);
+            }
+        } else if (!skipToast) {
+            showToast('エラーが発生しました', 'error', error.message || '不明なエラー');
+        }
+    }, [confirm, showToast, refreshTable]);
+
     // Unified delete many helper using ID + version
     const deleteManyItems = useCallback(async (
         table: string,
@@ -575,7 +665,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setState: React.Dispatch<React.SetStateAction<any[]>>,
         deleteAction: (id: string, version: number) => Promise<any>
     ) => {
-        const toastId = showToast('削除中...', 'loading');
         try {
             // Sequential or Parallel deletes with ID + version check
             const results = await Promise.all(itemsToProcess.map(item => deleteAction(item.id, item.version)));
@@ -595,45 +684,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error: any) {
             console.error(`Bulk delete failed for ${table}:`, error);
             await handleCRUDError(table, error, false);
-        } finally {
-            dismissToast(toastId);
         }
-    }, [showToast, dismissToast, refreshTable]);
-
-    // Specific implementations
-    const handleCRUDError = useCallback(async (table: string, error: any, skipToast: boolean = false, skipDialog: boolean = false, operationName: string = '処理', itemIdentifier: string = '不明なデータ') => {
-        const isDuplicate = error?.message?.includes('DuplicateError');
-        const isConflict = error?.message?.includes('ConcurrencyError');
-        const isNotFound = error?.message?.includes('NotFoundError');
-
-        if (isDuplicate || isConflict || isNotFound) {
-            let title = `${operationName}エラー`;
-            const errorReason = isDuplicate ? '競合エラー（既に登録済みのデータです）' :
-                isConflict ? '競合エラー（他のユーザーが更新しました）' :
-                    '競合エラー（対象のデータが見つかりません）';
-
-            let descriptionNode = (
-                <div className="max-h-60 overflow-y-auto">
-                    <p className="mb-2 font-bold text-red-600">エラーが存在するため、{operationName}を中止しました。</p>
-                    <ul className="list-disc pl-5 text-sm text-red-600">
-                        <li>{operationName}エラー: {itemIdentifier} - {errorReason}</li>
-                    </ul>
-                </div>
-            );
-
-            if (!skipDialog) {
-                await confirm({
-                    title,
-                    description: descriptionNode,
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-            }
-            await refreshTable(table);
-        } else if (!skipToast) {
-            showToast('エラーが発生しました', 'error', error.message || '不明なエラー');
-        }
-    }, [confirm, showToast, refreshTable]);
+    }, [showToast, dismissToast, refreshTable, handleCRUDError]);
 
     const addTablet = async (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
@@ -645,7 +697,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setTablets(prev => [...prev, mapTabletFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('tablets', error, skipToast, skipDialog, '新規登録', item.terminalCode);
             }
             throw error;
@@ -662,7 +714,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setTablets(prev => prev.map(p => p.id === item.id ? mapTabletFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('tablets', error, skipToast, skipDialog, '編集', item.terminalCode);
             }
             throw error;
@@ -690,7 +742,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIPhones(prev => [...prev, mapIPhoneFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('iphones', error, skipToast, skipDialog);
             }
             throw error;
@@ -707,7 +759,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIPhones(prev => prev.map(p => p.id === item.id ? mapIPhoneFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('iphones', error, skipToast, skipDialog);
             }
             throw error;
@@ -735,7 +787,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setFeaturePhones(prev => [...prev, mapFeaturePhoneFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('featurephones', error, skipToast, skipDialog, '新規登録', item.managementNumber);
             }
             throw error;
@@ -752,7 +804,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setFeaturePhones(prev => prev.map(p => p.id === item.id ? mapFeaturePhoneFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('featurephones', error, skipToast, skipDialog, '編集', item.managementNumber);
             }
             throw error;
@@ -780,7 +832,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setRouters(prev => [...prev, mapRouterFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('routers', error, skipToast, skipDialog, '新規登録', item.terminalCode);
             }
             throw error;
@@ -797,7 +849,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setRouters(prev => prev.map(p => p.id === item.id ? mapRouterFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('routers', error, skipToast, skipDialog, '編集', item.terminalCode);
             }
             throw error;
@@ -844,7 +896,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setEmployees(prev => [...prev, mapEmployeeFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('employees', error, skipToast, skipDialog, '新規登録', item.code || item.name);
             }
             throw error;
@@ -860,7 +912,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setEmployees(prev => prev.map(p => p.id === item.id ? mapEmployeeFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('employees', error, skipToast, skipDialog, '編集', item.code || item.name);
             }
             throw error;
@@ -888,7 +940,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setAreas(prev => [...prev, mapAreaFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('areas', error, skipToast, skipDialog, '新規登録', item.areaCode);
             }
             throw error;
@@ -904,7 +956,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setAreas(prev => prev.map(p => p.id === item.id ? mapAreaFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('areas', error, skipToast, skipDialog, '編集', item.areaCode);
             }
             throw error;
@@ -932,7 +984,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setAddresses(prev => [...prev, mapAddressFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('addresses', error, skipToast, skipDialog, '新規登録', item.addressCode);
             }
             throw error;
@@ -948,7 +1000,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setAddresses(prev => prev.map(p => p.id === item.id ? mapAddressFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+            if (!(error instanceof Error && (error.message.startsWith('DuplicateError') || error.message.startsWith('NotFoundError') || error.message.startsWith('ConcurrencyError')))) {
                 await handleCRUDError('addresses', error, skipToast, skipDialog, '編集', item.addressCode);
             }
             throw error;
@@ -1058,9 +1110,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fetchAddresses,
             fetchAreas,
             handleCRUDError,
+            setIsSyncing,
         }}>
             {children}
             <ConfirmDialog />
+            {isSyncing && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#FEFEF8]/80 backdrop-blur-sm">
+                    <div className="animate-pulse flex flex-col items-center gap-4">
+                        <div className="h-10 w-10 bg-[#0EA5E9] rounded-lg shadow-sm border-2 border-[#0A0E27]"></div>
+                        <span className="text-[#0A0E27]/50 font-display">データを読み込み中...</span>
+                    </div>
+                </div>
+            )}
         </DataContext.Provider>
     );
 };

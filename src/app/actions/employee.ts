@@ -83,7 +83,7 @@ export async function createEmployeeAction(data: any) {
         }
 
         if (error.code === '23505') {
-            return { success: false, error: 'DuplicateError' };
+            return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
         }
         return { success: false, error: error.message };
     }
@@ -170,7 +170,7 @@ export async function updateEmployeeAction(id: string, data: any) {
         .select();
 
     if (error) {
-        if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+        if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
         return { success: false, error: error.message };
     }
 

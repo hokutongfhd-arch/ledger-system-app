@@ -154,7 +154,7 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>, vers
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        if (updateError.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(updateError)}` };
         return { success: false, error: updateError.message };
     }
 
@@ -171,7 +171,7 @@ export async function createIPhoneAction(data: Partial<IPhone>) {
         const dbData = mapIPhoneToDb(data);
         const { data: result, error } = await supabase.from('iphones').insert({ ...dbData, version: 1 }).select().single();
         if (error) {
-            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
             return { success: false, error: error.message };
         }
         return { success: true, data: result };
@@ -298,7 +298,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        if (updateError.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(updateError)}` };
         return { success: false, error: updateError.message };
     }
 
@@ -315,7 +315,7 @@ export async function createFeaturePhoneAction(data: Partial<FeaturePhone>) {
         const dbData = mapFeaturePhoneToDb(data);
         const { data: result, error } = await supabase.from('featurephones').insert({ ...dbData, version: 1 }).select().single();
         if (error) {
-            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
             return { success: false, error: error.message };
         }
         return { success: true, data: result };
@@ -432,7 +432,7 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>, vers
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        if (updateError.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(updateError)}` };
         return { success: false, error: updateError.message };
     }
 
@@ -449,7 +449,7 @@ export async function createTabletAction(data: Partial<Tablet>) {
         const dbData = mapTabletToDb(data);
         const { data: result, error } = await supabase.from('tablets').insert({ ...dbData, version: 1 }).select().single();
         if (error) {
-            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
             return { success: false, error: error.message };
         }
         return { success: true, data: result };
@@ -578,7 +578,7 @@ export async function updateRouterAction(id: string, data: Partial<Router>, vers
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        if (updateError.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(updateError)}` };
         return { success: false, error: updateError.message };
     }
 
@@ -595,7 +595,7 @@ export async function createRouterAction(data: Partial<Router>) {
         const dbData = mapRouterToDb(data);
         const { data: result, error } = await supabase.from('routers').insert({ ...dbData, version: 1 }).select().single();
         if (error) {
-            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            if (error.code === '23505') return { success: false, error: `DuplicateError: ${JSON.stringify(error)}` };
             return { success: false, error: error.message };
         }
         return { success: true, data: result };
