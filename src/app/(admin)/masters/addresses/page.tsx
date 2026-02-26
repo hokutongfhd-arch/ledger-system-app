@@ -483,7 +483,6 @@ function AddressListContent() {
                         setIsModalOpen(false);
                     } catch (error: any) {
                         // console.error(error);
-                        handleCRUDError('addresses', error, true);
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

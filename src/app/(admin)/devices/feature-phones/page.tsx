@@ -623,7 +623,6 @@ function FeaturePhoneListContent() {
                         setEditingItem(undefined);
                     } catch (error: any) {
                         // console.error(error);
-                        handleCRUDError('feature-phones', error, true);
                     }
                 }}
                     onCancel={() => setIsModalOpen(false)} />

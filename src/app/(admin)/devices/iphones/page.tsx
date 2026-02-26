@@ -660,7 +660,6 @@ function IPhoneListContent() {
                         setEditingItem(undefined);
                     } catch (error: any) {
                         // console.error(error);
-                        handleCRUDError('iphones', error, true);
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

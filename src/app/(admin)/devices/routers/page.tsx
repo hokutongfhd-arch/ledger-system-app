@@ -611,7 +611,6 @@ function RouterListContent() {
                         setIsModalOpen(false);
                     } catch (error: any) {
                         // console.error(error);
-                        handleCRUDError('routers', error, true);
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

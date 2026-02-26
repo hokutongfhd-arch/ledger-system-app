@@ -430,7 +430,6 @@ function AreaListContent() {
                         setIsModalOpen(false);
                     } catch (error: any) {
                         // console.error(error);
-                        handleCRUDError('areas', error, true);
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

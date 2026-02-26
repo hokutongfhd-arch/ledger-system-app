@@ -530,7 +530,6 @@ function EmployeeListContent() {
                         setIsModalOpen(false);
                     } catch (error: any) {
                         // console.error(error);
-                        handleCRUDError('employees', error, true);
                     }
                 }} onCancel={() => setIsModalOpen(false)} isSelfEdit={editingItem?.id === user?.id} />
             </Modal>

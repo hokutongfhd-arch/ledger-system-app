@@ -559,7 +559,6 @@ function TabletListContent() {
                         setIsModalOpen(false);
                     } catch (error: any) {
                         // console.error(error);
-                        handleCRUDError('tablets', error, true);
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
