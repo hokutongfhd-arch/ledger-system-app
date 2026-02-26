@@ -81,6 +81,31 @@ export async function deleteAreaAction(id: string, version: number) {
     }
 }
 
+export async function deleteManyAreasAction(items: { id: string, version: number }[]) {
+    try {
+        const supabase = await getSupabase();
+        // We need to perform individual deletes to respect version check per item,
+        // but doing it on the server avoids multiple client-server trips.
+        const results = await Promise.all(items.map(async (item) => {
+            const { count, error } = await supabase
+                .from('areas')
+                .delete({ count: 'exact' })
+                .eq('area_code', item.id)
+                .eq('version', item.version);
+            return { id: item.id, success: !error && count > 0, error: error?.message };
+        }));
+
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) {
+            return { success: false, error: failures[0].error || 'NotFoundError' };
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
+    }
+}
+
 // --- Address Actions ---
 
 const mapAddressToDb = (t: Partial<Address>) => ({
@@ -162,6 +187,29 @@ export async function deleteAddressAction(id: string, version: number) {
 
         if (count === 0) {
             return { success: false, error: 'NotFoundError' };
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
+    }
+}
+
+export async function deleteManyAddressesAction(items: { id: string, version: number }[]) {
+    try {
+        const supabase = await getSupabase();
+        const results = await Promise.all(items.map(async (item) => {
+            const { count, error } = await supabase
+                .from('addresses')
+                .delete({ count: 'exact' })
+                .eq('id', item.id)
+                .eq('version', item.version);
+            return { id: item.id, success: !error && count > 0, error: error?.message };
+        }));
+
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) {
+            return { success: false, error: failures[0].error || 'NotFoundError' };
         }
 
         return { success: true };

@@ -279,9 +279,15 @@ export async function deleteEmployeeAction(id: string, version: number) {
 
 export async function deleteManyEmployeesAction(items: { id: string, version: number }[]) {
     // We must respect ID + version for each delete as per Rule 6.
-    // Loop through individual deletes to ensure version check for each.
-    for (const item of items) {
-        await deleteEmployeeAction(item.id, item.version);
+    // Use Promise.all to process deletes in parallel on the server side to improve performance.
+    try {
+        const results = await Promise.all(items.map(item => deleteEmployeeAction(item.id, item.version)));
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) {
+            return { success: false, error: failures[0].error || 'Deletion failed' };
+        }
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'Bulk deletion failed' };
     }
-    return { success: true };
 }

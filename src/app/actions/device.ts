@@ -187,9 +187,24 @@ export async function deleteIPhoneAction(id: string, version: number) {
         if (error) {
             return { success: false, error: error.message };
         }
-        if (count === 0) {
+        if ((count ?? 0) === 0) {
             return { success: false, error: 'NotFoundError' };
         }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
+    }
+}
+
+export async function deleteManyIPhonesAction(items: { id: string, version: number }[]) {
+    try {
+        const supabase = await getSupabase();
+        const results = await Promise.all(items.map(async (item) => {
+            const { count, error } = await supabase.from('iphones').delete({ count: 'exact' }).eq('id', item.id).eq('version', item.version);
+            return { success: !error && (count ?? 0) > 0, error: error?.message };
+        }));
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) return { success: false, error: failures[0].error || 'NotFoundError' };
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message || 'Unknown error' };
@@ -331,9 +346,24 @@ export async function deleteFeaturePhoneAction(id: string, version: number) {
         if (error) {
             return { success: false, error: error.message };
         }
-        if (count === 0) {
+        if ((count ?? 0) === 0) {
             return { success: false, error: 'NotFoundError' };
         }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
+    }
+}
+
+export async function deleteManyFeaturePhonesAction(items: { id: string, version: number }[]) {
+    try {
+        const supabase = await getSupabase();
+        const results = await Promise.all(items.map(async (item) => {
+            const { count, error } = await supabase.from('featurephones').delete({ count: 'exact' }).eq('id', item.id).eq('version', item.version);
+            return { success: !error && (count ?? 0) > 0, error: error?.message };
+        }));
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) return { success: false, error: failures[0].error || 'NotFoundError' };
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message || 'Unknown error' };
@@ -465,9 +495,24 @@ export async function deleteTabletAction(id: string, version: number) {
         if (error) {
             return { success: false, error: error.message };
         }
-        if (count === 0) {
+        if ((count ?? 0) === 0) {
             return { success: false, error: 'NotFoundError' };
         }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
+    }
+}
+
+export async function deleteManyTabletsAction(items: { id: string, version: number }[]) {
+    try {
+        const supabase = await getSupabase();
+        const results = await Promise.all(items.map(async (item) => {
+            const { count, error } = await supabase.from('tablets').delete({ count: 'exact' }).eq('id', item.id).eq('version', item.version);
+            return { success: !error && (count ?? 0) > 0, error: error?.message };
+        }));
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) return { success: false, error: failures[0].error || 'NotFoundError' };
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message || 'Unknown error' };
@@ -611,9 +656,24 @@ export async function deleteRouterAction(id: string, version: number) {
         if (error) {
             return { success: false, error: error.message };
         }
-        if (count === 0) {
+        if ((count ?? 0) === 0) {
             return { success: false, error: 'NotFoundError' };
         }
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
+    }
+}
+
+export async function deleteManyRoutersAction(items: { id: string, version: number }[]) {
+    try {
+        const supabase = await getSupabase();
+        const results = await Promise.all(items.map(async (item) => {
+            const { count, error } = await supabase.from('routers').delete({ count: 'exact' }).eq('id', item.id).eq('version', item.version);
+            return { success: !error && (count ?? 0) > 0, error: error?.message };
+        }));
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) return { success: false, error: failures[0].error || 'NotFoundError' };
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message || 'Unknown error' };

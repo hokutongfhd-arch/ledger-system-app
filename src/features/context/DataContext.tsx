@@ -13,15 +13,15 @@ import { logService } from '../logs/log.service';
 import { createEmployeeAction, fetchEmployeesAction, deleteEmployeeAction, deleteManyEmployeesAction, updateEmployeeAction } from '@/app/actions/employee';
 import {
     updateIPhoneAction, updateFeaturePhoneAction, updateTabletAction, updateRouterAction,
-    createIPhoneAction, deleteIPhoneAction,
-    createFeaturePhoneAction, deleteFeaturePhoneAction,
-    createTabletAction, deleteTabletAction,
-    createRouterAction, deleteRouterAction
+    createIPhoneAction, deleteIPhoneAction, deleteManyIPhonesAction,
+    createFeaturePhoneAction, deleteFeaturePhoneAction, deleteManyFeaturePhonesAction,
+    createTabletAction, deleteTabletAction, deleteManyTabletsAction,
+    createRouterAction, deleteRouterAction, deleteManyRoutersAction
 } from '@/app/actions/device';
 import { fetchIPhonesAction, fetchTabletsAction, fetchFeaturePhonesAction, fetchRoutersAction, fetchAreasAction, fetchAddressesAction } from '@/app/actions/device_fetch';
 import {
-    createAreaAction, updateAreaAction, deleteAreaAction,
-    createAddressAction, updateAddressAction, deleteAddressAction
+    createAreaAction, updateAreaAction, deleteAreaAction, deleteManyAreasAction,
+    createAddressAction, updateAddressAction, deleteAddressAction, deleteManyAddressesAction
 } from '@/app/actions/master';
 import { deleteManyEmployeesBySetupAdmin } from '@/app/actions/employee_setup';
 import { fetchAuditLogsAction, fetchLogMinDateAction } from '@/app/actions/audit';
@@ -682,29 +682,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         table: string,
         itemsToProcess: { id: string, version: number }[],
         setState: React.Dispatch<React.SetStateAction<any[]>>,
-        deleteAction: (id: string, version: number) => Promise<any>
+        bulkDeleteAction: (items: { id: string, version: number }[]) => Promise<any>
     ) => {
         try {
-            // Sequential or Parallel deletes with ID + version check
-            const results = await Promise.all(itemsToProcess.map(item => deleteAction(item.id, item.version)));
+            setIsSyncing(true);
+            const result = await bulkDeleteAction(itemsToProcess);
 
-            const failures = results.filter(r => !r.success);
-            if (failures.length > 0) {
-                // If any failed, show the first failure via handleCRUDError
-                await handleCRUDError(table, new Error(failures[0].error), false);
-                // Even with some failures, we should still refresh to be sure
+            if (!result.success) {
+                await handleCRUDError(table, new Error(result.error), false);
+                return;
             }
 
-            const successIds = itemsToProcess.filter((_, i) => results[i].success).map(i => i.id);
-            if (successIds.length > 0) {
-                setState(prev => prev.filter(p => !successIds.includes(p.id)));
-                showToast(`${successIds.length}件、削除しました`, 'success');
-            }
+            const successIds = itemsToProcess.map(i => i.id);
+            setState(prev => prev.filter(p => !successIds.includes(p.id)));
+            showToast(`${successIds.length}件、削除しました`, 'success');
         } catch (error: any) {
             console.error(`Bulk delete failed for ${table}:`, error);
             await handleCRUDError(table, error, false);
+        } finally {
+            setIsSyncing(false);
         }
-    }, [showToast, dismissToast, refreshTable, handleCRUDError]);
+    }, [showToast, handleCRUDError]);
 
     const addTablet = async (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
@@ -1039,51 +1037,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const deleteManyIPhones = async (ids: string[]) => {
         const items = iPhones.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        await deleteManyItems('iphones', items, setIPhones, deleteIPhoneAction);
+        await deleteManyItems('iphones', items, setIPhones, deleteManyIPhonesAction);
     };
     const deleteManyFeaturePhones = async (ids: string[]) => {
         const items = featurePhones.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        await deleteManyItems('featurephones', items, setFeaturePhones, deleteFeaturePhoneAction);
+        await deleteManyItems('featurephones', items, setFeaturePhones, deleteManyFeaturePhonesAction);
     };
     const deleteManyTablets = async (ids: string[]) => {
         const items = tablets.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        await deleteManyItems('tablets', items, setTablets, deleteTabletAction);
+        await deleteManyItems('tablets', items, setTablets, deleteManyTabletsAction);
     };
     const deleteManyRouters = async (ids: string[]) => {
         const items = routers.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        await deleteManyItems('routers', items, setRouters, deleteRouterAction);
+        await deleteManyItems('routers', items, setRouters, deleteManyRoutersAction);
     };
     const deleteManyEmployees = async (ids: string[]) => {
         if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
             try {
+                setIsSyncing(true);
                 await deleteManyEmployeesBySetupAdmin(ids);
                 setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
                 showToast(`${ids.length}件、削除しました (Setup)`, 'success');
             } catch (error: any) {
                 showToast('削除に失敗しました', 'error', error.message);
+            } finally {
+                setIsSyncing(false);
             }
             return;
         }
         const items = employees.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        // Employee deleteManyAction already loops deleteEmployeeAction which we need.
-        const toastId = showToast('削除中...', 'loading');
-        try {
-            await deleteManyEmployeesAction(items);
-            setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
-            showToast(`${ids.length}件、削除しました`, 'success');
-        } catch (error) {
-            await handleCRUDError('employees', error, false);
-        } finally {
-            dismissToast(toastId);
-        }
+        await deleteManyItems('employees', items, setEmployees, deleteManyEmployeesAction);
     };
     const deleteManyAreas = async (ids: string[]) => {
         const items = areas.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        await deleteManyItems('areas', items, setAreas, deleteAreaAction);
+        await deleteManyItems('areas', items, setAreas, deleteManyAreasAction);
     };
     const deleteManyAddresses = async (ids: string[]) => {
         const items = addresses.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        await deleteManyItems('addresses', items, setAddresses, deleteAddressAction);
+        await deleteManyItems('addresses', items, setAddresses, deleteManyAddressesAction);
     };
 
     const fetchLogRange = useCallback(async (startDate: string, endDate: string) => {
