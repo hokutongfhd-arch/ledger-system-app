@@ -69,7 +69,7 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>, vers
         .single();
 
     if (fetchError || !current) {
-        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
+        return { success: false, error: 'NotFoundError' };
     }
 
     // 2. Check for User Change
@@ -267,7 +267,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
         .single();
 
     if (fetchError || !current) {
-        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
+        return { success: false, error: 'NotFoundError' };
     }
 
     // 2. Check for User Change
@@ -423,7 +423,7 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>, vers
         .single();
 
     if (fetchError || !current) {
-        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
+        return { success: false, error: 'NotFoundError' };
     }
 
     // 2. Check for User Change
@@ -582,7 +582,7 @@ export async function updateRouterAction(id: string, data: Partial<Router>, vers
         .single();
 
     if (fetchError || !current) {
-        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
+        return { success: false, error: 'NotFoundError' };
     }
 
     // 2. Check for User Change

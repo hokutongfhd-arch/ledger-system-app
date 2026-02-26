@@ -92,7 +92,7 @@ export async function deleteManyAreasAction(items: { id: string, version: number
                 .delete({ count: 'exact' })
                 .eq('area_code', item.id)
                 .eq('version', item.version);
-            return { id: item.id, success: !error && count > 0, error: error?.message };
+            return { id: item.id, success: !error && (count ?? 0) > 0, error: error?.message };
         }));
 
         const failures = results.filter(r => !r.success);
@@ -204,7 +204,7 @@ export async function deleteManyAddressesAction(items: { id: string, version: nu
                 .delete({ count: 'exact' })
                 .eq('id', item.id)
                 .eq('version', item.version);
-            return { id: item.id, success: !error && count > 0, error: error?.message };
+            return { id: item.id, success: !error && (count ?? 0) > 0, error: error?.message };
         }));
 
         const failures = results.filter(r => !r.success);
