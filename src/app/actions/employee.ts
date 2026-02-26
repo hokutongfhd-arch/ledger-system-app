@@ -164,7 +164,7 @@ export async function updateEmployeeAction(id: string, data: any) {
     // 3. Update DB Record
     const { data: result, error } = await supabaseAdmin
         .from('employees')
-        .update({ ...dbItem, version: data.version + 1 })
+        .update({ ...dbItem, version: data.version + 1, updated_at: new Date().toISOString() })
         .eq('id', id)
         .eq('version', data.version)
         .select();

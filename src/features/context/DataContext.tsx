@@ -392,6 +392,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { confirm, ConfirmDialog } = useConfirm();
     const pathname = usePathname();
     const lastSyncMetadata = useRef<Record<string, SyncMetadata>>({});
+    const lastSyncTime = useRef<number>(0);
+    const SYNC_COOLDOWN = 3000; // 3 seconds
     const isFirstLoad = useRef(true);
 
 
@@ -489,7 +491,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const syncDataIfNeeded = useCallback(async () => {
         if (!user) return;
+
+        const now = Date.now();
+        if (now - lastSyncTime.current < SYNC_COOLDOWN) {
+            console.log('[Sync] Skipping sync (cooldown active)');
+            return;
+        }
+        lastSyncTime.current = now;
+
         try {
+            console.log('[Sync] Checking for remote changes...');
             const remoteMetadata = await getSyncMetadataAction();
             const staleTables: string[] = [];
 
@@ -527,12 +538,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchData = useCallback(async () => {
         try {
-            // Fetch core master data concurrently on initialization
-            await Promise.all([
+            // Fetch core master data and sync metadata concurrently
+            const [meta] = await Promise.all([
+                getSyncMetadataAction(),
                 fetchEmployees(),
                 fetchAddresses(),
                 fetchAreas(),
             ]);
+
+            // Initialize sync metadata baseline
+            if (meta) {
+                meta.forEach(rem => {
+                    lastSyncMetadata.current[rem.table] = rem;
+                });
+            }
 
             // Default fetch: Current week's logs
             const { start, end } = getWeekRange(new Date());
@@ -543,7 +562,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Failed to fetch data:', error);
             showToast('データ読み込みに失敗しました', 'error');
         }
-    }, [supabase, showToast, useToast, fetchEmployees, fetchAddresses, fetchAreas]);
+    }, [supabase, showToast, fetchEmployees, fetchAddresses, fetchAreas]);
 
     useEffect(() => {
         if (user) {
