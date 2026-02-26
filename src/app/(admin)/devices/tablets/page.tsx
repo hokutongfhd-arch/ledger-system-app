@@ -59,7 +59,7 @@ export default function TabletListPage() {
 }
 
 function TabletListContent() {
-    const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses, employeeMap, addressMap, fetchTablets } = useData();
+    const { tablets, addTablet, updateTablet, deleteTablet, deleteManyTablets, employees, addresses, employeeMap, addressMap, fetchTablets, handleCRUDError } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -250,7 +250,7 @@ function TabletListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addTablet(data as Omit<Tablet, 'id'>, true, true);
+                    await addTablet(data as Omit<Tablet, 'id'>, true, true, true);
                     successCount++;
                 } catch (error: any) {
                     const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
@@ -296,7 +296,7 @@ function TabletListContent() {
             try {
                 await deleteTablet(item.id, item.version, false, true);
             } catch (error: any) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -314,7 +314,7 @@ function TabletListContent() {
                 await deleteManyTablets(Array.from(selectedIds));
                 setSelectedIds(new Set());
             } catch (error) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -550,12 +550,17 @@ function TabletListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'タブレット 編集' : 'タブレット 新規登録'}>
                 <TabletForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) {
-                        await updateTablet({ ...data, id: editingItem.id } as Tablet);
-                    } else {
-                        await addTablet(data as any);
+                    try {
+                        if (editingItem) {
+                            await updateTablet({ ...data, id: editingItem.id } as Tablet);
+                        } else {
+                            await addTablet(data as any);
+                        }
+                        setIsModalOpen(false);
+                    } catch (error: any) {
+                        // console.error(error);
+                        handleCRUDError('tablets', error, true);
                     }
-                    setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 

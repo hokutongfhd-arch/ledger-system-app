@@ -36,7 +36,7 @@ export default function RouterListPage() {
 }
 
 function RouterListContent() {
-    const { routers, addRouter, updateRouter, deleteRouter, deleteManyRouters, employees, addresses, employeeMap, addressMap, fetchRouters } = useData();
+    const { routers, addRouter, updateRouter, deleteRouter, deleteManyRouters, employees, addresses, employeeMap, addressMap, fetchRouters, handleCRUDError } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -254,7 +254,7 @@ function RouterListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addRouter(data as any, true, true);
+                    await addRouter(data as any, true, true, true);
                     successCount++;
                 } catch (error: any) {
                     const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
@@ -300,7 +300,7 @@ function RouterListContent() {
             try {
                 await deleteRouter(item.id, item.version, false, true);
             } catch (error: any) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -318,7 +318,7 @@ function RouterListContent() {
                 await deleteManyRouters(Array.from(selectedIds));
                 setSelectedIds(new Set());
             } catch (error) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -596,18 +596,23 @@ function RouterListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'ルーター 編集' : 'ルーター 新規登録'}>
                 <RouterForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) {
-                        await updateRouter({ ...data, id: editingItem.id } as any);
-                        if (editingItem.id === highlightId) {
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('highlight');
-                            params.delete('field');
-                            router.replace(`${pathname}?${params.toString()}`);
+                    try {
+                        if (editingItem) {
+                            await updateRouter({ ...data, id: editingItem.id } as any);
+                            if (editingItem.id === highlightId) {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.delete('highlight');
+                                params.delete('field');
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }
+                        } else {
+                            await addRouter(data as any);
                         }
-                    } else {
-                        await addRouter(data as any);
+                        setIsModalOpen(false);
+                    } catch (error: any) {
+                        // console.error(error);
+                        handleCRUDError('routers', error, true);
                     }
-                    setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 

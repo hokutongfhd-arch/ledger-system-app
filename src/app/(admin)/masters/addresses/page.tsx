@@ -36,7 +36,7 @@ export default function AddressListPage() {
 }
 
 function AddressListContent() {
-    const { addresses, addAddress, updateAddress, deleteAddress, deleteManyAddresses, areas } = useData();
+    const { addresses, addAddress, updateAddress, deleteAddress, deleteManyAddresses, areas, handleCRUDError } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -180,7 +180,7 @@ function AddressListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addAddress(data as any, true, true);
+                    await addAddress(data as any, true, true, true);
                     successCount++;
                 } catch (error: any) {
                     const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
@@ -226,7 +226,7 @@ function AddressListContent() {
             try {
                 await deleteAddress(item.id, item.version, false, true);
             } catch (error: any) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -468,18 +468,23 @@ function AddressListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '事業所 編集' : '事業所 新規登録'}>
                 <AddressForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) {
-                        await updateAddress({ ...data, id: editingItem.id } as Address);
-                        if (editingItem.id === highlightId) {
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('highlight');
-                            params.delete('field');
-                            router.replace(`${pathname}?${params.toString()}`);
+                    try {
+                        if (editingItem) {
+                            await updateAddress({ ...data, id: editingItem.id } as Address);
+                            if (editingItem.id === highlightId) {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.delete('highlight');
+                                params.delete('field');
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }
+                        } else {
+                            await addAddress(data as Omit<Address, 'id'>);
                         }
-                    } else {
-                        await addAddress(data as Omit<Address, 'id'>);
+                        setIsModalOpen(false);
+                    } catch (error: any) {
+                        // console.error(error);
+                        handleCRUDError('addresses', error, true);
                     }
-                    setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 

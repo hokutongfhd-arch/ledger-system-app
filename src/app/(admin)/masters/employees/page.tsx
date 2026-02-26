@@ -38,7 +38,7 @@ export default function EmployeeListPage() {
 }
 
 function EmployeeListContent() {
-    const { employees, addEmployee, updateEmployee, deleteEmployee, deleteManyEmployees, areas, addresses } = useData();
+    const { employees, addEmployee, updateEmployee, deleteEmployee, deleteManyEmployees, areas, addresses, handleCRUDError } = useData();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const highlightId = searchParams.get('highlight');
@@ -242,7 +242,7 @@ function EmployeeListContent() {
             try {
                 await deleteEmployee(item.id, item.version, false, true);
             } catch (error: any) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -515,18 +515,23 @@ function EmployeeListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '社員 編集' : '社員 新規登録'}>
                 <EmployeeForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) {
-                        await updateEmployee({ ...data, id: editingItem.id } as Employee);
-                        if (editingItem.id === highlightId) {
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('highlight');
-                            params.delete('field');
-                            router.replace(`${pathname}?${params.toString()}`);
+                    try {
+                        if (editingItem) {
+                            await updateEmployee({ ...data, id: editingItem.id } as Employee);
+                            if (editingItem.id === highlightId) {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.delete('highlight');
+                                params.delete('field');
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }
+                        } else {
+                            await addEmployee(data as Omit<Employee, 'id'>);
                         }
-                    } else {
-                        await addEmployee(data as Omit<Employee, 'id'>);
+                        setIsModalOpen(false);
+                    } catch (error: any) {
+                        // console.error(error);
+                        handleCRUDError('employees', error, true);
                     }
-                    setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} isSelfEdit={editingItem?.id === user?.id} />
             </Modal>
 

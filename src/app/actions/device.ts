@@ -69,7 +69,7 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>, vers
         .single();
 
     if (fetchError || !current) {
-        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
+        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
     }
 
     // 2. Check for User Change
@@ -154,26 +154,30 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>, vers
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') throw new Error('DuplicateError');
-        throw new Error(updateError.message);
+        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        return { success: false, error: updateError.message };
     }
 
     if (!updated || updated.length === 0) {
-        throw new Error('ConcurrencyError');
+        return { success: false, error: 'ConcurrencyError' };
     }
 
-    return updated[0];
+    return { success: true, data: updated[0] };
 }
 
 export async function createIPhoneAction(data: Partial<IPhone>) {
-    const supabase = await getSupabase();
-    const dbData = mapIPhoneToDb(data);
-    const { data: result, error } = await supabase.from('iphones').insert({ ...dbData, version: 1 }).select().single();
-    if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const dbData = mapIPhoneToDb(data);
+        const { data: result, error } = await supabase.from('iphones').insert({ ...dbData, version: 1 }).select().single();
+        if (error) {
+            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            return { success: false, error: error.message };
+        }
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    return result;
 }
 
 export async function deleteIPhoneAction(id: string, version: number) {
@@ -248,7 +252,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
         .single();
 
     if (fetchError || !current) {
-        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
+        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
     }
 
     // 2. Check for User Change
@@ -294,26 +298,30 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') throw new Error('DuplicateError');
-        throw new Error(updateError.message);
+        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        return { success: false, error: updateError.message };
     }
 
     if (!updated || updated.length === 0) {
-        throw new Error('ConcurrencyError');
+        return { success: false, error: 'ConcurrencyError' };
     }
 
-    return updated[0];
+    return { success: true, data: updated[0] };
 }
 
 export async function createFeaturePhoneAction(data: Partial<FeaturePhone>) {
-    const supabase = await getSupabase();
-    const dbData = mapFeaturePhoneToDb(data);
-    const { data: result, error } = await supabase.from('featurephones').insert({ ...dbData, version: 1 }).select().single();
-    if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const dbData = mapFeaturePhoneToDb(data);
+        const { data: result, error } = await supabase.from('featurephones').insert({ ...dbData, version: 1 }).select().single();
+        if (error) {
+            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            return { success: false, error: error.message };
+        }
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    return result;
 }
 
 export async function deleteFeaturePhoneAction(id: string, version: number) {
@@ -385,7 +393,7 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>, vers
         .single();
 
     if (fetchError || !current) {
-        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
+        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
     }
 
     // 2. Check for User Change
@@ -424,26 +432,30 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>, vers
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') throw new Error('DuplicateError');
-        throw new Error(updateError.message);
+        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        return { success: false, error: updateError.message };
     }
 
     if (!updated || updated.length === 0) {
-        throw new Error('ConcurrencyError');
+        return { success: false, error: 'ConcurrencyError' };
     }
 
-    return updated[0];
+    return { success: true, data: updated[0] };
 }
 
 export async function createTabletAction(data: Partial<Tablet>) {
-    const supabase = await getSupabase();
-    const dbData = mapTabletToDb(data);
-    const { data: result, error } = await supabase.from('tablets').insert({ ...dbData, version: 1 }).select().single();
-    if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const dbData = mapTabletToDb(data);
+        const { data: result, error } = await supabase.from('tablets').insert({ ...dbData, version: 1 }).select().single();
+        if (error) {
+            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            return { success: false, error: error.message };
+        }
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    return result;
 }
 
 export async function deleteTabletAction(id: string, version: number) {
@@ -525,7 +537,7 @@ export async function updateRouterAction(id: string, data: Partial<Router>, vers
         .single();
 
     if (fetchError || !current) {
-        throw new Error(`Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}`);
+        return { success: false, error: `Device not found (ID: ${id}). Error: ${fetchError?.message || 'No data returned'}` };
     }
 
     // 2. Check for User Change
@@ -566,26 +578,30 @@ export async function updateRouterAction(id: string, data: Partial<Router>, vers
         .select();
 
     if (updateError) {
-        if (updateError.code === '23505') throw new Error('DuplicateError');
-        throw new Error(updateError.message);
+        if (updateError.code === '23505') return { success: false, error: 'DuplicateError' };
+        return { success: false, error: updateError.message };
     }
 
     if (!updated || updated.length === 0) {
-        throw new Error('ConcurrencyError');
+        return { success: false, error: 'ConcurrencyError' };
     }
 
-    return updated[0];
+    return { success: true, data: updated[0] };
 }
 
 export async function createRouterAction(data: Partial<Router>) {
-    const supabase = await getSupabase();
-    const dbData = mapRouterToDb(data);
-    const { data: result, error } = await supabase.from('routers').insert({ ...dbData, version: 1 }).select().single();
-    if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+    try {
+        const supabase = await getSupabase();
+        const dbData = mapRouterToDb(data);
+        const { data: result, error } = await supabase.from('routers').insert({ ...dbData, version: 1 }).select().single();
+        if (error) {
+            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            return { success: false, error: error.message };
+        }
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    return result;
 }
 
 export async function deleteRouterAction(id: string, version: number) {

@@ -83,12 +83,12 @@ export async function createEmployeeAction(data: any) {
         }
 
         if (error.code === '23505') {
-            throw new Error('DuplicateError');
+            return { success: false, error: 'DuplicateError' };
         }
-        throw new Error(error.message);
+        return { success: false, error: error.message };
     }
 
-    return result;
+    return { success: true, data: result };
 }
 
 export async function fetchEmployeesAction() {
@@ -170,15 +170,15 @@ export async function updateEmployeeAction(id: string, data: any) {
         .select();
 
     if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+        if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+        return { success: false, error: error.message };
     }
 
     if (!result || result.length === 0) {
-        throw new Error('ConcurrencyError');
+        return { success: false, error: 'ConcurrencyError' };
     }
 
-    return result[0];
+    return { success: true, data: result[0] };
 }
 
 export async function deleteEmployeeAction(id: string, version: number) {

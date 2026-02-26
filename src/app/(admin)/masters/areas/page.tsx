@@ -33,7 +33,7 @@ export default function AreaListPage() {
 }
 
 function AreaListContent() {
-    const { areas, addArea, updateArea, deleteArea, deleteManyAreas } = useData();
+    const { areas, addArea, updateArea, deleteArea, deleteManyAreas, handleCRUDError } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -202,7 +202,7 @@ function AreaListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addArea(data as any, true, true);
+                    await addArea(data as any, true, true, true);
                     successCount++;
                 } catch (error: any) {
                     const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
@@ -248,7 +248,7 @@ function AreaListContent() {
             try {
                 await deleteArea(item.id, item.version, false, true);
             } catch (error: any) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -415,18 +415,23 @@ function AreaListContent() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'エリア 編集' : 'エリア 新規登録'}>
                 <AreaForm initialData={editingItem} onSubmit={async (data) => {
-                    if (editingItem) {
-                        await updateArea({ ...data, id: editingItem.id } as Area);
-                        if (editingItem.id === highlightId) {
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('highlight');
-                            params.delete('field');
-                            router.replace(`${pathname}?${params.toString()}`);
+                    try {
+                        if (editingItem) {
+                            await updateArea({ ...data, id: editingItem.id } as Area);
+                            if (editingItem.id === highlightId) {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.delete('highlight');
+                                params.delete('field');
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }
+                        } else {
+                            await addArea(data as Omit<Area, 'id'>);
                         }
-                    } else {
-                        await addArea(data as Omit<Area, 'id'>);
+                        setIsModalOpen(false);
+                    } catch (error: any) {
+                        // console.error(error);
+                        handleCRUDError('areas', error, true);
                     }
-                    setIsModalOpen(false);
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>
 

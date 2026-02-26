@@ -19,18 +19,22 @@ const getSupabase = async () => {
 // --- Area Actions ---
 
 export async function createAreaAction(data: Partial<Area>) {
-    const supabase = await getSupabase();
-    const { data: result, error } = await supabase
-        .from('areas')
-        .insert({ area_code: data.areaCode, area_name: data.areaName, version: 1 })
-        .select()
-        .single();
+    try {
+        const supabase = await getSupabase();
+        const { data: result, error } = await supabase
+            .from('areas')
+            .insert({ area_code: data.areaCode, area_name: data.areaName, version: 1 })
+            .select()
+            .single();
 
-    if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+        if (error) {
+            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            return { success: false, error: error.message };
+        }
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    return result;
 }
 
 export async function updateAreaAction(id: string, data: Partial<Area>, version: number) {
@@ -43,15 +47,15 @@ export async function updateAreaAction(id: string, data: Partial<Area>, version:
         .select();
 
     if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+        if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+        return { success: false, error: error.message };
     }
 
     if (!updated || updated.length === 0) {
-        throw new Error('ConcurrencyError');
+        return { success: false, error: 'ConcurrencyError' };
     }
 
-    return updated[0];
+    return { success: true, data: updated[0] };
 }
 
 export async function deleteAreaAction(id: string, version: number) {
@@ -102,19 +106,23 @@ const mapAddressToDb = (t: Partial<Address>) => ({
 });
 
 export async function createAddressAction(data: Partial<Address>) {
-    const supabase = await getSupabase();
-    const dbData = mapAddressToDb(data);
-    const { data: result, error } = await supabase
-        .from('addresses')
-        .insert({ ...dbData, version: 1 })
-        .select()
-        .single();
+    try {
+        const supabase = await getSupabase();
+        const dbData = mapAddressToDb(data);
+        const { data: result, error } = await supabase
+            .from('addresses')
+            .insert({ ...dbData, version: 1 })
+            .select()
+            .single();
 
-    if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+        if (error) {
+            if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+            return { success: false, error: error.message };
+        }
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unknown error' };
     }
-    return result;
 }
 
 export async function updateAddressAction(id: string, data: Partial<Address>, version: number) {
@@ -128,15 +136,15 @@ export async function updateAddressAction(id: string, data: Partial<Address>, ve
         .select();
 
     if (error) {
-        if (error.code === '23505') throw new Error('DuplicateError');
-        throw new Error(error.message);
+        if (error.code === '23505') return { success: false, error: 'DuplicateError' };
+        return { success: false, error: error.message };
     }
 
     if (!updated || updated.length === 0) {
-        throw new Error('ConcurrencyError');
+        return { success: false, error: 'ConcurrencyError' };
     }
 
-    return updated[0];
+    return { success: true, data: updated[0] };
 }
 
 export async function deleteAddressAction(id: string, version: number) {

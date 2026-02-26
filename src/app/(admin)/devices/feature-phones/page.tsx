@@ -36,7 +36,7 @@ export default function FeaturePhoneListPage() {
 }
 
 function FeaturePhoneListContent() {
-    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, deleteManyFeaturePhones, employees, addresses, employeeMap, addressMap, fetchFeaturePhones } = useData();
+    const { featurePhones, addFeaturePhone, updateFeaturePhone, deleteFeaturePhone, deleteManyFeaturePhones, employees, addresses, employeeMap, addressMap, fetchFeaturePhones, handleCRUDError } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -258,7 +258,7 @@ function FeaturePhoneListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addFeaturePhone(data as Omit<FeaturePhone, 'id'>, true, true);
+                    await addFeaturePhone(data as Omit<FeaturePhone, 'id'>, true, true, true);
                     successCount++;
                 } catch (error: any) {
                     const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
@@ -304,7 +304,7 @@ function FeaturePhoneListContent() {
             try {
                 await deleteFeaturePhone(item.id, item.version, false, true);
             } catch (error: any) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -322,7 +322,7 @@ function FeaturePhoneListContent() {
                 await deleteManyFeaturePhones(Array.from(selectedIds));
                 setSelectedIds(new Set());
             } catch (error) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -621,8 +621,9 @@ function FeaturePhoneListContent() {
                         }
                         setIsModalOpen(false);
                         setEditingItem(undefined);
-                    } catch (error) {
-                        console.error(error);
+                    } catch (error: any) {
+                        // console.error(error);
+                        handleCRUDError('feature-phones', error, true);
                     }
                 }}
                     onCancel={() => setIsModalOpen(false)} />

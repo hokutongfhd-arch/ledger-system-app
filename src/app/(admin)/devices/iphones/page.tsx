@@ -38,7 +38,7 @@ export default function IPhoneListPage() {
 }
 
 function IPhoneListContent() {
-    const { iPhones, addIPhone, updateIPhone, deleteIPhone, deleteManyIPhones, employees, addresses, employeeMap, addressMap, fetchIPhones } = useData();
+    const { iPhones, addIPhone, updateIPhone, deleteIPhone, deleteManyIPhones, employees, addresses, employeeMap, addressMap, fetchIPhones, handleCRUDError } = useData();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -293,7 +293,7 @@ function IPhoneListContent() {
             // Execution Phase
             for (const data of importData) {
                 try {
-                    await addIPhone(data as Omit<IPhone, 'id'>, true, true);
+                    await addIPhone(data as Omit<IPhone, 'id'>, true, true, true);
                     successCount++;
                 } catch (error: any) {
                     const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
@@ -339,7 +339,7 @@ function IPhoneListContent() {
             try {
                 await deleteIPhone(item.id, item.version, false, true);
             } catch (error: any) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -357,7 +357,7 @@ function IPhoneListContent() {
                 await deleteManyIPhones(Array.from(selectedIds));
                 setSelectedIds(new Set());
             } catch (error) {
-                console.error(error);
+                // console.error(error);
             }
         }
     };
@@ -658,8 +658,9 @@ function IPhoneListContent() {
                         }
                         setIsModalOpen(false);
                         setEditingItem(undefined);
-                    } catch (error) {
-                        console.error(error);
+                    } catch (error: any) {
+                        // console.error(error);
+                        handleCRUDError('iphones', error, true);
                     }
                 }} onCancel={() => setIsModalOpen(false)} />
             </Modal>

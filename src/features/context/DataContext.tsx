@@ -44,27 +44,27 @@ interface DataContextType {
     fetchEmployees: () => Promise<void>;
     fetchAddresses: () => Promise<void>;
     fetchAreas: () => Promise<void>;
-    addTablet: (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    updateTablet: (item: Tablet, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteTablet: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
-    addIPhone: (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    updateIPhone: (item: IPhone, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteIPhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
-    addFeaturePhone: (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    updateFeaturePhone: (item: FeaturePhone, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteFeaturePhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
-    addRouter: (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    updateRouter: (item: Router, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteRouter: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
-    addEmployee: (item: Omit<Employee, 'id' | 'version' | 'updatedAt'> & { id?: string, password?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    updateEmployee: (item: Employee, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteEmployee: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
-    addArea: (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    updateArea: (item: Area, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteArea: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
-    addAddress: (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    updateAddress: (item: Address, skipLog?: boolean, skipToast?: boolean) => Promise<void>;
-    deleteAddress: (id: string, version: number, skipLog?: boolean, skipToast?: boolean) => Promise<any>;
+    addTablet: (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    updateTablet: (item: Tablet, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    deleteTablet: (id: string, version: number, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<any>;
+    addIPhone: (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    updateIPhone: (item: IPhone, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    deleteIPhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<any>;
+    addFeaturePhone: (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    updateFeaturePhone: (item: FeaturePhone, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    deleteFeaturePhone: (id: string, version: number, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<any>;
+    addRouter: (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    updateRouter: (item: Router, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    deleteRouter: (id: string, version: number, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<any>;
+    addEmployee: (item: Omit<Employee, 'id' | 'version' | 'updatedAt'> & { id?: string, password?: string }, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    updateEmployee: (item: Employee, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    deleteEmployee: (id: string, version: number, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<any>;
+    addArea: (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    updateArea: (item: Area, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    deleteArea: (id: string, version: number, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<any>;
+    addAddress: (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    updateAddress: (item: Address, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
+    deleteAddress: (id: string, version: number, skipLog?: boolean, skipToast?: boolean, skipDialog?: boolean) => Promise<any>;
     deleteManyIPhones: (ids: string[]) => Promise<void>;
     deleteManyFeaturePhones: (ids: string[]) => Promise<void>;
     deleteManyTablets: (ids: string[]) => Promise<void>;
@@ -75,6 +75,7 @@ interface DataContextType {
     fetchLogRange: (startDate: string, endDate: string) => Promise<void>;
     fetchLogMinDate: () => Promise<string | null>;
     logs: Log[];
+    handleCRUDError: (table: string, error: any, skipToast?: boolean, skipDialog?: boolean) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -600,7 +601,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [showToast, dismissToast, refreshTable]);
 
     // Specific implementations
-    const handleCRUDError = useCallback(async (table: string, error: any, skipToast: boolean = false) => {
+    const handleCRUDError = useCallback(async (table: string, error: any, skipToast: boolean = false, skipDialog: boolean = false) => {
         const isDuplicate = error?.message?.includes('DuplicateError');
         const isConflict = error?.message?.includes('ConcurrencyError');
         const isNotFound = error?.message?.includes('NotFoundError');
@@ -620,44 +621,57 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 message = <>対象のデータが見つかりません。既に削除された可能性があります。<br />データの更新を行います。</>;
             }
 
-            await confirm({
-                title,
-                description: message,
-                confirmText: 'OK',
-                cancelText: ''
-            });
+            if (!skipDialog) {
+                await confirm({
+                    title,
+                    description: message,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+            }
             await refreshTable(table);
         } else if (!skipToast) {
             showToast('エラーが発生しました', 'error', error.message || '不明なエラー');
         }
     }, [confirm, showToast, refreshTable]);
 
-    const addTablet = async (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addTablet = async (item: Omit<Tablet, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await createTabletAction(item);
-            setTablets(prev => [...prev, mapTabletFromDb(result)]);
+            if (!result.success) {
+                await handleCRUDError('tablets', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setTablets(prev => [...prev, mapTabletFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            await handleCRUDError('tablets', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('tablets', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-
-    const updateTablet = async (item: Tablet, skipLog: boolean = false, skipToast: boolean = false) => {
+    const updateTablet = async (item: Tablet, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const { id, ...data } = item;
             const result = await updateTabletAction(id, data, item.version);
-            setTablets(prev => prev.map(p => p.id === item.id ? mapTabletFromDb(result) : p));
+            if (!result.success) {
+                await handleCRUDError('tablets', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setTablets(prev => prev.map(p => p.id === item.id ? mapTabletFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            await handleCRUDError('tablets', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('tablets', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const deleteTablet = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteTablet = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         const result = await deleteTabletAction(id, version);
         if (!result.success) {
-            await handleCRUDError('tablets', new Error(result.error), skipToast);
+            await handleCRUDError('tablets', new Error(result.error), skipToast, skipDialog);
             throw new Error(result.error);
         }
         setTablets(prev => prev.filter(p => p.id !== id));
@@ -665,31 +679,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return result;
     };
 
-    const addIPhone = async (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addIPhone = async (item: Omit<IPhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await createIPhoneAction(item);
-            setIPhones(prev => [...prev, mapIPhoneFromDb(result)]);
+            if (!result.success) {
+                await handleCRUDError('iphones', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setIPhones(prev => [...prev, mapIPhoneFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            await handleCRUDError('iphones', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('iphones', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const updateIPhone = async (item: IPhone, skipLog: boolean = false, skipToast: boolean = false) => {
+    const updateIPhone = async (item: IPhone, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const { id, ...data } = item;
             const result = await updateIPhoneAction(id, data, item.version);
-            setIPhones(prev => prev.map(p => p.id === item.id ? mapIPhoneFromDb(result) : p));
+            if (!result.success) {
+                await handleCRUDError('iphones', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setIPhones(prev => prev.map(p => p.id === item.id ? mapIPhoneFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            await handleCRUDError('iphones', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('iphones', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const deleteIPhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteIPhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         const result = await deleteIPhoneAction(id, version);
         if (!result.success) {
-            await handleCRUDError('iphones', new Error(result.error), skipToast);
+            await handleCRUDError('iphones', new Error(result.error), skipToast, skipDialog);
             throw new Error(result.error);
         }
         setIPhones(prev => prev.filter(p => p.id !== id));
@@ -697,31 +723,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return result;
     };
 
-    const addFeaturePhone = async (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addFeaturePhone = async (item: Omit<FeaturePhone, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await createFeaturePhoneAction(item);
-            setFeaturePhones(prev => [...prev, mapFeaturePhoneFromDb(result)]);
+            if (!result.success) {
+                await handleCRUDError('featurephones', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setFeaturePhones(prev => [...prev, mapFeaturePhoneFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            await handleCRUDError('featurephones', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('featurephones', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const updateFeaturePhone = async (item: FeaturePhone, skipLog: boolean = false, skipToast: boolean = false) => {
+    const updateFeaturePhone = async (item: FeaturePhone, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const { id, ...data } = item;
             const result = await updateFeaturePhoneAction(id, data, item.version);
-            setFeaturePhones(prev => prev.map(p => p.id === item.id ? mapFeaturePhoneFromDb(result) : p));
+            if (!result.success) {
+                await handleCRUDError('featurephones', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setFeaturePhones(prev => prev.map(p => p.id === item.id ? mapFeaturePhoneFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            await handleCRUDError('featurephones', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('featurephones', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const deleteFeaturePhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteFeaturePhone = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         const result = await deleteFeaturePhoneAction(id, version);
         if (!result.success) {
-            await handleCRUDError('featurephones', new Error(result.error), skipToast);
+            await handleCRUDError('featurephones', new Error(result.error), skipToast, skipDialog);
             throw new Error(result.error);
         }
         setFeaturePhones(prev => prev.filter(p => p.id !== id));
@@ -729,31 +767,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return result;
     };
 
-    const addRouter = async (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addRouter = async (item: Omit<Router, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await createRouterAction(item);
-            setRouters(prev => [...prev, mapRouterFromDb(result)]);
+            if (!result.success) {
+                await handleCRUDError('routers', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setRouters(prev => [...prev, mapRouterFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            await handleCRUDError('routers', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('routers', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const updateRouter = async (item: Router, skipLog: boolean = false, skipToast: boolean = false) => {
+    const updateRouter = async (item: Router, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const { id, ...data } = item;
             const result = await updateRouterAction(id, data, item.version);
-            setRouters(prev => prev.map(p => p.id === item.id ? mapRouterFromDb(result) : p));
+            if (!result.success) {
+                await handleCRUDError('routers', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setRouters(prev => prev.map(p => p.id === item.id ? mapRouterFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            await handleCRUDError('routers', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('routers', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const deleteRouter = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteRouter = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         const result = await deleteRouterAction(id, version);
         if (!result.success) {
-            await handleCRUDError('routers', new Error(result.error), skipToast);
+            await handleCRUDError('routers', new Error(result.error), skipToast, skipDialog);
             throw new Error(result.error);
         }
         setRouters(prev => prev.filter(p => p.id !== id));
@@ -762,7 +812,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
 
-    const addEmployee = async (item: Omit<Employee, 'id' | 'version' | 'updatedAt'> & { id?: string, password?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addEmployee = async (item: Omit<Employee, 'id' | 'version' | 'updatedAt'> & { id?: string, password?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             // 1. Create Auth User via API
             const response = await fetch('/api/auth/register', {
@@ -783,27 +833,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // 2. Insert into DB (via Server Action with compensation logic)
             const result = await createEmployeeAction(item);
-            setEmployees(prev => [...prev, mapEmployeeFromDb(result)]);
+            if (!result.success) {
+                await handleCRUDError('employees', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setEmployees(prev => [...prev, mapEmployeeFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            await handleCRUDError('employees', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('employees', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const updateEmployee = async (item: Employee, skipLog: boolean = false, skipToast: boolean = false) => {
+    const updateEmployee = async (item: Employee, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await updateEmployeeAction(item.id, item);
-            setEmployees(prev => prev.map(p => p.id === item.id ? mapEmployeeFromDb(result) : p));
+            if (!result.success) {
+                await handleCRUDError('employees', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setEmployees(prev => prev.map(p => p.id === item.id ? mapEmployeeFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            await handleCRUDError('employees', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('employees', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const deleteEmployee = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteEmployee = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         const result = await deleteEmployeeAction(id, version);
         if (!result.success) {
-            await handleCRUDError('employees', new Error(result.error), skipToast);
+            await handleCRUDError('employees', new Error(result.error), skipToast, skipDialog);
             throw new Error(result.error);
         }
         setEmployees(prev => prev.filter(p => p.id !== id));
@@ -811,30 +873,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return result;
     };
 
-    const addArea = async (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addArea = async (item: Omit<Area, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await createAreaAction(item);
-            setAreas(prev => [...prev, mapAreaFromDb(result)]);
+            if (!result.success) {
+                await handleCRUDError('areas', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setAreas(prev => [...prev, mapAreaFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            await handleCRUDError('areas', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('areas', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const updateArea = async (item: Area, skipLog: boolean = false, skipToast: boolean = false) => {
+    const updateArea = async (item: Area, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await updateAreaAction(item.areaCode, item, item.version);
-            setAreas(prev => prev.map(p => p.id === item.id ? mapAreaFromDb(result) : p));
+            if (!result.success) {
+                await handleCRUDError('areas', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setAreas(prev => prev.map(p => p.id === item.id ? mapAreaFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            await handleCRUDError('areas', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('areas', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const deleteArea = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteArea = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         const result = await deleteAreaAction(id, version);
         if (!result.success) {
-            await handleCRUDError('areas', new Error(result.error), skipToast);
+            await handleCRUDError('areas', new Error(result.error), skipToast, skipDialog);
             throw new Error(result.error);
         }
         setAreas(prev => prev.filter(p => p.id !== id));
@@ -842,30 +916,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return result;
     };
 
-    const addAddress = async (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false) => {
+    const addAddress = async (item: Omit<Address, 'id' | 'version' | 'updatedAt'> & { id?: string }, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await createAddressAction(item);
-            setAddresses(prev => [...prev, mapAddressFromDb(result)]);
+            if (!result.success) {
+                await handleCRUDError('addresses', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setAddresses(prev => [...prev, mapAddressFromDb(result.data)]);
             if (!skipToast) showToast('登録しました', 'success');
         } catch (error) {
-            await handleCRUDError('addresses', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('addresses', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const updateAddress = async (item: Address, skipLog: boolean = false, skipToast: boolean = false) => {
+    const updateAddress = async (item: Address, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         try {
             const result = await updateAddressAction(item.id, item, item.version);
-            setAddresses(prev => prev.map(p => p.id === item.id ? mapAddressFromDb(result) : p));
+            if (!result.success) {
+                await handleCRUDError('addresses', new Error(result.error), skipToast, skipDialog);
+                throw new Error(result.error);
+            }
+            setAddresses(prev => prev.map(p => p.id === item.id ? mapAddressFromDb(result.data) : p));
             if (!skipToast) showToast('更新しました', 'success');
         } catch (error) {
-            await handleCRUDError('addresses', error, skipToast);
+            if (!(error instanceof Error && (error.message === 'DuplicateError' || error.message === 'NotFoundError' || error.message === 'ConcurrencyError'))) {
+                await handleCRUDError('addresses', error, skipToast, skipDialog);
+            }
             throw error;
         }
     };
-    const deleteAddress = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false) => {
+    const deleteAddress = async (id: string, version: number, skipLog: boolean = false, skipToast: boolean = false, skipDialog: boolean = false) => {
         const result = await deleteAddressAction(id, version);
         if (!result.success) {
-            await handleCRUDError('addresses', new Error(result.error), skipToast);
+            await handleCRUDError('addresses', new Error(result.error), skipToast, skipDialog);
             throw new Error(result.error);
         }
         setAddresses(prev => prev.filter(p => p.id !== id));
@@ -964,6 +1050,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fetchEmployees,
             fetchAddresses,
             fetchAreas,
+            handleCRUDError,
         }}>
             {children}
             <ConfirmDialog />
