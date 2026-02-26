@@ -41,7 +41,7 @@ export async function updateAreaAction(id: string, data: Partial<Area>, version:
     const supabase = await getSupabase();
     const { data: updated, error } = await supabase
         .from('areas')
-        .update({ area_name: data.areaName, version: version + 1, updated_at: new Date().toISOString() })
+        .update({ area_name: data.areaName, version: version + 1 })
         .eq('area_code', id)
         .eq('version', version)
         .select();
@@ -155,7 +155,7 @@ export async function updateAddressAction(id: string, data: Partial<Address>, ve
     const dbData = mapAddressToDb(data);
     const { data: updated, error } = await supabase
         .from('addresses')
-        .update({ ...dbData, version: version + 1, updated_at: new Date().toISOString() })
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
         .eq('version', version)
         .select();

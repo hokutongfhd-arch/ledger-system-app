@@ -148,7 +148,7 @@ export async function updateIPhoneAction(id: string, data: Partial<IPhone>, vers
 
     const { data: updated, error: updateError } = await supabase
         .from('iphones')
-        .update({ ...dbData, version: version + 1, updated_at: new Date().toISOString() })
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
         .eq('version', version)
         .select();
@@ -307,7 +307,7 @@ export async function updateFeaturePhoneAction(id: string, data: Partial<Feature
 
     const { data: updated, error: updateError } = await supabase
         .from('featurephones')
-        .update({ ...dbData, version: version + 1, updated_at: new Date().toISOString() })
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
         .eq('version', version)
         .select();
@@ -456,7 +456,7 @@ export async function updateTabletAction(id: string, data: Partial<Tablet>, vers
 
     const { data: updated, error: updateError } = await supabase
         .from('tablets')
-        .update({ ...dbData, version: version + 1, updated_at: new Date().toISOString() })
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
         .eq('version', version)
         .select();
@@ -617,7 +617,7 @@ export async function updateRouterAction(id: string, data: Partial<Router>, vers
 
     const { data: updated, error: updateError } = await supabase
         .from('routers')
-        .update({ ...dbData, version: version + 1, updated_at: new Date().toISOString() })
+        .update({ ...dbData, version: version + 1 })
         .eq('id', id)
         .eq('version', version)
         .select();
