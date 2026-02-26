@@ -32,10 +32,10 @@ export const AdminHeader = () => {
     };
 
     const handleNotificationClick = async () => {
-        if (window.location.pathname === '/audit-dashboard') {
+        if (window.location.pathname === '/audit/dashboard') {
             window.dispatchEvent(new CustomEvent('refresh-audit-dashboard'));
         } else {
-            router.push('/audit-dashboard');
+            router.push('/audit/dashboard');
         }
     };
 
