@@ -557,8 +557,10 @@ const DeviceManualListContent = () => {
                 if (storageError) {
                     throw new Error(`ストレージファイルの削除に失敗しました: ${storageError.message}`);
                 }
+                // If data is empty, the file was not found in storage.
+                // We still proceed to remove the DB record to fix the discrepancy.
                 if (!data || data.length === 0) {
-                    throw new Error(`ストレージファイルの削除に失敗しました（対象のファイル ${storageFileName} が見つかりません）`);
+                    console.warn(`Storage file not found or already deleted: ${storageFileName}`);
                 }
             }
 
