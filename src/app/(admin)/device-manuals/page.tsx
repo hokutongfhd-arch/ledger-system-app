@@ -16,6 +16,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { TitleFragment, ManualItem, ManualFile } from '@/features/manuals/manual.types';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useConfirm } from '@/hooks/useConfirm';
+import { logSystemError } from '@/lib/systemLogger';
 
 const SortableFileItem = ({
     file,
@@ -458,6 +459,11 @@ const DeviceManualListContent = () => {
 
                 if (uploadError) {
                     console.error(`Upload error for ${file.name}:`, uploadError);
+                    await logSystemError({
+                        errorMessage: `ファイルのアップロードに失敗: ${file.name}`,
+                        context: 'マニュアル管理画面 - 追加処理 (ストレージアップロード)',
+                        errorDetails: uploadError
+                    });
                     hasError = true;
                     continue;
                 }
@@ -526,6 +532,11 @@ const DeviceManualListContent = () => {
 
         } catch (error: any) {
             console.error('Error registering manual:', error);
+            await logSystemError({
+                errorMessage: 'マニュアルの登録処理全体で予期せぬエラーが発生しました',
+                context: 'マニュアル管理画面 - 追加処理全般',
+                errorDetails: error
+            });
             showAlert(`登録に失敗しました: ${error.message || JSON.stringify(error)}`);
         }
     };
@@ -540,10 +551,10 @@ const DeviceManualListContent = () => {
 
         if (!confirmed) return;
 
-        try {
-            const item = manuals.find(i => i.id === itemId);
-            if (!item) return;
+        const item = manuals.find(i => i.id === itemId);
+        if (!item) return;
 
+        try {
             const deletedFile = item.files[fileIndex];
 
             const urlObj = new URL(deletedFile.url);
@@ -589,6 +600,11 @@ const DeviceManualListContent = () => {
 
         } catch (error: any) {
             console.error('Error deleting file:', error);
+            await logSystemError({
+                errorMessage: `ファイルの削除処理でエラーが発生しました: ${item.title}`,
+                context: 'マニュアル管理画面 - 削除処理',
+                errorDetails: error
+            });
             showAlert(`削除に失敗しました: ${error.message || JSON.stringify(error)}`);
         }
     };
