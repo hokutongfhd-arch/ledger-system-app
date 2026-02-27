@@ -80,9 +80,9 @@ function AddressListContent() {
 
     // New Header Order
     const headers = [
-        '事業所コード(必須)', '事業所名(必須)', 'エリアコード', 'No.',
+        '事業所コード(必須)', '事業所名(必須)', 'No.',
         '〒(必須)', '住所(必須)', 'TEL', 'FAX',
-        '事業部', '経理コード', 'エリアコード(確認用)', '主担当', '枝番', '※', '備考',
+        '事業部', '経理コード', 'エリアコード', '主担当', '枝番', '※', '備考',
         '宛名ラベル用', '宛名ラベル用〒', '宛名ラベル用住所', '注意書き'
     ];
 
@@ -134,6 +134,7 @@ function AddressListContent() {
             const existingNames = new Set(addresses.map(a => a.officeName));
             const processedCodes = new Set<string>();
             const processedNames = new Set<string>();
+            const validAreaCodes = new Set(areas.map(a => a.areaCode));
             const errors: string[] = [];
 
             const importData: any[] = [];
@@ -145,7 +146,7 @@ function AddressListContent() {
                 const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
                 if (isRowEmpty) continue;
 
-                const { errors: rowErrors, data: newAddress } = validateAddressImportRow(row, fileHeaders, i, existingCodes, processedCodes, existingNames, processedNames);
+                const { errors: rowErrors, data: newAddress } = validateAddressImportRow(row, fileHeaders, i, existingCodes, processedCodes, existingNames, processedNames, validAreaCodes);
 
                 if (rowErrors.length > 0) {
                     errors.push(...rowErrors);
@@ -265,7 +266,6 @@ function AddressListContent() {
             return [
                 item.addressCode || '',
                 item.officeName || '',
-                item.area || '',
                 item.no || '',
                 item.zipCode || '',
                 item.address || '',
@@ -273,7 +273,7 @@ function AddressListContent() {
                 formatPhoneNumber(item.fax || ''),
                 item.division || '',
                 item.accountingCode || '',
-                item.area || '', // エリアコード(確認用)
+                item.area || '', // エリアコード
                 item.mainPerson || '',
                 item.branchNumber || '',
                 item.specialNote || '',
@@ -292,10 +292,10 @@ function AddressListContent() {
 
         // Headers
         const topHeader = [
-            '基本情報', '', '', '', // A-D
-            '連絡先情報', '', '', '', // E-H
-            '詳細情報', '', '', '', '', '', '', // I-O
-            '宛名ラベル情報', '', '', '' // P-S
+            '基本情報', '', '', // A-C
+            '連絡先情報', '', '', '', // D-G
+            '詳細情報', '', '', '', '', '', '', // H-N
+            '宛名ラベル情報', '', '', '' // O-R
         ];
 
         // Add rows
@@ -303,10 +303,10 @@ function AddressListContent() {
         worksheet.addRow(headers);
 
         // Merge cells
-        worksheet.mergeCells('A1:D1'); // Basic Info
-        worksheet.mergeCells('E1:H1'); // Contact Info
-        worksheet.mergeCells('I1:O1'); // Detail Info
-        worksheet.mergeCells('P1:S1'); // Label Info
+        worksheet.mergeCells('A1:C1'); // Basic Info
+        worksheet.mergeCells('D1:G1'); // Contact Info
+        worksheet.mergeCells('H1:N1'); // Detail Info
+        worksheet.mergeCells('O1:R1'); // Label Info
 
         // Styling Top Header (Row 1)
         const topRow = worksheet.getRow(1);
@@ -320,29 +320,29 @@ function AddressListContent() {
         // Aqua, Accent 5, White + 60%: FFDDEBF7
         // Purple, Accent 4, White + 60%: FFE4DFEC
 
-        // Basic Info (A1-D1)
-        ['A1', 'B1', 'C1', 'D1'].forEach(cellRef => {
+        // Basic Info (A1-C1)
+        ['A1', 'B1', 'C1'].forEach(cellRef => {
             const cell = worksheet.getCell(cellRef);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE4D6' } };
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
         });
 
-        // Contact Info (E1-H1)
-        ['E1', 'F1', 'G1', 'H1'].forEach(cellRef => {
+        // Contact Info (D1-G1)
+        ['D1', 'E1', 'F1', 'G1'].forEach(cellRef => {
             const cell = worksheet.getCell(cellRef);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
         });
 
-        // Detail Info (I1-O1)
-        ['I1', 'J1', 'K1', 'L1', 'M1', 'N1', 'O1'].forEach(cellRef => {
+        // Detail Info (H1-N1)
+        ['H1', 'I1', 'J1', 'K1', 'L1', 'M1', 'N1'].forEach(cellRef => {
             const cell = worksheet.getCell(cellRef);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } };
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
         });
 
-        // Label Info (P1-S1)
-        ['P1', 'Q1', 'R1', 'S1'].forEach(cellRef => {
+        // Label Info (O1-R1)
+        ['O1', 'P1', 'Q1', 'R1'].forEach(cellRef => {
             const cell = worksheet.getCell(cellRef);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE4DFEC' } };
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
@@ -364,13 +364,13 @@ function AddressListContent() {
         });
 
         // Format numeric/string columns as text to prevent scientific notation etc.
-        // A: Code, B: Name, C: AreaCode, D: No, E: Zip, F: Address, G: Tel, H: Fax
-        // I: Division, J: AccCode, K: AreaCheck, L: MainPerson, M: Branch, N: Special
-        // O: Notes, P: LabelName, Q: LabelZip, R: LabelAddress, S: Attention
+        // A: Code, B: Name, C: No, D: Zip, E: Address, F: Tel, G: Fax
+        // H: Division, I: AccCode, J: AreaCheck, K: MainPerson, L: Branch, M: Special
+        // N: Notes, O: LabelName, P: LabelZip, Q: LabelAddress, R: Attention
 
         // Columns needing Text format (Code-like):
-        // A(1), C(3), D(4), E(5), G(7), H(8), J(10), K(11), M(13), Q(17)
-        [1, 3, 4, 5, 7, 8, 10, 11, 13, 17].forEach(colIndex => {
+        // A(1), C(3), D(4), F(6), G(7), I(9), J(10), L(12), P(16)
+        [1, 3, 4, 6, 7, 9, 10, 12, 16].forEach(colIndex => {
             worksheet.getColumn(colIndex).numFmt = '@';
         });
 

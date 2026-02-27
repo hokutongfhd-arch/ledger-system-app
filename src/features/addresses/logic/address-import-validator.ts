@@ -14,7 +14,8 @@ export const validateAddressImportRow = (
     existingCodes: Set<string>,
     processedCodes: Set<string>,
     existingNames: Set<string>,
-    processedNames: Set<string>
+    processedNames: Set<string>,
+    validAreaCodes?: Set<string>
 ): { errors: string[], data?: Omit<Address, 'id'> } => {
     const errors: string[] = [];
     const rowData: any = {};
@@ -77,12 +78,6 @@ export const validateAddressImportRow = (
         }
     }
 
-    // 3. Area Code (エリアコード) - Format
-    const areaCode = toHalfWidth(String(rowData['エリアコード'] || '')).trim();
-    if (areaCode && !/^[0-9-]+$/.test(areaCode)) {
-        errors.push(`${excelRowNumber}行目: エリアコード「${areaCode}」は半角数字とハイフンのみ入力可能です`);
-        rowHasError = true;
-    }
 
     // 4. No. - Format
     const no = toHalfWidth(String(rowData['No.'] || '')).trim();
@@ -143,11 +138,16 @@ export const validateAddressImportRow = (
         rowHasError = true;
     }
 
-    // 9. Area Code Confirm (to match 'エリアコード(確認用)')
-    const areaCodeConfirm = toHalfWidth(String(rowData['エリアコード(確認用)'] || '')).trim();
-    if (areaCodeConfirm && !/^[0-9-]+$/.test(areaCodeConfirm)) {
-        errors.push(`${excelRowNumber}行目: エリアコード(確認用)「${areaCodeConfirm}」は半角数字とハイフンのみ入力可能です`);
-        rowHasError = true;
+    // 9. Area Code (to match 'エリアコード')
+    const areaCodeConfirm = toHalfWidth(String(rowData['エリアコード'] || '')).trim();
+    if (areaCodeConfirm) {
+        if (!/^[0-9-]+$/.test(areaCodeConfirm)) {
+            errors.push(`${excelRowNumber}行目: エリアコード「${areaCodeConfirm}」は半角数字とハイフンのみ入力可能です`);
+            rowHasError = true;
+        } else if (validAreaCodes && !validAreaCodes.has(areaCodeConfirm)) {
+            errors.push(`${excelRowNumber}行目: エリアコード「${areaCodeConfirm}」はエリアマスタに存在しません`);
+            rowHasError = true;
+        }
     }
 
     // 10. Branch Number (to match '枝番')
@@ -180,7 +180,7 @@ export const validateAddressImportRow = (
     const newAddress: Omit<Address, 'id'> = {
         addressCode: officeCode,
         officeName: officeName,
-        area: areaCode,
+        area: areaCodeConfirm,
         no: no,
         zipCode: formatZipCode(zip || ''),
         address: address,

@@ -59,7 +59,6 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                                 <DetailRow label="事業所名" value={item.officeName} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <DetailRow label="エリアコード" value={areaDisplay} />
                                 <DetailRow label="No." value={item.no} />
                             </div>
                         </div>
@@ -89,7 +88,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                                 <DetailRow label="経理コード" value={item.accountingCode} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <DetailRow label="エリアコード(確認用)" value={areaDisplay} />
+                                <DetailRow label="エリアコード" value={areaDisplay} />
                                 <DetailRow label="主担当" value={item.mainPerson} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

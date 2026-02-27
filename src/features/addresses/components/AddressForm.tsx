@@ -398,15 +398,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             {errorFields.has('officeName') && !formData.officeName && <FormError>この項目は必須です</FormError>}
                             {errorFields.has('officeName') && formData.officeName && isOfficeNameDuplicate && <FormError>既に登録されている事業所名です</FormError>}
                         </div>
-                        <div>
-                            <FormLabel>エリアコード</FormLabel>
-                            <SearchableSelect
-                                options={areaOptions}
-                                value={formData.area}
-                                onChange={(val) => handleSelectChange('area', val)}
-                                placeholder="エリアを検索..."
-                            />
-                        </div>
+
                         <div>
                             <FormLabel>No.</FormLabel>
                             <Input name="no" value={formData.no} onChange={handleNumberChange} placeholder="半角数字のみ" />
@@ -545,7 +537,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             />
                         </div>
                         <div>
-                            <FormLabel>エリアコード(確認用)</FormLabel>
+                            <FormLabel>エリアコード</FormLabel>
                             <SearchableSelect
                                 options={areaOptions}
                                 value={formData.area}
