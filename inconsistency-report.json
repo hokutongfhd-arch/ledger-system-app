@@ -1,0 +1,90 @@
+{
+  "dbFilesCount": 10,
+  "storageFilesCount": 8,
+  "dbFiles": [
+    {
+      "manualId": "57e2c827-20bd-430f-8eef-73e33a97d1af",
+      "name": "251023_説明資料.pdf",
+      "key": "1766018561939_0soit.pdf",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1766018561939_0soit.pdf?download=251023_%E8%AA%AC%E6%98%8E%E8%B3%87%E6%96%99.pdf"
+    },
+    {
+      "manualId": "57e2c827-20bd-430f-8eef-73e33a97d1af",
+      "name": "食事予約システムマニュアル_利用者(決済&配送).pdf",
+      "key": "1766018562428_39ra0i.pdf",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1766018562428_39ra0i.pdf?download=%E9%A3%9F%E4%BA%8B%E4%BA%88%E7%B4%84%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2%E3%83%AB_%E5%88%A9%E7%94%A8%E8%80%85(%E6%B1%BA%E6%B8%88%26%E9%85%8D%E9%80%81).pdf"
+    },
+    {
+      "manualId": "57e2c827-20bd-430f-8eef-73e33a97d1af",
+      "name": "テスト用.xlsx",
+      "key": "1766018562773_3rutqb.xlsx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1766018562773_3rutqb.xlsx?download=%E3%83%86%E3%82%B9%E3%83%88%E7%94%A8.xlsx"
+    },
+    {
+      "manualId": "13637c02-4ca7-4611-9597-cec565c36593",
+      "name": "20250925_SBルーター学校給食用設定変更手順書.pptx",
+      "key": "1765843903682_b4jhzn.pptx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1765843903682_b4jhzn.pptx?download=20250925_SB%E3%83%AB%E3%83%BC%E3%82%BF%E3%83%BC%E5%AD%A6%E6%A0%A1%E7%B5%A6%E9%A3%9F%E7%94%A8%E8%A8%AD%E5%AE%9A%E5%A4%89%E6%9B%B4%E6%89%8B%E9%A0%86%E6%9B%B8.pptx"
+    },
+    {
+      "manualId": "7898eccd-007f-49f2-bf0d-22db9d36f503",
+      "name": "MMキッティング手順書【NGF】_20250121更新.docx",
+      "key": "1767942375502_td7n69.docx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1767942375502_td7n69.docx?download=MM%E3%82%AD%E3%83%83%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0%E6%89%8B%E9%A0%86%E6%9B%B8%E3%80%90NGF%E3%80%91_20250121%E6%9B%B4%E6%96%B0.docx"
+    },
+    {
+      "manualId": "2229be2a-6a0c-4c41-8f41-e48246820e86",
+      "name": "勤怠タブレットマニュアル.pptx",
+      "key": "1766019523962_hnj3op.pptx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1766019523962_hnj3op.pptx?download=%E5%8B%A4%E6%80%A0%E3%82%BF%E3%83%96%E3%83%AC%E3%83%83%E3%83%88%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2%E3%83%AB.pptx"
+    },
+    {
+      "manualId": "2229be2a-6a0c-4c41-8f41-e48246820e86",
+      "name": "勤怠タブレットの再起動方法.pptx",
+      "key": "1766019523048_1oyrua.pptx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1766019523048_1oyrua.pptx?download=%E5%8B%A4%E6%80%A0%E3%82%BF%E3%83%96%E3%83%AC%E3%83%83%E3%83%88%E3%81%AE%E5%86%8D%E8%B5%B7%E5%8B%95%E6%96%B9%E6%B3%95.pptx"
+    },
+    {
+      "manualId": "2229be2a-6a0c-4c41-8f41-e48246820e86",
+      "name": "勤怠タブレット操作マニュアル20151006.pdf",
+      "key": "1766019525477_koz9g.pdf",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1766019525477_koz9g.pdf?download=%E5%8B%A4%E6%80%A0%E3%82%BF%E3%83%96%E3%83%AC%E3%83%83%E3%83%88%E6%93%8D%E4%BD%9C%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2%E3%83%AB20151006.pdf"
+    },
+    {
+      "manualId": "6eeaa968-d9d2-45c7-9cba-5690db25646a",
+      "name": "Digno_ペンコム手順書.xlsx",
+      "key": "1765849307698_pnsifi.xlsx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1765849307698_pnsifi.xlsx?download=Digno_%E3%83%9A%E3%83%B3%E3%82%B3%E3%83%A0%E6%89%8B%E9%A0%86%E6%9B%B8.xlsx"
+    },
+    {
+      "manualId": "6eeaa968-d9d2-45c7-9cba-5690db25646a",
+      "name": "モバイルルーターエクセルフォーマット.xlsx",
+      "key": "1765850014639_lvf9mc.xlsx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1765850014639_lvf9mc.xlsx?download=%E3%83%A2%E3%83%90%E3%82%A4%E3%83%AB%E3%83%AB%E3%83%BC%E3%82%BF%E3%83%BC%E3%82%A8%E3%82%AF%E3%82%BB%E3%83%AB%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88.xlsx"
+    }
+  ],
+  "storageKeys": [
+    "1765850014639_lvf9mc.xlsx",
+    "1766018561939_0soit.pdf",
+    "1766018562428_39ra0i.pdf",
+    "1766018562773_3rutqb.xlsx",
+    "1766019523048_1oyrua.pptx",
+    "1766019523962_hnj3op.pptx",
+    "1766019525477_koz9g.pdf",
+    "1767942375502_td7n69.docx"
+  ],
+  "mismatches": [
+    {
+      "manualId": "13637c02-4ca7-4611-9597-cec565c36593",
+      "name": "20250925_SBルーター学校給食用設定変更手順書.pptx",
+      "key": "1765843903682_b4jhzn.pptx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1765843903682_b4jhzn.pptx?download=20250925_SB%E3%83%AB%E3%83%BC%E3%82%BF%E3%83%BC%E5%AD%A6%E6%A0%A1%E7%B5%A6%E9%A3%9F%E7%94%A8%E8%A8%AD%E5%AE%9A%E5%A4%89%E6%9B%B4%E6%89%8B%E9%A0%86%E6%9B%B8.pptx"
+    },
+    {
+      "manualId": "6eeaa968-d9d2-45c7-9cba-5690db25646a",
+      "name": "Digno_ペンコム手順書.xlsx",
+      "key": "1765849307698_pnsifi.xlsx",
+      "url": "https://imogixajsqkatoixkwlc.supabase.co/storage/v1/object/public/manuals/1765849307698_pnsifi.xlsx?download=Digno_%E3%83%9A%E3%83%B3%E3%82%B3%E3%83%A0%E6%89%8B%E9%A0%86%E6%9B%B8.xlsx"
+    }
+  ]
+}
