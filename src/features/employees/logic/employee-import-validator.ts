@@ -10,6 +10,10 @@ export const parseAndValidateEmployees = (
     const importData: Employee[] = [];
     const validationErrors: string[] = [];
 
+    const today = new Date();
+    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const minDateString = '1900-01-01';
+
     // Helper: Check for full-width characters (considers anything outside ASCII range as full-width roughly, or specifically check range)
     // Requirement says "Full-width characters". Usually means checking for non-half-width-ASCII.
     // ASCII printable: 0x20 - 0x7E.
@@ -93,6 +97,16 @@ export const parseAndValidateEmployees = (
         if (!lastName) { validationErrors.push(`${excelRowNumber}行目: 苗字(必須)が未入力です`); rowHasError = true; }
         if (!firstName) { validationErrors.push(`${excelRowNumber}行目: 名前(必須)が未入力です`); rowHasError = true; }
 
+        const katakanaRegex = /^[ァ-ヶー]+$/;
+        if (lastNameKana && !katakanaRegex.test(lastNameKana.replace(/[\s　]/g, ''))) {
+            validationErrors.push(`${excelRowNumber}行目: 苗字カナ「${lastNameKana}」はカタカナで入力してください`);
+            rowHasError = true;
+        }
+        if (firstNameKana && !katakanaRegex.test(firstNameKana.replace(/[\s　]/g, ''))) {
+            validationErrors.push(`${excelRowNumber}行目: 名前カナ「${firstNameKana}」はカタカナで入力してください`);
+            rowHasError = true;
+        }
+
         // 7. Email
         const email = String(rowData['メールアドレス(必須)'] || '').trim();
         if (email) {
@@ -119,6 +133,13 @@ export const parseAndValidateEmployees = (
                  rowHasError = true;
             } else {
                 birthDateValue = parseDate(rawBirthDate);
+                if (birthDateValue > todayString) {
+                    validationErrors.push(`${excelRowNumber}行目: 生年月日はシステム利用日以前の日付を入力してください`);
+                    rowHasError = true;
+                } else if (birthDateValue < minDateString) {
+                    validationErrors.push(`${excelRowNumber}行目: 生年月日は1900年以降の日付を入力してください`);
+                    rowHasError = true;
+                }
             }
         }
 
@@ -147,6 +168,13 @@ export const parseAndValidateEmployees = (
                 rowHasError = true;
              } else {
                 joinDateValue = parseDate(rawJoinDate);
+                if (joinDateValue > todayString) {
+                    validationErrors.push(`${excelRowNumber}行目: 入社年月日はシステム利用日以前の日付を入力してください`);
+                    rowHasError = true;
+                } else if (joinDateValue < minDateString) {
+                    validationErrors.push(`${excelRowNumber}行目: 入社年月日は1900年以降の日付を入力してください`);
+                    rowHasError = true;
+                }
              }
         }
 
