@@ -17,7 +17,9 @@ import { IPhoneDetailModal } from '../../../../features/devices/components/IPhon
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { formatPhoneNumber } from '../../../../lib/utils/phoneUtils';
 import { useToast } from '../../../../features/context/ToastContext';
-import { useDataTable } from '../../../../hooks/useDataTable';
+import { useServerDataTable } from '../../../../hooks/useServerDataTable';
+import { fetchIPhonesPaginatedAction, fetchIPhonesAllAction } from '../../../../app/actions/device_fetch';
+import { mapIPhoneFromDb } from '../../../../features/context/DataContext';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
 import { logger } from '../../../../lib/logger';
@@ -51,33 +53,24 @@ function IPhoneListContent() {
     const [editingItem, setEditingItem] = useState<IPhone | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<IPhone | undefined>(undefined);
 
-    useEffect(() => {
-        fetchIPhones();
-    }, [fetchIPhones]);
-
     const {
         searchTerm, setSearchTerm,
         currentPage, setCurrentPage,
         pageSize, setPageSize,
         sortCriteria, toggleSort,
         selectedIds, setSelectedIds, handleSelectAll, handleCheckboxChange,
-        paginatedData, filteredData,
-        isAllSelected
-    } = useDataTable<IPhone>({
-        data: iPhones,
-        searchKeys: ['managementNumber', 'phoneNumber', 'modelName', 'carrier', 'notes'],
-        sortConfig: {
-            employeeCode: (a, b) => { // User Name Sort
-                const nameA = employeeMap.get(a.employeeCode)?.name || '';
-                const nameB = employeeMap.get(b.employeeCode)?.name || '';
-                return nameA.localeCompare(nameB);
-            },
-            contractYears: (a, b) => {
-                const numA = parseInt(String(a.contractYears || '').replace(/[^0-9]/g, '')) || 0;
-                const numB = parseInt(String(b.contractYears || '').replace(/[^0-9]/g, '')) || 0;
-                return numA - numB;
-            }
-        }
+        paginatedData,
+        totalItems,
+        totalPages,
+        startIndex,
+        endIndex,
+        isAllSelected,
+        refetch,
+        isLoading
+    } = useServerDataTable<IPhone>({
+        fetchData: fetchIPhonesPaginatedAction as any,
+        mapData: mapIPhoneFromDb,
+        initialPageSize: 15
     });
 
     const { handleExport } = useCSVExport<IPhone>();
@@ -154,13 +147,16 @@ function IPhoneListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            setIsSyncing(true);
+            const allIPhonesRaw = await fetchIPhonesAllAction();
+            const allIPhones = allIPhonesRaw.map(mapIPhoneFromDb);
             const { validateDeviceImportRow } = await import('../../../../features/devices/device-import-validator');
 
             const validationErrors: string[] = [];
             let successCount = 0;
             let errorCount = 0;
-            const existingManagementNumbers = new Set(iPhones.map(d => d.managementNumber));
-            const existingPhoneNumbers = new Set(iPhones.map(d => d.phoneNumber.replace(/-/g, '')));
+            const existingManagementNumbers = new Set(allIPhones.map(d => d.managementNumber));
+            const existingPhoneNumbers = new Set(allIPhones.map(d => d.phoneNumber.replace(/-/g, '')));
             const processedManagementNumbers = new Set<string>();
             const processedPhoneNumbers = new Set<string>();
             const errors: string[] = [];
@@ -321,6 +317,8 @@ function IPhoneListContent() {
             if (successCount > 0 && errorCount === 0) {
                 showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
             }
+            refetch();
+            setIsSyncing(false);
         }
     });
 
@@ -338,6 +336,7 @@ function IPhoneListContent() {
         if (confirmed) {
             try {
                 await deleteIPhone(item.id, item.version, false, true);
+                refetch();
             } catch (error: any) {
                 // console.error(error);
             }
@@ -356,6 +355,7 @@ function IPhoneListContent() {
             try {
                 await deleteManyIPhones(Array.from(selectedIds));
                 setSelectedIds(new Set());
+                refetch();
             } catch (error) {
                 // console.error(error);
             }
@@ -369,35 +369,43 @@ function IPhoneListContent() {
             targetType: 'iphone',
             targetId: 'iphone_list',
             result: 'success',
-            message: `iPhone一覧のエクスポート: ${filteredData.length}件`
+            message: `iPhone一覧のエクスポート開始`
         });
 
-        const statusLabelMap: Record<string, string> = {
-            'in-use': '使用中',
-            'backup': '予備機',
-            'available': '在庫',
-            'broken': '故障',
-            'repairing': '修理中',
-            'discarded': '廃棄'
-        };
+        try {
+            const allMatchingRaw = await fetchIPhonesAllAction(searchTerm);
+            const allMatching = allMatchingRaw.map(mapIPhoneFromDb);
 
-        handleExport(filteredData, headers, `iphone_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
-            item.managementNumber,
-            formatPhoneNumber(item.phoneNumber),
-            item.modelName,
-            normalizeContractYear(item.contractYears || ''),
-            item.carrier,
-            statusLabelMap[item.status] || item.status,
-            item.employeeCode,
-            item.addressCode,
-            item.costBearer || '',
-            item.receiptDate,
-            item.lendDate,
-            item.returnDate,
-            item.smartAddressId,
-            item.smartAddressPw,
-            `"${item.notes}"`
-        ]);
+            const statusLabelMap: Record<string, string> = {
+                'in-use': '使用中',
+                'backup': '予備機',
+                'available': '在庫',
+                'broken': '故障',
+                'repairing': '修理中',
+                'discarded': '廃棄'
+            };
+
+            handleExport(allMatching, headers, `iphone_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
+                item.managementNumber,
+                formatPhoneNumber(item.phoneNumber),
+                item.modelName,
+                normalizeContractYear(item.contractYears || ''),
+                item.carrier,
+                statusLabelMap[item.status] || item.status,
+                item.employeeCode,
+                item.addressCode,
+                item.costBearer || '',
+                item.receiptDate,
+                item.lendDate,
+                item.returnDate,
+                item.smartAddressId,
+                item.smartAddressPw,
+                `"${item.notes}"`
+            ]);
+        } catch (error) {
+            console.error('Export failed:', error);
+            showToast('エクスポートに失敗しました', 'error');
+        }
     };
 
     const handleDownloadTemplate = async () => {
@@ -637,10 +645,10 @@ function IPhoneListContent() {
 
             <Pagination
                 currentPage={currentPage}
-                totalPages={Math.ceil(filteredData.length / pageSize)}
-                totalItems={filteredData.length}
-                startIndex={(currentPage - 1) * pageSize}
-                endIndex={Math.min(currentPage * pageSize, filteredData.length)}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}
@@ -658,6 +666,7 @@ function IPhoneListContent() {
                         }
                         setIsModalOpen(false);
                         setEditingItem(undefined);
+                        refetch();
                     } catch (error: any) {
                         const isDuplicate = error?.message?.includes('DuplicateError');
                         const isConflict = error?.message?.includes('ConcurrencyError');

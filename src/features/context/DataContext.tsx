@@ -85,7 +85,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 // Helper to safely get string
 const s = (val: any) => (val === null || val === undefined) ? '' : String(val);
 
-const mapTabletFromDb = (d: any): Tablet => ({
+export const mapTabletFromDb = (d: any): Tablet => ({
     id: d.id,
     terminalCode: s(d.terminal_code),
     maker: s(d.maker),
@@ -117,7 +117,7 @@ const mapTabletToDb = (t: Partial<Tablet>) => ({
     version: t.version,
 });
 
-const mapIPhoneFromDb = (d: any): IPhone => ({
+export const mapIPhoneFromDb = (d: any): IPhone => ({
     id: d.id,
     carrier: s(d.carrier),
     phoneNumber: s(d.phone_number),
@@ -157,7 +157,7 @@ const mapIPhoneToDb = (t: Partial<IPhone>) => ({
     version: t.version,
 });
 
-const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
+export const mapFeaturePhoneFromDb = (d: any): FeaturePhone => ({
     id: d.id,
     carrier: s(d.carrier),
     phoneNumber: s(d.phone_number),
@@ -193,7 +193,7 @@ const mapFeaturePhoneToDb = (t: Partial<FeaturePhone>) => ({
     version: t.version,
 });
 
-const mapRouterFromDb = (d: any): Router => ({
+export const mapRouterFromDb = (d: any): Router => ({
     id: d.id,
     no: s(d.no),
     biller: s(d.biller),
@@ -252,7 +252,7 @@ const mapRouterToDb = (t: Partial<Router>) => ({
     version: t.version,
 });
 
-const mapEmployeeFromDb = (d: any): Employee => {
+export const mapEmployeeFromDb = (d: any): Employee => {
     const rawBirthDate = s(d.birthday);
     const rawJoinDate = s(d.join_date);
 
@@ -301,7 +301,7 @@ const mapEmployeeToDb = (t: Partial<Employee> & { auth_id?: string }) => ({
     version: t.version,
 });
 
-const mapAreaFromDb = (d: any): Area => ({
+export const mapAreaFromDb = (d: any): Area => ({
     id: d.area_code,
     areaCode: s(d.area_code),
     areaName: s(d.area_name),
@@ -315,7 +315,7 @@ const mapAreaToDb = (t: Partial<Area>) => ({
     version: t.version,
 });
 
-const mapAddressFromDb = (d: any): Address => ({
+export const mapAddressFromDb = (d: any): Address => ({
     id: d.id,
     no: s(d.no),
     addressCode: s(d.address_code),
@@ -609,7 +609,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             let errorReason = isDuplicate ? '競合エラー（既に登録済みのデータです）' :
                 isConflict ? '競合エラー（他のユーザーが更新しました）' :
                     operationName === '削除' ? '他社員がデータの編集を行ったため、削除を中止します。' :
-                    `他社員がデータの削除を行ったため、${operationName}を中止します。`;
+                        `他社員がデータの削除を行ったため、${operationName}を中止します。`;
 
             let isDetailed = false;
             // 詳細な重複情報のパース

@@ -16,10 +16,12 @@ import ExcelJS from 'exceljs';
 import { TabletDetailModal } from '../../../../features/devices/components/TabletDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { useToast } from '../../../../features/context/ToastContext';
-import { useDataTable } from '../../../../hooks/useDataTable';
+import { useServerDataTable } from '../../../../hooks/useServerDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
 import { logger } from '../../../../lib/logger';
+import { fetchTabletsPaginatedAction, fetchTabletsAllAction } from '../../../../app/actions/device_fetch';
+import { mapTabletFromDb } from '../../../../features/context/DataContext';
 
 const statusMap: Record<string, string> = {
     'in-use': '使用中',
@@ -72,38 +74,24 @@ function TabletListContent() {
     const [editingItem, setEditingItem] = useState<Tablet | undefined>(undefined);
     const [detailItem, setDetailItem] = useState<Tablet | undefined>(undefined);
 
-    useEffect(() => {
-        fetchTablets();
-    }, [fetchTablets]);
-
     const {
         searchTerm, setSearchTerm,
         currentPage, setCurrentPage,
         pageSize, setPageSize,
         sortCriteria, toggleSort,
         selectedIds, setSelectedIds, handleSelectAll, handleCheckboxChange,
-        paginatedData, filteredData,
-        isAllSelected
-    } = useDataTable<Tablet>({
-        data: tablets,
-        searchKeys: ['terminalCode', 'maker', 'modelNumber', 'status', 'addressCode', 'notes'],
-        sortConfig: {
-            employeeCode: (a, b) => { // User Name Sort
-                const nameA = employeeMap.get(a.employeeCode)?.name || '';
-                const nameB = employeeMap.get(b.employeeCode)?.name || '';
-                return nameA.localeCompare(nameB);
-            },
-            status: (a, b) => {
-                const indexA = statusSortOrder[a.status] ?? 999;
-                const indexB = statusSortOrder[b.status] ?? 999;
-                return indexA - indexB;
-            },
-            contractYears: (a, b) => {
-                const numA = parseInt(String(a.contractYears || '').replace(/[^0-9]/g, '')) || 0;
-                const numB = parseInt(String(b.contractYears || '').replace(/[^0-9]/g, '')) || 0;
-                return numA - numB;
-            }
-        }
+        paginatedData,
+        totalItems,
+        totalPages,
+        startIndex,
+        endIndex,
+        isAllSelected,
+        refetch,
+        isLoading
+    } = useServerDataTable<Tablet>({
+        fetchData: fetchTabletsPaginatedAction as any,
+        mapData: mapTabletFromDb,
+        initialPageSize: 15
     });
 
     const { handleExport } = useCSVExport<Tablet>();
@@ -149,10 +137,13 @@ function TabletListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            setIsSyncing(true);
+            const allTabletsRaw = await fetchTabletsAllAction();
+            const allTablets = allTabletsRaw.map(mapTabletFromDb);
             const { validateTabletImportRow } = await import('../../../../features/devices/device-import-validator');
             let successCount = 0;
             let errorCount = 0;
-            const existingTerminalCodes = new Set(tablets.map(t => t.terminalCode));
+            const existingTerminalCodes = new Set(allTablets.map(t => t.terminalCode));
             const processedTerminalCodes = new Set<string>();
             const errors: string[] = [];
             const reverseStatusMap: Record<string, string> = Object.entries(statusMap).reduce((acc, [key, value]) => {
@@ -278,6 +269,8 @@ function TabletListContent() {
             if (successCount > 0 && errorCount === 0) {
                 showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
             }
+            refetch();
+            setIsSyncing(false);
         }
     });
 
@@ -295,6 +288,7 @@ function TabletListContent() {
         if (confirmed) {
             try {
                 await deleteTablet(item.id, item.version, false, true);
+                refetch();
             } catch (error: any) {
                 // console.error(error);
             }
@@ -313,6 +307,7 @@ function TabletListContent() {
             try {
                 await deleteManyTablets(Array.from(selectedIds));
                 setSelectedIds(new Set());
+                refetch();
             } catch (error) {
                 // console.error(error);
             }
@@ -326,21 +321,29 @@ function TabletListContent() {
             targetType: 'tablet',
             targetId: 'tablet_list',
             result: 'success',
-            message: `タブレット一覧のエクスポート: ${filteredData.length}件`
+            message: `タブレット一覧のエクスポート開始`
         });
 
-        handleExport(filteredData, headers, `tablet_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
-            item.terminalCode || '',
-            item.modelNumber || '',
-            item.maker || '',
-            normalizeContractYear(item.contractYears || ''),
-            statusMap[item.status] || item.status,
-            item.employeeCode || '',
-            item.addressCode || '',
-            item.costBearer || '',
-            `"${item.history || ''}"`,
-            `"${item.notes || ''}"`
-        ]);
+        try {
+            const allMatchingRaw = await fetchTabletsAllAction(searchTerm);
+            const allMatching = allMatchingRaw.map(mapTabletFromDb);
+
+            handleExport(allMatching, headers, `tablet_list_${new Date().toISOString().split('T')[0]}.csv`, (item) => [
+                item.terminalCode || '',
+                item.modelNumber || '',
+                item.maker || '',
+                normalizeContractYear(item.contractYears || ''),
+                statusMap[item.status] || item.status,
+                item.employeeCode || '',
+                item.addressCode || '',
+                item.costBearer || '',
+                `"${item.history || ''}"`,
+                `"${item.notes || ''}"`
+            ]);
+        } catch (error) {
+            console.error('Export failed:', error);
+            showToast('エクスポートに失敗しました', 'error');
+        }
     };
 
     const handleDownloadTemplate = async () => {
@@ -537,10 +540,10 @@ function TabletListContent() {
 
             <Pagination
                 currentPage={currentPage}
-                totalPages={Math.ceil(filteredData.length / pageSize)}
-                totalItems={filteredData.length}
-                startIndex={(currentPage - 1) * pageSize}
-                endIndex={Math.min(currentPage * pageSize, filteredData.length)}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}
@@ -557,6 +560,7 @@ function TabletListContent() {
                             await addTablet(data as any);
                         }
                         setIsModalOpen(false);
+                        refetch();
                     } catch (error: any) {
                         const isDuplicate = error?.message?.includes('DuplicateError');
                         const isConflict = error?.message?.includes('ConcurrencyError');
