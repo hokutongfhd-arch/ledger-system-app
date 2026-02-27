@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { fixOperationLogActor } from '../api/admin/employees/audit_helper';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { getSetupUserServer } from './auth_setup';
 
 const getSupabaseAdmin = () => {
@@ -14,7 +14,7 @@ const getSupabaseAdmin = () => {
 
 export async function createEmployeeAction(data: any) {
     const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+    const supabase = createServerActionClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication & Admin Role
     const setupUser = await getSetupUserServer();
@@ -93,7 +93,7 @@ export async function createEmployeeAction(data: any) {
 
 export async function fetchEmployeesAction() {
     const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+    const supabase = createServerActionClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication
     const setupUser = await getSetupUserServer();
@@ -123,7 +123,7 @@ export async function fetchEmployeesAction() {
 
 export async function updateEmployeeAction(id: string, data: any) {
     const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+    const supabase = createServerActionClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication
     const setupUser = await getSetupUserServer();
@@ -183,7 +183,7 @@ export async function updateEmployeeAction(id: string, data: any) {
 
 export async function deleteEmployeeAction(id: string, version: number) {
     const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+    const supabase = createServerActionClient({ cookies: () => cookieStore as any });
 
     // 1. Verify Authentication
     let currentUser: any = null;

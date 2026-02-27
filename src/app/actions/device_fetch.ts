@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { getSetupUserServer } from './auth_setup';
 
 const getSupabaseAdmin = () => {
@@ -18,7 +18,7 @@ const checkAuth = async () => {
 
     // 2. Check for Supabase Auth User
     const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
+    const supabase = createServerActionClient({ cookies: () => cookieStore as any });
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Unauthenticated');
     return user;
