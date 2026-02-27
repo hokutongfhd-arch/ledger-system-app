@@ -111,8 +111,40 @@ export const validateDeviceImportRow = (
         return /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(str);
     };
 
-    if (!isValidDate(row['貸与日'])) errors.push(`${rowNumber}行目: 貸与日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
-    if (!isValidDate(row['返却日'])) errors.push(`${rowNumber}行目: 返却日は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
+    const parseDeviceDate = (val: any): Date | null => {
+        if (!val) return null;
+        if (typeof val === 'number') {
+            return new Date((val - 25569) * 86400 * 1000);
+        }
+        const str = String(val).trim();
+        if (!str) return null;
+        const d = new Date(str.replace(/-/g, '/'));
+        if (isNaN(d.getTime())) return null;
+        return d;
+    };
+
+    const validateDateConstraints = (val: any, fieldName: string) => {
+        if (!isValidDate(val)) {
+            errors.push(`${rowNumber}行目: ${fieldName}は「YYYY-MM-DD」または「YYYY/MM/DD」形式で入力してください`);
+            return;
+        }
+        const dateObj = parseDeviceDate(val);
+        if (dateObj) {
+            const minDate = new Date('2000-01-01T00:00:00');
+            const maxDate = new Date();
+            maxDate.setFullYear(maxDate.getFullYear() + 5);
+            maxDate.setHours(23, 59, 59, 999);
+            
+            if (dateObj < minDate) {
+                errors.push(`${rowNumber}行目: ${fieldName}は2000年以降の日付を入力してください`);
+            } else if (dateObj > maxDate) {
+                errors.push(`${rowNumber}行目: ${fieldName}はシステム利用日から5年以内の日付を入力してください`);
+            }
+        }
+    };
+
+    validateDateConstraints(row['貸与日'], '貸与日');
+    validateDateConstraints(row['返却日'], '返却日');
 
     // SMART Address Validation
     const smartIdVal = row['SMARTアドレス帳ID'];

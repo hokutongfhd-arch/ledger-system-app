@@ -49,6 +49,13 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
     });
     const [phoneParts, setPhoneParts] = useState({ part1: '', part2: '', part3: '' });
 
+    const minDate = '2000-01-01';
+    const maxDate = useMemo(() => {
+        const today = new Date();
+        today.setFullYear(today.getFullYear() + 5);
+        return today.toISOString().split('T')[0];
+    }, []);
+
     // Prepare Options
     const employeeOptions = useMemo(() => {
         const options = employees.map(e => ({
@@ -421,6 +428,8 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 name="lendDate"
                                 value={formData.lendDate}
                                 onChange={handleChange}
+                                min={minDate}
+                                max={maxDate}
                             />
                         </div>
 
@@ -431,6 +440,8 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 name="returnDate"
                                 value={formData.returnDate}
                                 onChange={handleChange}
+                                min={minDate}
+                                max={maxDate}
                             />
                         </div>
                     </div>
