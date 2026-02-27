@@ -448,9 +448,7 @@ const DeviceManualListContent = () => {
                     continue;
                 }
 
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `${fileName}`;
+                const filePath = file.name;
 
                 const { error: uploadError } = await supabase.storage
                     .from('manuals')
@@ -543,6 +541,21 @@ const DeviceManualListContent = () => {
         try {
             const item = manuals.find(i => i.id === itemId);
             if (!item) return;
+
+            const deletedFile = item.files[fileIndex];
+
+            const urlObj = new URL(deletedFile.url);
+            const pathParts = urlObj.pathname.split('/');
+            const storageFileName = decodeURIComponent(pathParts[pathParts.length - 1]);
+
+            if (storageFileName) {
+                const { error: storageError } = await supabase.storage
+                    .from('manuals')
+                    .remove([storageFileName]);
+                if (storageError) {
+                    throw new Error(`ストレージファイルの削除に失敗しました: ${storageError.message}`);
+                }
+            }
 
             const newFiles = item.files.filter((_, index) => index !== fileIndex);
 
