@@ -263,6 +263,17 @@ export const validateRouterImportRow = (
     validateIpFormat(String(row['開始IP'] || ''), '開始IP');
     validateIpFormat(String(row['終了IP'] || ''), '終了IP');
 
+    const validateCostField = (value: any, fieldName: string) => {
+        if (value === undefined || value === null || value === '') return;
+        const strVal = String(value).trim();
+        if (strVal && !/^[0-9]+$/.test(strVal)) {
+            errors.push(`${rowNumber}行目: ${fieldName}は半角数字のみで入力してください`);
+        }
+    };
+
+    validateCostField(row['費用'], '費用');
+    validateCostField(row['費用振替'], '費用振替');
+
     return {
         isValid: errors.length === 0,
         errors,
