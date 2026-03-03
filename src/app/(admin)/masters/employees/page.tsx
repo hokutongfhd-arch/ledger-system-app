@@ -172,44 +172,14 @@ function EmployeeListContent() {
       return true;
     },
     onImport: async (rows, headers) => {
-      const { validEmployees: importData, errors: validationErrors } =
-        parseAndValidateEmployees(rows, headers);
-
-      // If there are validation errors from parsing, show them and stop.
-      if (validationErrors.length > 0) {
-        await confirm({
-          title: "インポートエラー",
-          description: (
-            <div className="max-h-60 overflow-y-auto">
-              <p className="mb-2 font-bold text-red-600">
-                エラーが存在するため、インポートを中止しました。
-              </p>
-              <ul className="list-disc pl-5 text-sm text-red-600">
-                {validationErrors.map((err, idx) => (
-                  <li key={idx}>{err}</li>
-                ))}
-              </ul>
-            </div>
-          ),
-          confirmText: "OK",
-          cancelText: "",
-        });
-        return;
-      }
-
-      // 2. Call Bulk API
-      if (importData.length === 0) {
-        showToast("インポート可能なデータがありませんでした", "error");
-        return;
-      }
-
+      setIsSyncing(true);
       try {
-        const { employeeService } =
-          await import("../../../../features/employees/employee.service");
-        const result = await employeeService.saveEmployeesBulk(importData);
+        const { validEmployees: importData, errors: validationErrors } =
+          parseAndValidateEmployees(rows, headers);
 
-        // 1. バリデーションエラー（メール重複など）のチェック
-        if (result.validationErrors && result.validationErrors.length > 0) {
+        // If there are validation errors from parsing, show them and stop.
+        if (validationErrors.length > 0) {
+          setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
           await confirm({
             title: "インポートエラー",
             description: (
@@ -218,7 +188,7 @@ function EmployeeListContent() {
                   エラーが存在するため、インポートを中止しました。
                 </p>
                 <ul className="list-disc pl-5 text-sm text-red-600">
-                  {result.validationErrors.map((err, idx) => (
+                  {validationErrors.map((err, idx) => (
                     <li key={idx}>{err}</li>
                   ))}
                 </ul>
@@ -230,52 +200,91 @@ function EmployeeListContent() {
           return;
         }
 
-        if (result.failureCount === 0) {
-          showToast(`インポート成功: ${result.successCount}件`, "success");
-        } else if (result.successCount === 0) {
-          // All failed
-          await confirm({
-            title: "インポートエラー",
-            description: (
-              <div className="max-h-60 overflow-y-auto">
-                <p className="mb-2 font-bold text-red-600">
-                  エラーが存在するため、インポートを中止しました。
-                </p>
-                <ul className="list-disc pl-5 text-sm text-red-600">
-                  {result.errors.map((err, idx) => (
-                    <li key={idx}>{err}</li>
-                  ))}
-                </ul>
-              </div>
-            ),
-            confirmText: "OK",
-            cancelText: "",
-          });
-        } else {
-          // Partial success
-          await confirm({
-            title: "インポートエラー",
-            description: (
-              <div className="max-h-60 overflow-y-auto">
-                <p className="mb-2 font-bold text-red-600">
-                  エラーが存在するため、インポートを中止しました。
-                </p>
-                <ul className="list-disc pl-5 text-sm text-red-600">
-                  {result.errors.map((err, idx) => (
-                    <li key={idx}>{err}</li>
-                  ))}
-                </ul>
-              </div>
-            ),
-            confirmText: "OK",
-            cancelText: "",
-          });
+        // 2. Call Bulk API
+        if (importData.length === 0) {
+          showToast("インポート可能なデータがありませんでした", "error");
+          return;
         }
 
-        // Refresh data
-        refetch();
-      } catch (e: any) {
-        showToast(`インポート予期せぬエラー: ${e.message}`, "error");
+        try {
+          const { employeeService } =
+            await import("../../../../features/employees/employee.service");
+          const result = await employeeService.saveEmployeesBulk(importData);
+
+          // 1. バリデーションエラー（メール重複など）のチェック
+          if (result.validationErrors && result.validationErrors.length > 0) {
+            setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+            await confirm({
+              title: "インポートエラー",
+              description: (
+                <div className="max-h-60 overflow-y-auto">
+                  <p className="mb-2 font-bold text-red-600">
+                    エラーが存在するため、インポートを中止しました。
+                  </p>
+                  <ul className="list-disc pl-5 text-sm text-red-600">
+                    {result.validationErrors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              ),
+              confirmText: "OK",
+              cancelText: "",
+            });
+            return;
+          }
+
+          if (result.failureCount === 0) {
+            showToast(`インポート成功: ${result.successCount}件`, "success");
+          } else if (result.successCount === 0) {
+            // All failed
+            setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+            await confirm({
+              title: "インポートエラー",
+              description: (
+                <div className="max-h-60 overflow-y-auto">
+                  <p className="mb-2 font-bold text-red-600">
+                    エラーが存在するため、インポートを中止しました。
+                  </p>
+                  <ul className="list-disc pl-5 text-sm text-red-600">
+                    {result.errors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              ),
+              confirmText: "OK",
+              cancelText: "",
+            });
+          } else {
+            // Partial success
+            setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+            await confirm({
+              title: "インポートエラー",
+              description: (
+                <div className="max-h-60 overflow-y-auto">
+                  <p className="mb-2 font-bold text-red-600">
+                    エラーが存在するため、インポートを中止しました。
+                  </p>
+                  <ul className="list-disc pl-5 text-sm text-red-600">
+                    {result.errors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              ),
+              confirmText: "OK",
+              cancelText: "",
+            });
+          }
+
+          // Refresh data
+          refetch();
+        } catch (e: any) {
+          showToast(`インポート予期せぬエラー: ${e.message}`, "error");
+        }
+      } finally {
+        setIsSyncing(false);
       }
     },
   });

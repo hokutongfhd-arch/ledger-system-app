@@ -138,139 +138,142 @@ function TabletListContent() {
         },
         onImport: async (rows, fileHeaders) => {
             setIsSyncing(true);
-            const allTabletsRaw = await fetchTabletsAllAction();
-            const allTablets = allTabletsRaw.map(mapTabletFromDb);
-            const { validateTabletImportRow } = await import('../../../../features/devices/device-import-validator');
-            let successCount = 0;
-            let errorCount = 0;
-            const existingTerminalCodes = new Set(allTablets.map(t => t.terminalCode));
-            const processedTerminalCodes = new Set<string>();
-            const errors: string[] = [];
-            const reverseStatusMap: Record<string, string> = Object.entries(statusMap).reduce((acc, [key, value]) => {
-                acc[value] = key;
-                return acc;
-            }, {} as Record<string, string>);
-            const validStatuses = ['使用中', '予備機', '在庫', '故障', '修理中', '廃棄'];
+            try {
+                const allTabletsRaw = await fetchTabletsAllAction();
+                const allTablets = allTabletsRaw.map(mapTabletFromDb);
+                const { validateTabletImportRow } = await import('../../../../features/devices/device-import-validator');
+                let successCount = 0;
+                let errorCount = 0;
+                const existingTerminalCodes = new Set(allTablets.map(t => t.terminalCode));
+                const processedTerminalCodes = new Set<string>();
+                const errors: string[] = [];
+                const reverseStatusMap: Record<string, string> = Object.entries(statusMap).reduce((acc, [key, value]) => {
+                    acc[value] = key;
+                    return acc;
+                }, {} as Record<string, string>);
+                const validStatuses = ['使用中', '予備機', '在庫', '故障', '修理中', '廃棄'];
 
-            const importData: any[] = [];
+                const importData: any[] = [];
 
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.length === 0) continue;
-                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
-                if (isRowEmpty) continue;
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+                    const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
+                    if (isRowEmpty) continue;
 
-                const rowData: any = {};
-                fileHeaders.forEach((header, index) => {
-                    rowData[header] = row[index];
-                });
+                    const rowData: any = {};
+                    fileHeaders.forEach((header, index) => {
+                        rowData[header] = row[index];
+                    });
 
-                const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+                    const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
-                const validEmployeeCodes = new Set(employees.map(e => e.code));
-                const validOfficeCodes = new Set(addresses.map(a => a.addressCode));
+                    const validEmployeeCodes = new Set(employees.map(e => e.code));
+                    const validOfficeCodes = new Set(addresses.map(a => a.addressCode));
 
-                const validation = validateTabletImportRow(
-                    rowData,
-                    i,
-                    existingTerminalCodes,
-                    processedTerminalCodes,
-                    validEmployeeCodes,
-                    validOfficeCodes
-                );
+                    const validation = validateTabletImportRow(
+                        rowData,
+                        i,
+                        existingTerminalCodes,
+                        processedTerminalCodes,
+                        validEmployeeCodes,
+                        validOfficeCodes
+                    );
 
-                if (!validation.isValid) {
-                    errors.push(...validation.errors);
-                    continue;
+                    if (!validation.isValid) {
+                        errors.push(...validation.errors);
+                        continue;
+                    }
+
+                    if (validation.managementNumber) processedTerminalCodes.add(validation.managementNumber);
+
+                    const rawStatusAtFile = String(rowData['状況'] || '').trim();
+                    const employeeCode = String(rowData['社員コード'] || '').trim();
+                    const addressCode = String(rowData['事業所コード'] || '').trim();
+
+                    let finalStatus: any;
+                    if (employeeCode || addressCode) {
+                        finalStatus = 'in-use';
+                    } else if (rawStatusAtFile === '') {
+                        finalStatus = 'available';
+                    } else {
+                        finalStatus = reverseStatusMap[rawStatusAtFile] || 'available';
+                    }
+
+                    const newTablet: Omit<Tablet, 'id'> = {
+                        terminalCode: validation.managementNumber || toHalfWidth(String(rowData['端末CD(必須)'] || '')).trim(),
+                        maker: String(rowData['メーカー'] || ''),
+                        modelNumber: toHalfWidth(String(rowData['型番(必須)'] || '')).trim(),
+                        addressCode: addressCode,
+                        employeeCode: employeeCode,
+                        notes: String(rowData['備考'] || ''),
+                        history: String(rowData['過去貸与履歴'] || ''),
+                        status: finalStatus,
+                        contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
+                        costBearer: String(rowData['負担先'] || ''),
+                        address: '',
+                        version: 1,
+                        updatedAt: '',
+                    };
+
+                    importData.push(newTablet);
                 }
 
-                if (validation.managementNumber) processedTerminalCodes.add(validation.managementNumber);
-
-                const rawStatusAtFile = String(rowData['状況'] || '').trim();
-                const employeeCode = String(rowData['社員コード'] || '').trim();
-                const addressCode = String(rowData['事業所コード'] || '').trim();
-
-                let finalStatus: any;
-                if (employeeCode || addressCode) {
-                    finalStatus = 'in-use';
-                } else if (rawStatusAtFile === '') {
-                    finalStatus = 'available';
-                } else {
-                    finalStatus = reverseStatusMap[rawStatusAtFile] || 'available';
+                // All-or-Nothing check
+                if (errors.length > 0) {
+                    setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+                    await confirm({
+                        title: 'インポートエラー',
+                        description: (
+                            <div className="max-h-60 overflow-y-auto">
+                                <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
+                                <ul className="list-disc pl-5 text-sm text-red-600">
+                                    {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                </ul>
+                            </div>
+                        ),
+                        confirmText: '閉じる',
+                        cancelText: ''
+                    });
+                    return; // finally で setIsSyncing(false) が確実に呼ばれる
                 }
 
-                const newTablet: Omit<Tablet, 'id'> = {
-                    terminalCode: validation.managementNumber || toHalfWidth(String(rowData['端末CD(必須)'] || '')).trim(),
-                    maker: String(rowData['メーカー'] || ''),
-                    modelNumber: toHalfWidth(String(rowData['型番(必須)'] || '')).trim(),
-                    addressCode: addressCode,
-                    employeeCode: employeeCode,
-                    notes: String(rowData['備考'] || ''),
-                    history: String(rowData['過去貸与履歴'] || ''),
-                    status: finalStatus,
-                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
-                    costBearer: String(rowData['負担先'] || ''),
-                    address: '',
-                    version: 1,
-                    updatedAt: '',
-                };
-
-
-
-                importData.push(newTablet);
-            }
-
-            // All-or-Nothing check
-            if (errors.length > 0) {
-                await confirm({
-                    title: 'インポートエラー',
-                    description: (
-                        <div className="max-h-60 overflow-y-auto">
-                            <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
-                            <ul className="list-disc pl-5 text-sm text-red-600">
-                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
-                            </ul>
-                        </div>
-                    ),
-                    confirmText: '閉じる',
-                    cancelText: ''
-                });
-                return;
-            }
-
-            // Execution Phase
-            for (const data of importData) {
-                try {
-                    await addTablet(data as Omit<Tablet, 'id'>, true, true, true);
-                    successCount++;
-                } catch (error: any) {
-                    const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
-                    errors.push(`登録エラー: ${data.terminalCode} - ${errorMsg}`);
-                    errorCount++;
+                // Execution Phase
+                for (const data of importData) {
+                    try {
+                        await addTablet(data as Omit<Tablet, 'id'>, true, true, true);
+                        successCount++;
+                    } catch (error: any) {
+                        const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
+                        errors.push(`登録エラー: ${data.terminalCode} - ${errorMsg}`);
+                        errorCount++;
+                    }
                 }
-            }
 
-            if (errors.length > 0) {
-                await confirm({
-                    title: 'インポートエラー',
-                    description: (
-                        <div className="max-h-60 overflow-y-auto">
-                            <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
-                            <ul className="list-disc pl-5 text-sm text-red-600">
-                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
-                            </ul>
-                        </div>
-                    ),
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-            }
+                if (errors.length > 0) {
+                    setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+                    await confirm({
+                        title: 'インポートエラー',
+                        description: (
+                            <div className="max-h-60 overflow-y-auto">
+                                <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
+                                <ul className="list-disc pl-5 text-sm text-red-600">
+                                    {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                </ul>
+                            </div>
+                        ),
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                }
 
-            if (successCount > 0 && errorCount === 0) {
-                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
+                if (successCount > 0 && errorCount === 0) {
+                    showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
+                }
+                refetch();
+            } finally {
+                setIsSyncing(false);
             }
-            refetch();
-            setIsSyncing(false);
         }
     });
 

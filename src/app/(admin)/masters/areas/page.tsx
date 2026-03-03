@@ -138,160 +138,167 @@ function AreaListContent() {
       return true;
     },
     onImport: async (rows, fileHeaders) => {
-      const existingCodes = new Set(areas.map((a) => a.areaCode));
-      const existingNames = new Set(areas.map((a) => a.areaName));
-      const processedCodes = new Set<string>();
-      const processedNames = new Set<string>();
-      const errors: string[] = [];
-      let successCount = 0;
-      let errorCount = 0;
+      setIsSyncing(true);
+      try {
+        const existingCodes = new Set(areas.map((a) => a.areaCode));
+        const existingNames = new Set(areas.map((a) => a.areaName));
+        const processedCodes = new Set<string>();
+        const processedNames = new Set<string>();
+        const errors: string[] = [];
+        let successCount = 0;
+        let errorCount = 0;
 
-      const importData: any[] = [];
+        const importData: any[] = [];
 
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-        const isRowEmpty = row.every(
-          (cell: any) =>
-            cell === undefined || cell === null || String(cell).trim() === "",
-        );
-        if (isRowEmpty) continue;
-
-        // Excel Row = i + 1 (data start) + 1 (header) + 1 (title) = i + 3
-        const excelRowNumber = i + 3;
-
-        const rowData: any = {};
-        fileHeaders.forEach((header, index) => {
-          rowData[header] = row[index];
-        });
-
-        const rawCode = String(rowData["エリアコード(必須)"] || "").trim();
-        const rawName = String(rowData["エリア名(必須)"] || "").trim();
-        let rowHasError = false;
-
-        if (!rawCode) {
-          errors.push(`${excelRowNumber}行目: エリアコード(必須)が未入力です`);
-          rowHasError = true;
-        } else if (!/^[0-9]+$/.test(rawCode)) {
-          errors.push(
-            `${excelRowNumber}行目: エリアコード「${rawCode}」に半角数字以外の文字が含まれています`,
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length === 0) continue;
+          const isRowEmpty = row.every(
+            (cell: any) =>
+              cell === undefined || cell === null || String(cell).trim() === "",
           );
-          rowHasError = true;
-        }
+          if (isRowEmpty) continue;
 
-        if (!rawName) {
-          errors.push(`${excelRowNumber}行目: エリア名(必須)が未入力です`);
-          rowHasError = true;
-        }
+          // Excel Row = i + 1 (data start) + 1 (header) + 1 (title) = i + 3
+          const excelRowNumber = i + 3;
 
-        const code = rawCode;
-        const name = rawName;
+          const rowData: any = {};
+          fileHeaders.forEach((header, index) => {
+            rowData[header] = row[index];
+          });
 
-        if (!rowHasError) {
-          if (existingCodes.has(code)) {
-            errors.push(
-              `${excelRowNumber}行目: エリアコード「${code}」は既に存在します`,
-            );
+          const rawCode = String(rowData["エリアコード(必須)"] || "").trim();
+          const rawName = String(rowData["エリア名(必須)"] || "").trim();
+          let rowHasError = false;
+
+          if (!rawCode) {
+            errors.push(`${excelRowNumber}行目: エリアコード(必須)が未入力です`);
             rowHasError = true;
-          } else if (processedCodes.has(code)) {
+          } else if (!/^[0-9]+$/.test(rawCode)) {
             errors.push(
-              `${excelRowNumber}行目: エリアコード「${code}」がファイル内で重複しています`,
-            );
-            rowHasError = true;
-          }
-
-          if (existingNames.has(name)) {
-            errors.push(
-              `${excelRowNumber}行目: エリア名「${name}」は既に存在します`,
-            );
-            rowHasError = true;
-          } else if (processedNames.has(name)) {
-            errors.push(
-              `${excelRowNumber}行目: エリア名「${name}」がファイル内で重複しています`,
+              `${excelRowNumber}行目: エリアコード「${rawCode}」に半角数字以外の文字が含まれています`,
             );
             rowHasError = true;
           }
+
+          if (!rawName) {
+            errors.push(`${excelRowNumber}行目: エリア名(必須)が未入力です`);
+            rowHasError = true;
+          }
+
+          const code = rawCode;
+          const name = rawName;
+
+          if (!rowHasError) {
+            if (existingCodes.has(code)) {
+              errors.push(
+                `${excelRowNumber}行目: エリアコード「${code}」は既に存在します`,
+              );
+              rowHasError = true;
+            } else if (processedCodes.has(code)) {
+              errors.push(
+                `${excelRowNumber}行目: エリアコード「${code}」がファイル内で重複しています`,
+              );
+              rowHasError = true;
+            }
+
+            if (existingNames.has(name)) {
+              errors.push(
+                `${excelRowNumber}行目: エリア名「${name}」は既に存在します`,
+              );
+              rowHasError = true;
+            } else if (processedNames.has(name)) {
+              errors.push(
+                `${excelRowNumber}行目: エリア名「${name}」がファイル内で重複しています`,
+              );
+              rowHasError = true;
+            }
+          }
+
+          if (rowHasError) {
+            continue;
+          }
+
+          processedCodes.add(code);
+          processedNames.add(name);
+
+          const newArea: Omit<Area, "id" | "version" | "updatedAt"> = {
+            areaCode: code,
+            areaName: name,
+          };
+
+          importData.push(newArea);
         }
 
-        if (rowHasError) {
-          continue;
+        // All-or-Nothing check
+        if (errors.length > 0) {
+          setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+          await confirm({
+            title: "インポートエラー",
+            description: (
+              <div className="max-h-60 overflow-y-auto">
+                <p className="font-bold text-red-600 mb-2">
+                  エラーが存在するため、インポートを中止しました。
+                </p>
+                <ul className="list-disc pl-5 text-sm text-red-600">
+                  {errors.map((err, idx) => (
+                    <li key={idx}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            ),
+            confirmText: "閉じる",
+            cancelText: "",
+          });
+          return;
         }
 
-        processedCodes.add(code);
-        processedNames.add(name);
-
-        const newArea: Omit<Area, "id" | "version" | "updatedAt"> = {
-          areaCode: code,
-          areaName: name,
-        };
-
-        importData.push(newArea);
-      }
-
-      // All-or-Nothing check
-      if (errors.length > 0) {
-        await confirm({
-          title: "インポートエラー",
-          description: (
-            <div className="max-h-60 overflow-y-auto">
-              <p className="font-bold text-red-600 mb-2">
-                エラーが存在するため、インポートを中止しました。
-              </p>
-              <ul className="list-disc pl-5 text-sm text-red-600">
-                {errors.map((err, idx) => (
-                  <li key={idx}>{err}</li>
-                ))}
-              </ul>
-            </div>
-          ),
-          confirmText: "閉じる",
-          cancelText: "",
-        });
-        return;
-      }
-
-      // Execution Phase
-      for (const data of importData) {
-        try {
-          await addArea(data as any, true, true, true);
-          successCount++;
-        } catch (error: any) {
-          const errorMsg =
-            error.message === "DuplicateError"
-              ? "競合エラー"
-              : error.message || "不明なエラー";
-          errors.push(`登録エラー: ${data.areaCode} - ${errorMsg}`);
-          errorCount++;
+        // Execution Phase
+        for (const data of importData) {
+          try {
+            await addArea(data as any, true, true, true);
+            successCount++;
+          } catch (error: any) {
+            const errorMsg =
+              error.message === "DuplicateError"
+                ? "競合エラー"
+                : error.message || "不明なエラー";
+            errors.push(`登録エラー: ${data.areaCode} - ${errorMsg}`);
+            errorCount++;
+          }
         }
-      }
 
-      if (errors.length > 0) {
-        await confirm({
-          title: "インポートエラー",
-          description: (
-            <div className="max-h-60 overflow-y-auto">
-              <p className="mb-2 font-bold text-red-600">
-                エラーが存在するため、インポートを中止しました。
-              </p>
-              <ul className="list-disc pl-5 text-sm text-red-600">
-                {errors.map((err, idx) => (
-                  <li key={idx}>{err}</li>
-                ))}
-              </ul>
-            </div>
-          ),
-          confirmText: "OK",
-          cancelText: "",
-        });
-      }
+        if (errors.length > 0) {
+          setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+          await confirm({
+            title: "インポートエラー",
+            description: (
+              <div className="max-h-60 overflow-y-auto">
+                <p className="mb-2 font-bold text-red-600">
+                  エラーが存在するため、インポートを中止しました。
+                </p>
+                <ul className="list-disc pl-5 text-sm text-red-600">
+                  {errors.map((err, idx) => (
+                    <li key={idx}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            ),
+            confirmText: "OK",
+            cancelText: "",
+          });
+        }
 
-      if (successCount > 0 && errorCount === 0) {
-        showToast(
-          `インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`,
-          "success",
-        );
+        if (successCount > 0 && errorCount === 0) {
+          showToast(
+            `インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`,
+            "success",
+          );
+        }
+        refetch();
+      } finally {
+        setIsSyncing(false);
       }
-      refetch();
     },
   });
 

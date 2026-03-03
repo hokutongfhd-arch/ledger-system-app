@@ -174,198 +174,203 @@ function RouterListContent() {
     },
     onImport: async (rows, fileHeaders) => {
       setIsSyncing(true);
-      const allRoutersRaw = await fetchRoutersAllAction();
-      const allRouters = allRoutersRaw.map(mapRouterFromDb);
-      const { validateRouterImportRow } =
-        await import("../../../../features/devices/device-import-validator");
+      try {
+        const allRoutersRaw = await fetchRoutersAllAction();
+        const allRouters = allRoutersRaw.map(mapRouterFromDb);
+        const { validateRouterImportRow } =
+          await import("../../../../features/devices/device-import-validator");
 
-      let successCount = 0;
-      let errorCount = 0;
-      const existingTerminalCodes = new Set(
-        allRouters.map((r) => r.terminalCode),
-      );
-      const existingSimNumbers = new Set(
-        allRouters.map((r) => normalizePhoneNumber(r.simNumber)),
-      );
-      const processedTerminalCodes = new Set<string>();
-      const processedSimNumbers = new Set<string>();
-      const errors: string[] = [];
-
-      const importData: any[] = [];
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-        const isRowEmpty = row.every(
-          (cell: any) =>
-            cell === undefined || cell === null || String(cell).trim() === "",
+        let successCount = 0;
+        let errorCount = 0;
+        const existingTerminalCodes = new Set(
+          allRouters.map((r) => r.terminalCode),
         );
-        if (isRowEmpty) continue;
-
-        const rowData: any = {};
-        fileHeaders.forEach((header, index) => {
-          rowData[header] = row[index];
-        });
-
-        const validEmployeeCodes = new Set(employees.map((e) => e.code));
-        const validOfficeCodes = new Set(addresses.map((a) => a.addressCode));
-
-        const validation = validateRouterImportRow(
-          rowData,
-          i,
-          existingSimNumbers,
-          processedSimNumbers,
-          existingTerminalCodes,
-          processedTerminalCodes,
-          validEmployeeCodes,
-          validOfficeCodes,
+        const existingSimNumbers = new Set(
+          allRouters.map((r) => normalizePhoneNumber(r.simNumber)),
         );
+        const processedTerminalCodes = new Set<string>();
+        const processedSimNumbers = new Set<string>();
+        const errors: string[] = [];
 
-        if (!validation.isValid) {
-          errors.push(...validation.errors);
-          continue;
-        }
+        const importData: any[] = [];
 
-        const toHalfWidth = (str: string) =>
-          str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) =>
-            String.fromCharCode(s.charCodeAt(0) - 0xfee0),
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length === 0) continue;
+          const isRowEmpty = row.every(
+            (cell: any) =>
+              cell === undefined || cell === null || String(cell).trim() === "",
+          );
+          if (isRowEmpty) continue;
+
+          const rowData: any = {};
+          fileHeaders.forEach((header, index) => {
+            rowData[header] = row[index];
+          });
+
+          const validEmployeeCodes = new Set(employees.map((e) => e.code));
+          const validOfficeCodes = new Set(addresses.map((a) => a.addressCode));
+
+          const validation = validateRouterImportRow(
+            rowData,
+            i,
+            existingSimNumbers,
+            processedSimNumbers,
+            existingTerminalCodes,
+            processedTerminalCodes,
+            validEmployeeCodes,
+            validOfficeCodes,
           );
 
-        const rawModelNumber = String(rowData["機種型番"] || "");
-        const modelNumber = rawModelNumber.trim();
+          if (!validation.isValid) {
+            errors.push(...validation.errors);
+            continue;
+          }
 
-        const statusMap: Record<string, string> = {
-          使用中: "in-use",
-          予備機: "backup",
-          在庫: "available",
-          故障: "broken",
-          修理中: "repairing",
-          廃棄: "discarded",
-        };
+          const toHalfWidth = (str: string) =>
+            str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) =>
+              String.fromCharCode(s.charCodeAt(0) - 0xfee0),
+            );
 
-        const rawTerminalCode = String(rowData["端末CD(必須)"] || "");
-        const terminalCode = toHalfWidth(rawTerminalCode).trim();
+          const rawModelNumber = String(rowData["機種型番"] || "");
+          const modelNumber = rawModelNumber.trim();
 
-        const rawSimNumber = String(rowData["SIM電番(必須)"] || "");
-        const simNumberNormalized = normalizePhoneNumber(rawSimNumber);
+          const statusMap: Record<string, string> = {
+            使用中: "in-use",
+            予備機: "backup",
+            在庫: "available",
+            故障: "broken",
+            修理中: "repairing",
+            廃棄: "discarded",
+          };
 
-        processedTerminalCodes.add(terminalCode);
-        if (simNumberNormalized) processedSimNumbers.add(simNumberNormalized);
+          const rawTerminalCode = String(rowData["端末CD(必須)"] || "");
+          const terminalCode = toHalfWidth(rawTerminalCode).trim();
 
-        const rawStatus = String(rowData["状況"] || "").trim();
-        const employeeCode = String(rowData["社員コード"] || "").trim();
-        const addressCode = String(rowData["事業所コード"] || "").trim();
+          const rawSimNumber = String(rowData["SIM電番(必須)"] || "");
+          const simNumberNormalized = normalizePhoneNumber(rawSimNumber);
 
-        let finalStatus: any;
-        if (employeeCode || addressCode) {
-          finalStatus = "in-use";
-        } else if (rawStatus === "") {
-          finalStatus = "available";
-        } else {
-          finalStatus = statusMap[rawStatus] || "available";
+          processedTerminalCodes.add(terminalCode);
+          if (simNumberNormalized) processedSimNumbers.add(simNumberNormalized);
+
+          const rawStatus = String(rowData["状況"] || "").trim();
+          const employeeCode = String(rowData["社員コード"] || "").trim();
+          const addressCode = String(rowData["事業所コード"] || "").trim();
+
+          let finalStatus: any;
+          if (employeeCode || addressCode) {
+            finalStatus = "in-use";
+          } else if (rawStatus === "") {
+            finalStatus = "available";
+          } else {
+            finalStatus = statusMap[rawStatus] || "available";
+          }
+
+          const newRouter: Omit<Router, "id"> = {
+            no: String(rowData["管理番号"] || "").trim(),
+            contractStatus: String(rowData["契約状況"] || ""),
+            contractYears: normalizeContractYear(
+              String(rowData["契約年数"] || ""),
+            ),
+            carrier: String(rowData["通信キャリア"] || ""),
+            modelNumber: modelNumber,
+            simNumber: formatPhoneNumber(simNumberNormalized),
+            dataCapacity: String(rowData["通信容量"] || ""),
+            terminalCode: terminalCode,
+            employeeCode: employeeCode,
+            addressCode: addressCode,
+            ipAddress: String(rowData["IPアドレス"] || ""),
+            subnetMask: String(rowData["サブネットマスク"] || ""),
+            startIp: String(rowData["開始IP"] || ""),
+            endIp: String(rowData["終了IP"] || ""),
+            biller: String(rowData["請求元"] || ""),
+            cost:
+              parseInt(String(rowData["費用"] || "").replace(/[^0-9]/g, "")) || 0,
+            costTransfer: String(rowData["費用振替"] || ""),
+            costBearer: String(rowData["負担先"] || ""),
+            lendingHistory: String(rowData["貸与履歴"] || ""),
+            notes: String(rowData["備考(返却日)"] || ""),
+            returnDate: "",
+            status: finalStatus,
+            company: "",
+            actualLender: "",
+            actualLenderName: "",
+            version: 1,
+            updatedAt: "",
+          };
+
+          importData.push(newRouter);
         }
 
-        const newRouter: Omit<Router, "id"> = {
-          no: String(rowData["管理番号"] || "").trim(),
-          contractStatus: String(rowData["契約状況"] || ""),
-          contractYears: normalizeContractYear(
-            String(rowData["契約年数"] || ""),
-          ),
-          carrier: String(rowData["通信キャリア"] || ""),
-          modelNumber: modelNumber,
-          simNumber: formatPhoneNumber(simNumberNormalized),
-          dataCapacity: String(rowData["通信容量"] || ""),
-          terminalCode: terminalCode,
-          employeeCode: employeeCode,
-          addressCode: addressCode,
-          ipAddress: String(rowData["IPアドレス"] || ""),
-          subnetMask: String(rowData["サブネットマスク"] || ""),
-          startIp: String(rowData["開始IP"] || ""),
-          endIp: String(rowData["終了IP"] || ""),
-          biller: String(rowData["請求元"] || ""),
-          cost:
-            parseInt(String(rowData["費用"] || "").replace(/[^0-9]/g, "")) || 0,
-          costTransfer: String(rowData["費用振替"] || ""),
-          costBearer: String(rowData["負担先"] || ""),
-          lendingHistory: String(rowData["貸与履歴"] || ""),
-          notes: String(rowData["備考(返却日)"] || ""),
-          returnDate: "",
-          status: finalStatus,
-          company: "",
-          actualLender: "",
-          actualLenderName: "",
-          version: 1,
-          updatedAt: "",
-        };
-
-        importData.push(newRouter);
-      }
-
-      // All-or-Nothing check
-      if (errors.length > 0) {
-        await confirm({
-          title: "インポートエラー",
-          description: (
-            <div className="max-h-60 overflow-y-auto">
-              <p className="font-bold text-red-600 mb-2">
-                エラーが存在するため、インポートを中止しました。
-              </p>
-              <ul className="list-disc pl-5 text-sm text-red-600">
-                {errors.map((err, idx) => (
-                  <li key={idx}>{err}</li>
-                ))}
-              </ul>
-            </div>
-          ),
-          confirmText: "閉じる",
-          cancelText: "",
-        });
-        return;
-      }
-
-      // Execution Phase
-      for (const data of importData) {
-        try {
-          await addRouter(data as any, true, true, true);
-          successCount++;
-        } catch (error: any) {
-          const errorMsg =
-            error.message === "DuplicateError"
-              ? "競合エラー"
-              : error.message || "不明なエラー";
-          errors.push(`登録エラー: ${data.terminalCode} - ${errorMsg}`);
-          errorCount++;
+        // All-or-Nothing check
+        if (errors.length > 0) {
+          setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+          await confirm({
+            title: "インポートエラー",
+            description: (
+              <div className="max-h-60 overflow-y-auto">
+                <p className="font-bold text-red-600 mb-2">
+                  エラーが存在するため、インポートを中止しました。
+                </p>
+                <ul className="list-disc pl-5 text-sm text-red-600">
+                  {errors.map((err, idx) => (
+                    <li key={idx}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            ),
+            confirmText: "閉じる",
+            cancelText: "",
+          });
+          return; // finally で setIsSyncing(false) が確実に呼ばれる
         }
-      }
 
-      if (errors.length > 0) {
-        await confirm({
-          title: "インポートエラー",
-          description: (
-            <div className="max-h-60 overflow-y-auto">
-              <p className="mb-2 font-bold text-red-600">
-                一部のデータの登録に失敗しました。
-              </p>
-              <ul className="list-disc pl-5 text-sm text-red-600">
-                {errors.map((err, idx) => (
-                  <li key={idx}>{err}</li>
-                ))}
-              </ul>
-            </div>
-          ),
-          confirmText: "OK",
-          cancelText: "",
-        });
-      }
+        // Execution Phase
+        for (const data of importData) {
+          try {
+            await addRouter(data as any, true, true, true);
+            successCount++;
+          } catch (error: any) {
+            const errorMsg =
+              error.message === "DuplicateError"
+                ? "競合エラー"
+                : error.message || "不明なエラー";
+            errors.push(`登録エラー: ${data.terminalCode} - ${errorMsg}`);
+            errorCount++;
+          }
+        }
 
-      if (successCount > 0 && errorCount === 0) {
-        showToast(
-          `インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`,
-          "success",
-        );
+        if (errors.length > 0) {
+          setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+          await confirm({
+            title: "インポートエラー",
+            description: (
+              <div className="max-h-60 overflow-y-auto">
+                <p className="mb-2 font-bold text-red-600">
+                  一部のデータの登録に失敗しました。
+                </p>
+                <ul className="list-disc pl-5 text-sm text-red-600">
+                  {errors.map((err, idx) => (
+                    <li key={idx}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            ),
+            confirmText: "OK",
+            cancelText: "",
+          });
+        }
+
+        if (successCount > 0 && errorCount === 0) {
+          showToast(
+            `インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`,
+            "success",
+          );
+        }
+        refetch();
+      } finally {
+        setIsSyncing(false);
       }
-      refetch();
-      setIsSyncing(false);
     },
   });
 

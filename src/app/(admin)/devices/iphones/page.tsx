@@ -148,177 +148,183 @@ function IPhoneListContent() {
         },
         onImport: async (rows, fileHeaders) => {
             setIsSyncing(true);
-            const allIPhonesRaw = await fetchIPhonesAllAction();
-            const allIPhones = allIPhonesRaw.map(mapIPhoneFromDb);
-            const { validateDeviceImportRow } = await import('../../../../features/devices/device-import-validator');
+            try {
+                const allIPhonesRaw = await fetchIPhonesAllAction();
+                const allIPhones = allIPhonesRaw.map(mapIPhoneFromDb);
+                const { validateDeviceImportRow } = await import('../../../../features/devices/device-import-validator');
 
-            const validationErrors: string[] = [];
-            let successCount = 0;
-            let errorCount = 0;
-            const existingManagementNumbers = new Set(allIPhones.map(d => d.managementNumber));
-            const existingPhoneNumbers = new Set(allIPhones.map(d => d.phoneNumber.replace(/-/g, '')));
-            const processedManagementNumbers = new Set<string>();
-            const processedPhoneNumbers = new Set<string>();
-            const errors: string[] = [];
+                const validationErrors: string[] = [];
+                let successCount = 0;
+                let errorCount = 0;
+                const existingManagementNumbers = new Set(allIPhones.map(d => d.managementNumber));
+                const existingPhoneNumbers = new Set(allIPhones.map(d => d.phoneNumber.replace(/-/g, '')));
+                const processedManagementNumbers = new Set<string>();
+                const processedPhoneNumbers = new Set<string>();
+                const errors: string[] = [];
 
-            const importData: any[] = [];
+                const importData: any[] = [];
 
-            const statusMap: Record<string, string> = {
-                '使用中': 'in-use',
-                '予備機': 'backup',
-                '在庫': 'available',
-                '故障': 'broken',
-                '修理中': 'repairing',
-                '廃棄': 'discarded'
-            };
+                const statusMap: Record<string, string> = {
+                    '使用中': 'in-use',
+                    '予備機': 'backup',
+                    '在庫': 'available',
+                    '故障': 'broken',
+                    '修理中': 'repairing',
+                    '廃棄': 'discarded'
+                };
 
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.length === 0) continue;
-                const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
-                if (isRowEmpty) continue;
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+                    const isRowEmpty = row.every((cell: any) => cell === undefined || cell === null || String(cell).trim() === '');
+                    if (isRowEmpty) continue;
 
-                const rowData: any = {};
-                fileHeaders.forEach((header, index) => {
-                    rowData[header] = row[index];
-                });
+                    const rowData: any = {};
+                    fileHeaders.forEach((header, index) => {
+                        rowData[header] = row[index];
+                    });
 
-                const validEmployeeCodes = new Set(employees.map(e => e.code));
-                const validOfficeCodes = new Set(addresses.map(a => a.addressCode));
+                    const validEmployeeCodes = new Set(employees.map(e => e.code));
+                    const validOfficeCodes = new Set(addresses.map(a => a.addressCode));
 
-                const validation = validateDeviceImportRow(
-                    rowData,
-                    i,
-                    existingPhoneNumbers,
-                    processedPhoneNumbers,
-                    existingManagementNumbers,
-                    processedManagementNumbers,
-                    validEmployeeCodes,
-                    validOfficeCodes
-                );
+                    const validation = validateDeviceImportRow(
+                        rowData,
+                        i,
+                        existingPhoneNumbers,
+                        processedPhoneNumbers,
+                        existingManagementNumbers,
+                        processedManagementNumbers,
+                        validEmployeeCodes,
+                        validOfficeCodes
+                    );
 
-                if (!validation.isValid) {
-                    errors.push(...validation.errors);
-                    continue;
-                }
-
-                // If valid, prepare data object
-                const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-
-                const rawPhoneNumber = String(rowData['電話番号(必須)'] || '');
-                const phoneNumber = formatPhoneNumber(toHalfWidth(rawPhoneNumber).trim());
-
-                const rawManagementNumber = String(rowData['管理番号(必須)'] || '');
-                const managementNumber = toHalfWidth(rawManagementNumber).trim();
-
-                const formatDate = (val: any) => {
-                    if (!val) return '';
-                    if (typeof val === 'number') {
-                        const date = new Date((val - 25569) * 86400 * 1000);
-                        return date.toISOString().split('T')[0];
+                    if (!validation.isValid) {
+                        errors.push(...validation.errors);
+                        continue;
                     }
-                    return String(val).trim().replace(/\//g, '-');
-                };
 
-                const formatAddressCode = (code: string) => {
-                    const cleanCode = String(code || '').trim();
-                    if (cleanCode.length === 6 && /^\d+$/.test(cleanCode)) {
-                        return `${cleanCode.slice(0, 4)}-${cleanCode.slice(4)}`;
+                    // If valid, prepare data object
+                    const toHalfWidth = (str: string) => str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+
+                    const rawPhoneNumber = String(rowData['電話番号(必須)'] || '');
+                    const phoneNumber = formatPhoneNumber(toHalfWidth(rawPhoneNumber).trim());
+
+                    const rawManagementNumber = String(rowData['管理番号(必須)'] || '');
+                    const managementNumber = toHalfWidth(rawManagementNumber).trim();
+
+                    const formatDate = (val: any) => {
+                        if (!val) return '';
+                        if (typeof val === 'number') {
+                            const date = new Date((val - 25569) * 86400 * 1000);
+                            return date.toISOString().split('T')[0];
+                        }
+                        return String(val).trim().replace(/\//g, '-');
+                    };
+
+                    const formatAddressCode = (code: string) => {
+                        const cleanCode = String(code || '').trim();
+                        if (cleanCode.length === 6 && /^\d+$/.test(cleanCode)) {
+                            return `${cleanCode.slice(0, 4)}-${cleanCode.slice(4)}`;
+                        }
+                        return cleanCode;
+                    };
+
+                    const rawStatus = String(rowData['状況'] || '').trim();
+                    const employeeId = String(rowData['社員コード'] || '').trim();
+                    const addressCode = formatAddressCode(rowData['事業所コード']);
+
+                    let finalStatus: any;
+                    if (employeeId || addressCode) {
+                        finalStatus = 'in-use';
+                    } else if (rawStatus === '') {
+                        finalStatus = 'available';
+                    } else {
+                        finalStatus = statusMap[rawStatus] || 'available';
                     }
-                    return cleanCode;
-                };
 
-                const rawStatus = String(rowData['状況'] || '').trim();
-                const employeeId = String(rowData['社員コード'] || '').trim();
-                const addressCode = formatAddressCode(rowData['事業所コード']);
+                    const newIPhone: Omit<IPhone, 'id'> & { id?: string } = {
+                        managementNumber: managementNumber,
+                        phoneNumber: phoneNumber,
+                        modelName: String(rowData['機種名'] || ''),
+                        contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
+                        carrier: String(rowData['キャリア'] || ''),
+                        status: finalStatus,
+                        employeeCode: employeeId,
+                        addressCode: addressCode,
+                        costBearer: String(rowData['負担先'] || ''),
+                        receiptDate: formatDate(rowData['受領書提出日']),
+                        lendDate: formatDate(rowData['貸与日']),
+                        returnDate: formatDate(rowData['返却日']),
+                        smartAddressId: rowData['SMARTアドレス帳ID'] !== undefined && rowData['SMARTアドレス帳ID'] !== null ? String(rowData['SMARTアドレス帳ID']) : '',
+                        smartAddressPw: rowData['SMARTアドレス帳PW'] !== undefined && rowData['SMARTアドレス帳PW'] !== null ? String(rowData['SMARTアドレス帳PW']) : '',
+                        notes: String(rowData['備考'] || ''),
+                        id: rowData['ID'] ? String(rowData['ID']) : undefined,
+                        version: 1,
+                        updatedAt: '',
+                    };
 
-                let finalStatus: any;
-                if (employeeId || addressCode) {
-                    finalStatus = 'in-use';
-                } else if (rawStatus === '') {
-                    finalStatus = 'available';
-                } else {
-                    finalStatus = statusMap[rawStatus] || 'available';
+
+                    importData.push(newIPhone);
+                    if (validation.managementNumber) processedManagementNumbers.add(validation.managementNumber);
+                    if (validation.normalizedPhone) processedPhoneNumbers.add(validation.normalizedPhone);
                 }
 
-                const newIPhone: Omit<IPhone, 'id'> & { id?: string } = {
-                    managementNumber: managementNumber,
-                    phoneNumber: phoneNumber,
-                    modelName: String(rowData['機種名'] || ''),
-                    contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
-                    carrier: String(rowData['キャリア'] || ''),
-                    status: finalStatus,
-                    employeeCode: employeeId,
-                    addressCode: addressCode,
-                    costBearer: String(rowData['負担先'] || ''),
-                    receiptDate: formatDate(rowData['受領書提出日']),
-                    lendDate: formatDate(rowData['貸与日']),
-                    returnDate: formatDate(rowData['返却日']),
-                    smartAddressId: rowData['SMARTアドレス帳ID'] !== undefined && rowData['SMARTアドレス帳ID'] !== null ? String(rowData['SMARTアドレス帳ID']) : '',
-                    smartAddressPw: rowData['SMARTアドレス帳PW'] !== undefined && rowData['SMARTアドレス帳PW'] !== null ? String(rowData['SMARTアドレス帳PW']) : '',
-                    notes: String(rowData['備考'] || ''),
-                    id: rowData['ID'] ? String(rowData['ID']) : undefined,
-                    version: 1,
-                    updatedAt: '',
-                };
-
-
-                importData.push(newIPhone);
-                if (validation.managementNumber) processedManagementNumbers.add(validation.managementNumber);
-                if (validation.normalizedPhone) processedPhoneNumbers.add(validation.normalizedPhone);
-            }
-
-            // All-or-Nothing check
-            if (errors.length > 0) {
-                await confirm({
-                    title: 'インポートエラー',
-                    description: (
-                        <div className="max-h-60 overflow-y-auto">
-                            <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
-                            <ul className="list-disc pl-5 text-sm text-red-600">
-                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
-                            </ul>
-                        </div>
-                    ),
-                    confirmText: '閉じる',
-                    cancelText: ''
-                });
-                return;
-            }
-
-            // Execution Phase
-            for (const data of importData) {
-                try {
-                    await addIPhone(data as Omit<IPhone, 'id'>, true, true, true);
-                    successCount++;
-                } catch (error: any) {
-                    const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
-                    errors.push(`登録エラー: ${data.managementNumber} - ${errorMsg}`);
-                    errorCount++;
+                // All-or-Nothing check
+                if (errors.length > 0) {
+                    setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+                    await confirm({
+                        title: 'インポートエラー',
+                        description: (
+                            <div className="max-h-60 overflow-y-auto">
+                                <p className="font-bold text-red-600 mb-2">エラーが存在するため、インポートを中止しました。</p>
+                                <ul className="list-disc pl-5 text-sm text-red-600">
+                                    {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                </ul>
+                            </div>
+                        ),
+                        confirmText: '閉じる',
+                        cancelText: ''
+                    });
+                    return; // ← finally が実行されるため setIsSyncing(false) は確実に呼ばれる
                 }
-            }
 
-            if (errors.length > 0) {
-                await confirm({
-                    title: 'インポートエラー',
-                    description: (
-                        <div className="max-h-60 overflow-y-auto">
-                            <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
-                            <ul className="list-disc pl-5 text-sm text-red-600">
-                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
-                            </ul>
-                        </div>
-                    ),
-                    confirmText: 'OK',
-                    cancelText: ''
-                });
-            }
+                // Execution Phase
+                for (const data of importData) {
+                    try {
+                        await addIPhone(data as Omit<IPhone, 'id'>, true, true, true);
+                        successCount++;
+                    } catch (error: any) {
+                        const errorMsg = error.message === 'DuplicateError' ? '競合エラー' : (error.message || '不明なエラー');
+                        errors.push(`登録エラー: ${data.managementNumber} - ${errorMsg}`);
+                        errorCount++;
+                    }
+                }
 
-            if (successCount > 0 && errorCount === 0) {
-                showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
+                if (errors.length > 0) {
+                    setIsSyncing(false); // ダイアログ表示前にオーバーレイを解除
+                    await confirm({
+                        title: 'インポートエラー',
+                        description: (
+                            <div className="max-h-60 overflow-y-auto">
+                                <p className="mb-2 font-bold text-red-600">エラーが存在するため、インポートを中止しました。</p>
+                                <ul className="list-disc pl-5 text-sm text-red-600">
+                                    {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                                </ul>
+                            </div>
+                        ),
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                }
+
+                if (successCount > 0 && errorCount === 0) {
+                    showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
+                }
+                refetch();
+            } finally {
+                // エラー・正常終了・バリデーションエラーどの経路でも必ず解除する
+                setIsSyncing(false);
             }
-            refetch();
-            setIsSyncing(false);
         }
     });
 
