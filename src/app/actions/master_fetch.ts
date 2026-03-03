@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { getSetupUserServer } from './auth_setup';
 import type { PaginationParams } from './device_fetch';
 
 const getSupabaseAdmin = () => {
@@ -12,6 +13,12 @@ const getSupabaseAdmin = () => {
 };
 
 const checkAuth = async () => {
+    // 1. 初期セットアップアカウント（999999）のクッキーを先に確認する
+    //    このアカウントは Supabase Auth を持たないため、専用クッキーで認証する
+    const setupUser = await getSetupUserServer();
+    if (setupUser) return setupUser;
+
+    // 2. 通常の Supabase Auth セッションを確認する
     const cookieStore = await cookies();
     const supabase = createServerActionClient({ cookies: () => cookieStore as any });
     const { data: { user } } = await supabase.auth.getUser();

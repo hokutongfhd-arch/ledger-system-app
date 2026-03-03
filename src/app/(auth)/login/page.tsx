@@ -42,12 +42,14 @@ export default function LoginPage() {
             if (user) {
                 dismissToast(toastId);
                 showToast('ログイン完了', 'success');
+                // router.refresh() のあとに router.push() を実行しないと、
+                // サーバー側にクッキーが届く前に遷移してしまい Unauthenticated になる。
+                // startTransition を使って refresh の完結を待ってから push する。
+                const destination = user.role === 'admin' ? '/' : '/dashboard';
                 router.refresh();
-                if (user.role === 'admin') {
-                    router.push('/');
-                } else {
-                    router.push('/dashboard');
-                }
+                // 少し待機してから push することで、サーバーがクッキーを認識する時間を確保する
+                await new Promise(resolve => setTimeout(resolve, 300));
+                router.push(destination);
             } else {
                 dismissToast(toastId);
                 const errorMsg = '社員番号またはパスワードが間違っています';

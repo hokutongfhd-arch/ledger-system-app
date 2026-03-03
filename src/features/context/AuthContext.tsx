@@ -133,6 +133,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     // Check for setup account session
                     const setupUser = await getSetupUserServer();
                     if (setupUser) {
+                        // セットアップアカウントも sessionStorage でタブセッションを管理する
+                        // sessionStorage はブラウザ/タブを閉じるとクリアされるため、
+                        // クッキーが残っていてもフラグがなければ強制ログアウトする
+                        const isSetupSessionActive = typeof window !== 'undefined' && sessionStorage.getItem('ledger_setup_session_active') === 'true';
+                        if (!isSetupSessionActive) {
+                            console.warn('Setup account cookie found but no active tab session. Forcing logout.');
+                            await logoutSetupAccount();
+                            setUser(null);
+                            return;
+                        }
                         setUser(setupUser as Employee);
                     }
                 }
@@ -158,8 +168,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         role: 'admin' as const,
                     } as Employee;
                     setUser(setupUser);
-                    // Refresh server state
-                    router.refresh();
+                    // セットアップアカウント用のタブセッションフラグを設定する
+                    // このフラグはタブ/ブラウザを閉じると自動的に消えるため、
+                    // 再度開いたときにログアウト扱いになる
+                    if (typeof window !== 'undefined') sessionStorage.setItem('ledger_setup_session_active', 'true');
                     return setupUser;
                 }
                 return null;
@@ -312,7 +324,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             await logoutSetupAccount().catch((err: any) => console.warn('Logout setup account failed:', err));
-            if (typeof window !== 'undefined') sessionStorage.removeItem('ledger_session_active');
+            if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('ledger_session_active');
+                sessionStorage.removeItem('ledger_setup_session_active');
+            }
             setUser(null);
         } catch (error) {
             console.error('Logout process error:', error);
