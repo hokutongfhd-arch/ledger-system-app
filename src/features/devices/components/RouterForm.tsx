@@ -5,7 +5,6 @@ import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
 import { useAutoFocus } from '../../../hooks/useAutoFocus';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Input } from '../../../components/ui/Input';
 import { IpInput } from '../../../components/ui/IpInput';
 import { Select } from '../../../components/ui/Select';
@@ -52,7 +51,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
         status: 'available',
         contractStatus: '',
         returnDate: '',
-        contractYears: '',
         employeeCode: '',
         version: 1,
         updatedAt: '',
@@ -319,16 +317,13 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             return;
         }
 
-        // Normalize SIM number (ensure no delimiters if 14 digit, else format)
         const normalizedSim = formatPhoneNumber(formData.simNumber);
         const normalizedContractStatus = normalizeContractYear(formData.contractStatus || '');
-        const normalizedContractYears = normalizeContractYear(formData.contractYears || '');
 
         onSubmit({
             ...formData,
             simNumber: normalizedSim,
             contractStatus: normalizedContractStatus,
-            contractYears: normalizedContractYears
         });
     };
 
@@ -446,15 +441,6 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                         <div>
                             <FormLabel>契約状況</FormLabel>
                             <Input name="contractStatus" value={formData.contractStatus} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <FormLabel>契約年数</FormLabel>
-                            <Input
-                                name="contractYears"
-                                value={formData.contractYears || ''}
-                                onChange={handleChange}
-                                placeholder="例: 2年"
-                            />
                         </div>
                         <div>
                             <FormLabel>状況</FormLabel>

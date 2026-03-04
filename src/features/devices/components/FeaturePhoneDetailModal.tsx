@@ -6,7 +6,6 @@ import { FeaturePhone, FeaturePhoneUsageHistory } from '../../../lib/types';
 import { Employee, Address } from '../../../lib/types';
 import { Phone, MapPin, Calendar, FileText, User, Building, History, ArrowLeft } from 'lucide-react';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { useState, useEffect } from 'react';
 
 interface FeaturePhoneDetailModalProps {
@@ -180,7 +179,6 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
                                     <DetailRow label="キャリア" value={item.carrier} />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                                     <div className="group">
                                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>
                                         <span className={`px-2 py-1 text-xs font-bold rounded border ${getStatusColor(item.status)}`}>

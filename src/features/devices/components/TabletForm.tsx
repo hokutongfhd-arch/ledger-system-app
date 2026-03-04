@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Tablet } from '../../../lib/types';
 import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { TextArea } from '../../../components/ui/TextArea';
@@ -32,7 +31,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         notes: '',
         history: '',
         employeeCode: '',
-        contractYears: '',
         costBearer: '',
         version: 1,
         updatedAt: '',
@@ -144,8 +142,7 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
             return;
         }
 
-        const finalContractYears = normalizeContractYear(formData.contractYears || '');
-        onSubmit({ ...formData, contractYears: finalContractYears });
+        onSubmit({ ...formData });
     };
 
     return (
@@ -190,16 +187,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                                 name="maker"
                                 value={formData.maker}
                                 onChange={handleChange}
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>契約年数</FormLabel>
-                            <Input
-                                type="text"
-                                name="contractYears"
-                                value={formData.contractYears || ''}
-                                onChange={handleChange}
-                                placeholder="例: 2年"
                             />
                         </div>
                         <div>

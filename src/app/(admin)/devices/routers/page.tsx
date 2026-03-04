@@ -21,7 +21,6 @@ import {
 import { Modal } from "../../../../components/ui/Modal";
 import { RouterForm } from "../../../../features/devices/components/RouterForm";
 import * as XLSX from "xlsx";
-import { normalizeContractYear } from "../../../../lib/utils/stringUtils";
 import ExcelJS from "exceljs";
 import { RouterDetailModal } from "../../../../features/devices/components/RouterDetailModal";
 import { useConfirm } from "../../../../hooks/useConfirm";
@@ -115,7 +114,6 @@ function RouterListContent() {
     "通信キャリア",
     "通信容量",
     "契約状況",
-    "契約年数",
     "状況",
     "社員コード",
     "事業所コード",
@@ -269,9 +267,6 @@ function RouterListContent() {
           const newRouter: Omit<Router, "id"> = {
             no: String(rowData["管理番号"] || "").trim(),
             contractStatus: String(rowData["契約状況"] || ""),
-            contractYears: normalizeContractYear(
-              String(rowData["契約年数"] || ""),
-            ),
             carrier: String(rowData["通信キャリア"] || ""),
             modelNumber: modelNumber,
             simNumber: formatPhoneNumber(simNumberNormalized),
@@ -453,7 +448,6 @@ function RouterListContent() {
           item.carrier || "",
           item.dataCapacity || "",
           item.contractStatus || "",
-          normalizeContractYear(item.contractYears || ""),
           statusLabelMap[item.status] || item.status,
           item.employeeCode || "",
           item.addressCode || "",
@@ -489,7 +483,6 @@ function RouterListContent() {
       "",
       "",
       "",
-      "",
       "使用者・場所",
       "",
       "ネットワーク情報",
@@ -508,11 +501,11 @@ function RouterListContent() {
     worksheet.addRow(headers);
 
     // Merge cells for top header
-    worksheet.mergeCells("A1:H1"); // Basic Info
-    worksheet.mergeCells("I1:J1"); // User/Place
-    worksheet.mergeCells("K1:N1"); // Network
-    worksheet.mergeCells("O1:R1"); // Cost/Mgmt
-    worksheet.mergeCells("S1:T1"); // Others
+    worksheet.mergeCells("A1:G1"); // Basic Info
+    worksheet.mergeCells("H1:I1"); // User/Place
+    worksheet.mergeCells("J1:M1"); // Network
+    worksheet.mergeCells("N1:Q1"); // Cost/Mgmt
+    worksheet.mergeCells("R1:S1"); // Others
 
     // Styling Top Header (Row 1)
     const topRow = worksheet.getRow(1);
@@ -538,11 +531,11 @@ function RouterListContent() {
     };
 
     // Apply background colors (approximate ARGB based on "Accent X, White+60%")
-    setCellColor(1, 8, "FFFCE4D6"); // Orange (Basic)
-    setCellColor(9, 10, "FFEBF1DE"); // Olive (User)
-    setCellColor(11, 14, "DCE6F1"); // Aqua (Network) (Standard Light Blue/Aqua)
-    setCellColor(15, 18, "E4DFEC"); // Purple (Cost)
-    setCellColor(19, 20, "F2DCDB"); // Red (Others)
+    setCellColor(1, 7, "FFFCE4D6"); // Orange (Basic)
+    setCellColor(8, 9, "FFEBF1DE"); // Olive (User)
+    setCellColor(10, 13, "DCE6F1"); // Aqua (Network) (Standard Light Blue/Aqua)
+    setCellColor(14, 17, "E4DFEC"); // Purple (Cost)
+    setCellColor(18, 19, "F2DCDB"); // Red (Others)
 
     // Styling Column Headers (Row 2)
     const headerRow = worksheet.getRow(2);
@@ -575,8 +568,8 @@ function RouterListContent() {
         formulae: ['"au・wimax2+,au,docomo(iij),SoftBank"'],
       };
 
-      // Status - Column H (8)
-      worksheet.getCell(i, 8).dataValidation = {
+      // Status - Column G (7)
+      worksheet.getCell(i, 7).dataValidation = {
         type: "list",
         allowBlank: true,
         formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"'],
@@ -584,11 +577,11 @@ function RouterListContent() {
     }
 
     // Format numeric columns as text to prevent scientific notation etc.
-    // SIM Number (B - 2), Employee Code (I - 9), Office Code (J - 10)
+    // SIM Number (B - 2), Employee Code (H - 8), Office Code (I - 9)
     worksheet.getColumn(2).numFmt = "@";
+    worksheet.getColumn(8).numFmt = "@";
     worksheet.getColumn(9).numFmt = "@";
-    worksheet.getColumn(10).numFmt = "@";
-    worksheet.getColumn(19).numFmt = "@"; // Lending History
+    worksheet.getColumn(18).numFmt = "@"; // Lending History
     worksheet.getColumn(1).width = 15; // Terminal CD
 
     // Set column widths

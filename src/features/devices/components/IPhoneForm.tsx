@@ -5,7 +5,6 @@ import { useData } from '../../context/DataContext';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { formatPhoneNumber, normalizePhoneNumber } from '../../../lib/utils/phoneUtils';
 import { useAutoFocus } from '../../../hooks/useAutoFocus';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { TextArea } from '../../../components/ui/TextArea';
@@ -43,7 +42,6 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         notes: '',
         status: 'available',
         costBearer: '',
-        contractYears: '',
         version: 1,
         updatedAt: '',
     });
@@ -241,8 +239,7 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
         }
 
         const finalPhone = formatPhoneNumber(`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`);
-        const finalContractYears = normalizeContractYear(formData.contractYears || '');
-        onSubmit({ ...formData, phoneNumber: finalPhone, contractYears: finalContractYears });
+        onSubmit({ ...formData, phoneNumber: finalPhone });
     };
 
     return (
@@ -325,17 +322,6 @@ export const IPhoneForm: React.FC<IPhoneFormProps> = ({ initialData, onSubmit, o
                                 value={formData.modelName}
                                 onChange={handleChange}
                                 placeholder="例: iPhone 13, iPhone SE (第3世代)"
-                            />
-                        </div>
-
-                        <div>
-                            <FormLabel>契約年数</FormLabel>
-                            <Input
-                                type="text"
-                                name="contractYears"
-                                value={formData.contractYears || ''}
-                                onChange={handleChange}
-                                placeholder="例: 2年"
                             />
                         </div>
 

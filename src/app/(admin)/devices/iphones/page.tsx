@@ -11,7 +11,6 @@ import { Plus, Download, Search, FileSpreadsheet, Upload, ArrowUp, ArrowDown, Ar
 import { Modal } from '../../../../components/ui/Modal';
 import { IPhoneForm } from '../../../../features/devices/components/IPhoneForm';
 import * as XLSX from 'xlsx';
-import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import ExcelJS from 'exceljs';
 import { IPhoneDetailModal } from '../../../../features/devices/components/IPhoneDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -75,7 +74,7 @@ function IPhoneListContent() {
 
     const { handleExport } = useCSVExport<IPhone>();
     const headers = [
-        '管理番号(必須)', '電話番号(必須)', '機種名', '契約年数', 'キャリア', '状況',
+        '管理番号(必須)', '電話番号(必須)', '機種名', 'キャリア', '状況',
         '社員コード', '事業所コード', '負担先', '受領書提出日', '貸与日', '返却日',
         'SMARTアドレス帳ID', 'SMARTアドレス帳PW', '備考'
     ];
@@ -246,7 +245,6 @@ function IPhoneListContent() {
                         managementNumber: managementNumber,
                         phoneNumber: phoneNumber,
                         modelName: String(rowData['機種名'] || ''),
-                        contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                         carrier: String(rowData['キャリア'] || ''),
                         status: finalStatus,
                         employeeCode: employeeId,
@@ -395,7 +393,6 @@ function IPhoneListContent() {
                 item.managementNumber,
                 formatPhoneNumber(item.phoneNumber),
                 item.modelName,
-                normalizeContractYear(item.contractYears || ''),
                 item.carrier,
                 statusLabelMap[item.status] || item.status,
                 item.employeeCode,
@@ -428,8 +425,7 @@ function IPhoneListContent() {
         // We know we have 15 columns based on headers.length
         worksheet.columns = headers.map(() => ({ width: 20, style: { font: fontStyle } }));
 
-        // --- Row 1: Merged Headers ---
-        worksheet.mergeCells('A1:F1');
+        worksheet.mergeCells('A1:E1');
         const cellA1 = worksheet.getCell('A1');
         cellA1.value = '基本情報';
         cellA1.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -440,23 +436,23 @@ function IPhoneListContent() {
             fgColor: { argb: 'FFFBE5D6' } // Light Orange-ish
         };
 
-        worksheet.mergeCells('G1:L1');
-        const cellG1 = worksheet.getCell('G1');
-        cellG1.value = '使用者情報';
-        cellG1.alignment = { vertical: 'middle', horizontal: 'center' };
-        cellG1.font = headerFont1;
-        cellG1.fill = {
+        worksheet.mergeCells('F1:K1');
+        const cellF1 = worksheet.getCell('F1');
+        cellF1.value = '使用者情報';
+        cellF1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellF1.font = headerFont1;
+        cellF1.fill = {
             type: 'pattern',
             pattern: 'solid',
             fgColor: { argb: 'FFE2EFDA' } // Light Olive/Green-ish
         };
 
-        worksheet.mergeCells('M1:O1');
-        const cellM1 = worksheet.getCell('M1');
-        cellM1.value = 'その他';
-        cellM1.alignment = { vertical: 'middle', horizontal: 'center' };
-        cellM1.font = headerFont1;
-        cellM1.fill = {
+        worksheet.mergeCells('L1:N1');
+        const cellL1 = worksheet.getCell('L1');
+        cellL1.value = 'その他';
+        cellL1.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellL1.font = headerFont1;
+        cellL1.fill = {
             type: 'pattern',
             pattern: 'solid',
             fgColor: { argb: 'FFDDEBF7' } // Light Blue/Aqua-ish
@@ -493,13 +489,9 @@ function IPhoneListContent() {
         const totalRows = 1000;
 
         // Apply Data Validation and Formats
-        // We apply this to cells starting from Row 3 to totalRows
-
-        // Text Formats: A(1), B(2), G(7), H(8)
-        // Date Formats: J(10), K(11), L(12)
-        // Dropdowns: E(5), F(6)
-
-        // It is more efficient to set column properties where possible, but for validation we iterate
+        // Columns (1-based): 1=管理番号, 2=電話番号, 3=機種名, 4=キャリア, 5=状況,
+        //   6=社員コード, 7=事業所コード, 8=負担先, 9=受領書提出日, 10=貸与日, 11=返却日,
+        //   12=SMARTアドレス帳ID, 13=SMARTアドレス帳PW, 14=備考
 
         // Column Formats (Entire column except headers potentially, but ExcelJS applies to whole column)
         // We already set default font in global column def. Now set numFmt.
@@ -509,27 +501,27 @@ function IPhoneListContent() {
 
         worksheet.getColumn(1).numFmt = '@'; // Management Number
         worksheet.getColumn(2).numFmt = '@'; // Phone Number
-        worksheet.getColumn(7).numFmt = '@'; // Employee Code
-        worksheet.getColumn(8).numFmt = '@'; // Office Code
+        worksheet.getColumn(6).numFmt = '@'; // Employee Code
+        worksheet.getColumn(7).numFmt = '@'; // Office Code
 
-        worksheet.getColumn(10).numFmt = 'yyyy/mm/dd'; // Receipt Date
-        worksheet.getColumn(11).numFmt = 'yyyy/mm/dd'; // Lend Date
-        worksheet.getColumn(12).numFmt = 'yyyy/mm/dd'; // Return Date
+        worksheet.getColumn(9).numFmt = 'yyyy/mm/dd'; // Receipt Date
+        worksheet.getColumn(10).numFmt = 'yyyy/mm/dd'; // Lend Date
+        worksheet.getColumn(11).numFmt = 'yyyy/mm/dd'; // Return Date
 
         // Data Validation Loop
         for (let i = 3; i <= totalRows + 2; i++) {
-            // Carrier (Column 5 - E)
-            worksheet.getCell(i, 5).dataValidation = {
+            // Carrier (Column 4 - D)
+            worksheet.getCell(i, 4).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"KDDI,SoftBank,Docomo,Rakuten,その他"']
             };
 
-            // Status (Column 6 - F)
-            worksheet.getCell(i, 6).dataValidation = {
+            // Status (Column 5 - E)
+            worksheet.getCell(i, 5).dataValidation = {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']
+                formulae: ['"\u4f7f\u7528\u4e2d,\u4e88\u5099\u6a5f,\u5728\u5eab,\u6545\u969c,\u4fee\u7406\u4e2d,\u5ec3\u68c4"']
             };
         }
 

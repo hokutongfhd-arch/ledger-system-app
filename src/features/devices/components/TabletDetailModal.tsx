@@ -1,7 +1,6 @@
 import { DetailRow } from '../../../components/ui/DetailView';
 import { SectionHeader } from '../../../components/ui/Section';
 import { Modal } from '../../../components/ui/Modal';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { getTabletHistoryAction } from '../../../app/actions/device';
 import { Tablet, TabletUsageHistory, DeviceStatus } from '../../../lib/types';
 import { Employee, Address } from '../../../lib/types';
@@ -172,7 +171,6 @@ export const TabletDetailModal: React.FC<TabletDetailModalProps> = ({
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <DetailRow label="型番" value={item.modelNumber} />
-                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                                 </div>
                                 <div className="group">
                                     <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>

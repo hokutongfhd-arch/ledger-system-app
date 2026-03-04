@@ -21,7 +21,6 @@ import {
 import { Modal } from "../../../../components/ui/Modal";
 import { FeaturePhoneForm } from "../../../../features/devices/components/FeaturePhoneForm";
 import * as XLSX from "xlsx";
-import { normalizeContractYear } from "../../../../lib/utils/stringUtils";
 import ExcelJS from "exceljs";
 import { FeaturePhoneDetailModal } from "../../../../features/devices/components/FeaturePhoneDetailModal";
 import { useConfirm } from "../../../../hooks/useConfirm";
@@ -114,7 +113,6 @@ function FeaturePhoneListContent() {
     "管理番号(必須)",
     "電話番号(必須)",
     "機種名",
-    "契約年数",
     "キャリア",
     "状況",
     "社員コード",
@@ -294,9 +292,6 @@ function FeaturePhoneListContent() {
             notes: String(rowData["備考"] || ""),
             returnDate: formatDate(rowData["返却日"]),
             modelName: String(rowData["機種名"] || ""),
-            contractYears: normalizeContractYear(
-              String(rowData["契約年数"] || ""),
-            ),
             costCompany: String(rowData["負担先"] || ""),
             status: finalStatus,
             version: 1,
@@ -464,7 +459,6 @@ function FeaturePhoneListContent() {
           item.managementNumber,
           formatPhoneNumber(item.phoneNumber),
           item.modelName,
-          normalizeContractYear(item.contractYears || ""),
           item.carrier,
           statusLabelMap[item.status] || item.status,
           item.employeeCode,
@@ -498,8 +492,7 @@ function FeaturePhoneListContent() {
     }));
 
     // --- Row 1: Merged Headers ---
-    // Basic Info: A-F
-    worksheet.mergeCells("A1:F1");
+    worksheet.mergeCells("A1:E1");
     const cellA1 = worksheet.getCell("A1");
     cellA1.value = "基本情報";
     cellA1.alignment = { vertical: "middle", horizontal: "center" };
@@ -510,24 +503,24 @@ function FeaturePhoneListContent() {
       fgColor: { argb: "FFFBE5D6" }, // Light Orange
     };
 
-    // User Info: G-L
-    worksheet.mergeCells("G1:L1");
-    const cellG1 = worksheet.getCell("G1");
-    cellG1.value = "使用者情報";
-    cellG1.alignment = { vertical: "middle", horizontal: "center" };
-    cellG1.font = headerFont1;
-    cellG1.fill = {
+    // User Info: F-K
+    worksheet.mergeCells("F1:K1");
+    const cellF1 = worksheet.getCell("F1");
+    cellF1.value = "使用者情報";
+    cellF1.alignment = { vertical: "middle", horizontal: "center" };
+    cellF1.font = headerFont1;
+    cellF1.fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: "FFE2EFDA" }, // Light Olive
     };
 
-    // Others: M only (Previously M-O)
-    const cellM1 = worksheet.getCell("M1");
-    cellM1.value = "その他";
-    cellM1.alignment = { vertical: "middle", horizontal: "center" };
-    cellM1.font = headerFont1;
-    cellM1.fill = {
+    // Others: L only
+    const cellL1 = worksheet.getCell("L1");
+    cellL1.value = "その他";
+    cellL1.alignment = { vertical: "middle", horizontal: "center" };
+    cellL1.font = headerFont1;
+    cellL1.fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: "FFDDEBF7" }, // Light Aqua
@@ -569,42 +562,41 @@ function FeaturePhoneListContent() {
     // 1: Management No (Text)
     // 2: Phone No (Text)
     // 3: Model
-    // 4: Contract Years
-    // 5: Carrier (Dropdown)
-    // 6: Status (Dropdown)
-    // 7: Emp Code (Text)
-    // 8: Office Code (Text)
-    // 9: Cost Bearer
-    // 10: Receipt Date (Date)
-    // 11: Lend Date (Date)
-    // 12: Return Date (Date)
-    // 13: Notes
+    // 4: Carrier (Dropdown)
+    // 5: Status (Dropdown)
+    // 6: Emp Code (Text)
+    // 7: Office Code (Text)
+    // 8: Cost Bearer
+    // 9: Receipt Date (Date)
+    // 10: Lend Date (Date)
+    // 11: Return Date (Date)
+    // 12: Notes
 
-    // Text Formats: A(1), B(2), G(7), H(8)
+    // Text Formats: A(1), B(2), F(6), G(7)
     worksheet.getColumn(1).numFmt = "@";
     worksheet.getColumn(2).numFmt = "@";
+    worksheet.getColumn(6).numFmt = "@";
     worksheet.getColumn(7).numFmt = "@";
-    worksheet.getColumn(8).numFmt = "@";
 
-    // Date Formats: J(10), K(11), L(12)
+    // Date Formats: I(9), J(10), K(11)
+    worksheet.getColumn(9).numFmt = "yyyy/mm/dd";
     worksheet.getColumn(10).numFmt = "yyyy/mm/dd";
     worksheet.getColumn(11).numFmt = "yyyy/mm/dd";
-    worksheet.getColumn(12).numFmt = "yyyy/mm/dd";
 
     // Data Validation Loop
     for (let i = 3; i <= totalRows + 2; i++) {
-      // Carrier (Column 5)
-      worksheet.getCell(i, 5).dataValidation = {
+      // Carrier (Column 4)
+      worksheet.getCell(i, 4).dataValidation = {
         type: "list",
         allowBlank: true,
         formulae: ['"KDDI,SoftBank,Docomo,Rakuten,その他"'],
       };
 
-      // Status (Column 6)
-      worksheet.getCell(i, 6).dataValidation = {
+      // Status (Column 5)
+      worksheet.getCell(i, 5).dataValidation = {
         type: "list",
         allowBlank: true,
-        formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"'],
+        formulae: ['"\u4f7f\u7528\u4e2d,\u4e88\u5099\u6a5f,\u5728\u5eab,\u6545\u969c,\u4fee\u7406\u4e2d,\u5ec3\u68c4"'],
       };
     }
 
