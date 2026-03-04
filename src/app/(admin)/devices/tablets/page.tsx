@@ -11,7 +11,6 @@ import { Plus, Search, ArrowUp, ArrowDown, ArrowUpDown, Download, FileSpreadshee
 import { Modal } from '../../../../components/ui/Modal';
 import { TabletForm } from '../../../../features/devices/components/TabletForm';
 import * as XLSX from 'xlsx';
-import { normalizeContractYear } from '../../../../lib/utils/stringUtils';
 import ExcelJS from 'exceljs';
 import { TabletDetailModal } from '../../../../features/devices/components/TabletDetailModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -97,7 +96,7 @@ function TabletListContent() {
     const { handleExport } = useCSVExport<Tablet>();
     // Updated headers order
     const headers = [
-        '端末CD(必須)', '型番(必須)', 'メーカー', '契約年数', '状況',
+        '端末CD(必須)', '型番(必須)', 'メーカー', '状況',
         '社員コード', '事業所コード', '負担先', '過去貸与履歴', '備考'
     ];
 
@@ -209,7 +208,6 @@ function TabletListContent() {
                         notes: String(rowData['備考'] || ''),
                         history: String(rowData['過去貸与履歴'] || ''),
                         status: finalStatus,
-                        contractYears: normalizeContractYear(String(rowData['契約年数'] || '')),
                         costBearer: String(rowData['負担先'] || ''),
                         address: '',
                         version: 1,
@@ -335,7 +333,6 @@ function TabletListContent() {
                 item.terminalCode || '',
                 item.modelNumber || '',
                 item.maker || '',
-                normalizeContractYear(item.contractYears || ''),
                 statusMap[item.status] || item.status,
                 item.employeeCode || '',
                 item.addressCode || '',
@@ -431,24 +428,22 @@ function TabletListContent() {
         // 1: Terminal CD (Text)
         // 2: Model No (Text)
         // 3: Maker
-        // 4: Contract Years
-        // 5: Status (Dropdown)
-        // 6: Emp Code (Text)
-        // 7: Office Code (Text)
-        // 8: Cost Bearer
-        // 9: History
-        // 10: Notes
+        // 4: Status (Dropdown)
+        // 5: Emp Code (Text)
+        // 6: Office Code (Text)
+        // 7: Cost Bearer
+        // 8: History
+        // 9: Notes
 
-        // Text Formats: A(1), B(2), F(6), G(7)
-        // Added B(2) Model No just in case it's numeric-like
+        // Text Formats: A(1), B(2), E(5), F(6)
         worksheet.getColumn(1).numFmt = '@';
         worksheet.getColumn(2).numFmt = '@';
+        worksheet.getColumn(5).numFmt = '@';
         worksheet.getColumn(6).numFmt = '@';
-        worksheet.getColumn(7).numFmt = '@';
 
-        // Data Validation (Status dropdown) - column E (index 5)
+        // Data Validation (Status dropdown) - column D (index 4)
         for (let i = 3; i <= totalRows + 2; i++) {
-            worksheet.getCell(i, 5).dataValidation = {
+            worksheet.getCell(i, 4).dataValidation = {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"使用中,予備機,在庫,故障,修理中,廃棄"']

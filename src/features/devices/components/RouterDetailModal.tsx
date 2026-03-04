@@ -6,7 +6,6 @@ import { Router, RouterUsageHistory } from '../../../lib/types';
 import { Employee, Address } from '../../../lib/types';
 import { Wifi, MapPin, Calendar, FileText, User, Server, DollarSign, History, Phone, ArrowLeft } from 'lucide-react';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
-import { normalizeContractYear } from '../../../lib/utils/stringUtils';
 import { useState, useEffect } from 'react';
 
 interface RouterDetailModalProps {
@@ -189,7 +188,6 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                                     <DetailRow label="通信容量" value={item.dataCapacity} />
                                     <DetailRow label="契約状況" value={item.contractStatus} />
 
-                                    <DetailRow label="契約年数" value={normalizeContractYear(item.contractYears || '')} />
                                     <div className="group">
                                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">状況</label>
                                         <span className={`px-2 py-1 text-xs font-bold rounded border ${getStatusColor(item.status)}`}>
