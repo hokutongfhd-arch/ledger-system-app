@@ -539,8 +539,13 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
                             <Input name="biller" value={formData.biller || ''} onChange={handleChange} />
                         </div>
                         <div>
-                            <FormLabel>負担先</FormLabel>
-                            <Input name="costBearer" value={formData.costBearer || ''} onChange={handleChange} />
+                            <FormLabel>負担先 (事業所コード)</FormLabel>
+                            <SearchableSelect
+                                options={addressOptions}
+                                value={formData.costBearer || ''}
+                                onChange={(val) => setFormData(prev => ({ ...prev, costBearer: val }))}
+                                placeholder="事業所を検索..."
+                            />
                         </div>
                         <div>
                             <FormLabel>費用</FormLabel>

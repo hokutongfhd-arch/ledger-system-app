@@ -56,6 +56,7 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
 
     // Logic for Address vs OfficeCode display could be unified, typically finding by addressCode
     const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
+    const costBearerName = addresses.find(a => a.addressCode === item.costBearer)?.officeName || item.costBearer || '-';
 
 
     // Status Badge Helper
@@ -228,7 +229,7 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <DetailRow label="請求元" value={item.biller} />
-                                    <DetailRow label="負担先" value={item.costBearer} />
+                                    <DetailRow label="負担先" value={costBearerName} subValue={item.costBearer || undefined} />
                                     <DetailRow label="費用" value={item.cost ? `¥${item.cost.toLocaleString()}` : '-'} isSensitive />
                                     <DetailRow label="費用振替" value={item.costTransfer} />
                                 </div>

@@ -109,16 +109,15 @@ function AddressListContent() {
     "事業所コード(必須)",
     "事業所名(必須)",
     "No.",
-    "〒(必須)",
-    "住所(必須)",
+    "〒",
+    "住所",
     "TEL",
     "FAX",
     "事業部",
     "経理コード",
-    "エリアコード",
+    "エリア名",
     "主担当",
     "枝番",
-    "※",
     "備考",
     "宛名ラベル用",
     "宛名ラベル用〒",
@@ -133,8 +132,6 @@ function AddressListContent() {
       const requiredHeaders = [
         "事業所コード(必須)",
         "事業所名(必須)",
-        "〒(必須)",
-        "住所(必須)",
       ];
       const missingHeaders = requiredHeaders.filter(
         (h) => !fileHeaders.includes(h),
@@ -185,7 +182,6 @@ function AddressListContent() {
         const existingNames = new Set(addresses.map((a) => a.officeName));
         const processedCodes = new Set<string>();
         const processedNames = new Set<string>();
-        const validAreaCodes = new Set(areas.map((a) => a.areaCode));
         const errors: string[] = [];
 
         const importData: any[] = [];
@@ -209,7 +205,7 @@ function AddressListContent() {
               processedCodes,
               existingNames,
               processedNames,
-              validAreaCodes,
+              areas,
             );
 
           if (rowErrors.length > 0) {
@@ -373,10 +369,9 @@ function AddressListContent() {
             formatPhoneNumber(item.fax || ""),
             item.division || "",
             item.accountingCode || "",
-            item.area || "", // エリアコード
+            item.area || "", // エリア名
             item.mainPerson || "",
             item.branchNumber || "",
-            item.specialNote || "",
             item.notes || "",
             item.labelName || "",
             item.labelZip || "",
@@ -409,12 +404,11 @@ function AddressListContent() {
       "",
       "",
       "",
-      "",
-      "", // H-N
+      "", // H-M (備考を含む6列)
       "宛名ラベル情報",
       "",
       "",
-      "", // O-R
+      "", // N-Q
     ];
 
     // Add rows
@@ -424,8 +418,8 @@ function AddressListContent() {
     // Merge cells
     worksheet.mergeCells("A1:C1"); // Basic Info
     worksheet.mergeCells("D1:G1"); // Contact Info
-    worksheet.mergeCells("H1:N1"); // Detail Info
-    worksheet.mergeCells("O1:R1"); // Label Info
+    worksheet.mergeCells("H1:M1"); // Detail Info (備考を含む6列)
+    worksheet.mergeCells("N1:Q1"); // Label Info
 
     // Styling Top Header (Row 1)
     const topRow = worksheet.getRow(1);
@@ -471,8 +465,8 @@ function AddressListContent() {
       };
     });
 
-    // Detail Info (H1-N1)
-    ["H1", "I1", "J1", "K1", "L1", "M1", "N1"].forEach((cellRef) => {
+    // Detail Info (H1-M1) 事業部・経理コード・エリア名・主担当・枝番・備考
+    ["H1", "I1", "J1", "K1", "L1", "M1"].forEach((cellRef) => {
       const cell = worksheet.getCell(cellRef);
       cell.fill = {
         type: "pattern",
@@ -487,8 +481,8 @@ function AddressListContent() {
       };
     });
 
-    // Label Info (O1-R1)
-    ["O1", "P1", "Q1", "R1"].forEach((cellRef) => {
+    // Label Info (N1-Q1)
+    ["N1", "O1", "P1", "Q1"].forEach((cellRef) => {
       const cell = worksheet.getCell(cellRef);
       cell.fill = {
         type: "pattern",
@@ -525,12 +519,12 @@ function AddressListContent() {
 
     // Format numeric/string columns as text to prevent scientific notation etc.
     // A: Code, B: Name, C: No, D: Zip, E: Address, F: Tel, G: Fax
-    // H: Division, I: AccCode, J: AreaCheck, K: MainPerson, L: Branch, M: Special
-    // N: Notes, O: LabelName, P: LabelZip, Q: LabelAddress, R: Attention
+    // H: Division, I: AccCode, J: AreaName, K: MainPerson, L: Branch
+    // M: Notes, N: LabelName, O: LabelZip, P: LabelAddress, Q: Attention
 
     // Columns needing Text format (Code-like):
-    // A(1), C(3), D(4), F(6), G(7), I(9), J(10), L(12), P(16)
-    [1, 3, 4, 6, 7, 9, 10, 12, 16].forEach((colIndex) => {
+    // A(1), C(3), D(4), F(6), G(7), I(9), J(10), L(12), O(15)
+    [1, 3, 4, 6, 7, 9, 10, 12, 15].forEach((colIndex) => {
       worksheet.getColumn(colIndex).numFmt = "@";
     });
 

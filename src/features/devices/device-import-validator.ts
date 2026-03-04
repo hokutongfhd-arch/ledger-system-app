@@ -221,10 +221,16 @@ export const validateRouterImportRow = (
         errors.push(`${rowNumber}行目: 機種型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
     }
 
+    const carrierAliasMap: Record<string, string> = {
+        'SB': 'SoftBank',
+        'sb': 'SoftBank',
+        'softbank': 'SoftBank',
+    };
     const validCarriers = ['au・wimax2+', 'au', 'docomo(iij)', 'SoftBank'];
-    const carrier = String(row['通信キャリア'] || '').trim();
+    const rawCarrierVal = String(row['通信キャリア'] || '').trim();
+    const carrier = carrierAliasMap[rawCarrierVal] ?? rawCarrierVal;
     if (carrier && !validCarriers.includes(carrier)) {
-        errors.push(`${rowNumber}行目: 通信キャリア「${carrier}」は不正な値です`);
+        errors.push(`${rowNumber}行目: 通信キャリア「${rawCarrierVal}」は不正な値です`);
     }
 
     const validStatuses = ['使用中', '予備機', '在庫', '故障', '修理中', '廃棄'];
@@ -308,7 +314,7 @@ export const validateTabletImportRow = (
         }
     }
 
-    const rawModelNumber = String(row['型番(必須)'] || '');
+    const rawModelNumber = String(row['型番'] || '');
     if (rawModelNumber && /[^\x20-\x7E]/.test(rawModelNumber)) {
         errors.push(`${rowNumber}行目: 型番「${rawModelNumber}」に全角文字が含まれています。半角文字のみ使用可能です。`);
     }
@@ -317,15 +323,6 @@ export const validateTabletImportRow = (
     const statusRaw = String(row['状況'] || '').trim();
     if (statusRaw && !validStatuses.includes(statusRaw)) {
         errors.push(`${rowNumber}行目: 状況「${statusRaw}」は不正な値です`);
-    }
-
-    const employeeCode = String(row['社員コード'] || '').trim();
-    if (employeeCode) {
-        if (!/^[0-9-]+$/.test(employeeCode)) {
-            errors.push(`${rowNumber}行目: 社員コード「${employeeCode}」に不正な文字が含まれています（半角数字とハイフンのみ使用可能）`);
-        } else if (validEmployeeCodes && !validEmployeeCodes.has(employeeCode)) {
-            errors.push(`${rowNumber}行目: 社員コード「${employeeCode}」は社員マスタに存在しません`);
-        }
     }
 
     const officeCode = String(row['事業所コード'] || '').trim();

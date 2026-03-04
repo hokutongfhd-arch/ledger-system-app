@@ -279,7 +279,11 @@ export const parseAndValidateEmployees = (
 
         const emp: Omit<Employee, 'id'> & { id?: string } = {
             code: rawCode,
-            gender: String(rowData['性別'] || ''),
+            gender: (() => {
+                const rawGender = String(rowData['性別'] || '').trim();
+                const genderMap: Record<string, string> = { '1': '男性', '2': '女性' };
+                return genderMap[rawGender] ?? rawGender;
+            })(),
             name: cleanName,
             nameKana: cleanNameKana,
             birthDate: birthDateValue,

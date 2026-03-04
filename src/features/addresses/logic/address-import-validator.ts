@@ -1,4 +1,5 @@
 import { Address } from '../../../lib/types';
+import { Area } from '../../areas/area.types';
 import { formatPhoneNumber } from '../../../lib/utils/phoneUtils';
 import { formatZipCode } from '../../../lib/utils/zipCodeUtils';
 
@@ -15,7 +16,7 @@ export const validateAddressImportRow = (
     processedCodes: Set<string>,
     existingNames: Set<string>,
     processedNames: Set<string>,
-    validAreaCodes?: Set<string>
+    areaList?: Area[]
 ): { errors: string[], data?: Omit<Address, 'id'> } => {
     const errors: string[] = [];
     const rowData: any = {};
@@ -86,33 +87,19 @@ export const validateAddressImportRow = (
         rowHasError = true;
     }
 
-    // 5. Zip Code (〒) - Format
-    const zipFields = ['〒(必須)', '宛名ラベル用〒'];
-    // We check main Zip first (match Excel order if '〒' is before '住所')
-    const zip = toHalfWidth(String(rowData['〒(必須)'] || '')).trim();
+    // 5. Zip Code (〒) - 任意だが書式チェックあり
+    const zip = toHalfWidth(String(rowData['〒'] || '')).trim();
     if (zip) {
         const is7Digits = /^\d{7}$/.test(zip);
         const is34Format = /^\d{3}-\d{4}$/.test(zip);
         if (!is7Digits && !is34Format) {
-            errors.push(`${excelRowNumber}行目: 〒(必須)「${zip}」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です`);
+            errors.push(`${excelRowNumber}行目: 〒「${zip}」は「xxxxxxx(7桁)」または「xxx-xxxx」の形式のみ入力可能です`);
             rowHasError = true;
         }
-    } else {
-        // Required check? The field name says "必須".
-        // Previous logic didn't explicit empty check, just regex on value.
-        // I'll add empty check if strictly required, but for now stick to previous behavior of format only, 
-        // unless I want to be strict. 
-        // Let's assume emptiness is handled by "Required" header check or UI?
-        // Actually, if it says "必須", I should probably check it.
-        // But the previous code didn't. I'll stick to format check for now to avoid behavior change.
     }
 
-    // 6. Address (住所) - Required
-    const address = String(rowData['住所(必須)'] || '').trim();
-    if (!address) {
-        errors.push(`${excelRowNumber}行目: 住所が空です`);
-        rowHasError = true;
-    }
+    // 6. Address (住所) - 任意
+    const address = String(rowData['住所'] || '').trim();
 
     // 7. Phone (TEL, FAX)
     const tel = toHalfWidth(String(rowData['TEL'] || '')).trim();
@@ -138,15 +125,28 @@ export const validateAddressImportRow = (
         rowHasError = true;
     }
 
-    // 9. Area Code (to match 'エリアコード')
-    const areaCodeConfirm = toHalfWidth(String(rowData['エリアコード'] || '')).trim();
-    if (areaCodeConfirm) {
-        if (!/^[0-9-]+$/.test(areaCodeConfirm)) {
-            errors.push(`${excelRowNumber}行目: エリアコード「${areaCodeConfirm}」は半角数字とハイフンのみ入力可能です`);
-            rowHasError = true;
-        } else if (validAreaCodes && !validAreaCodes.has(areaCodeConfirm)) {
-            errors.push(`${excelRowNumber}行目: エリアコード「${areaCodeConfirm}」はエリアマスタに存在しません`);
-            rowHasError = true;
+    // 9. Area - エリア名を1次ソースとして検索
+    const rawAreaInput = toHalfWidth(String(rowData['エリア名'] || '')).trim();
+    let resolvedAreaCode = '';
+    if (rawAreaInput) {
+        if (areaList && areaList.length > 0) {
+            // まずエリアコードとして完全一致で探す
+            const byCode = areaList.find(a => a.areaCode === rawAreaInput);
+            if (byCode) {
+                resolvedAreaCode = byCode.areaCode;
+            } else {
+                // エリア名で探す
+                const byName = areaList.find(a => a.areaName === rawAreaInput);
+                if (byName) {
+                    resolvedAreaCode = byName.areaCode;
+                } else {
+                    errors.push(`${excelRowNumber}行目: エリア「${rawAreaInput}」はエリアマスタに存在しません`);
+                    rowHasError = true;
+                }
+            }
+        } else {
+            // areaList が渡されていない場合は値をそのまま使用
+            resolvedAreaCode = rawAreaInput;
         }
     }
 
@@ -180,7 +180,7 @@ export const validateAddressImportRow = (
     const newAddress: Omit<Address, 'id'> = {
         addressCode: officeCode,
         officeName: officeName,
-        area: areaCodeConfirm,
+        area: resolvedAreaCode,
         no: no,
         zipCode: formatZipCode(zip || ''),
         address: address,
@@ -190,7 +190,7 @@ export const validateAddressImportRow = (
         accountingCode: accountingCode,
         mainPerson: String(rowData['主担当'] || ''),
         branchNumber: branchNumber,
-        specialNote: String(rowData['※'] || ''),
+        specialNote: '', // ※列は削除されたため空文字固定
         notes: String(rowData['備考'] || ''),
         labelName: String(rowData['宛名ラベル用'] || ''),
         labelZip: formatZipCode(labelZip || ''),

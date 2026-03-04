@@ -154,32 +154,31 @@ export const useSystemAlerts = () => {
             }
         });
 
-        // 4. Receipt Date is NULL (iPhone, FeaturePhone)
-        // Assume applies if lendDate is present (loaned) but receiptDate is missing
-        iPhones.forEach(i => {
-            if (i.lendDate && !i.receiptDate) {
-                result.push({
-                    id: `no-receipt-iphone-${i.id}`,
-                    type: 'missing_receipt',
-                    source: 'iPhone',
-                    message: '受領書受領日が未入力です',
-                    recordId: i.id,
-                    path: `/devices/iphones?highlight=${i.id}&field=receiptDate`
-                });
-            }
-        });
-        featurePhones.forEach(f => {
-            if (f.lendDate && !f.receiptDate) {
-                result.push({
-                    id: `no-receipt-fp-${f.id}`,
-                    type: 'missing_receipt',
-                    source: 'FeaturePhone',
-                    message: '受領書受領日が未入力です',
-                    recordId: f.id,
-                    path: `/devices/feature-phones?highlight=${f.id}&field=receiptDate`
-                });
-            }
-        });
+        // 4. Receipt Date is NULL - アラート表示を無効化
+        // iPhones.forEach(i => {
+        //     if (i.lendDate && !i.receiptDate) {
+        //         result.push({
+        //             id: `no-receipt-iphone-${i.id}`,
+        //             type: 'missing_receipt',
+        //             source: 'iPhone',
+        //             message: '受領書受領日が未入力です',
+        //             recordId: i.id,
+        //             path: `/devices/iphones?highlight=${i.id}&field=receiptDate`
+        //         });
+        //     }
+        // });
+        // featurePhones.forEach(f => {
+        //     if (f.lendDate && !f.receiptDate) {
+        //         result.push({
+        //             id: `no-receipt-fp-${f.id}`,
+        //             type: 'missing_receipt',
+        //             source: 'FeaturePhone',
+        //             message: '受領書受領日が未入力です',
+        //             recordId: f.id,
+        //             path: `/devices/feature-phones?highlight=${f.id}&field=receiptDate`
+        //         });
+        //     }
+        // });
 
         // 5. Duplicates Checks
         checkDuplicates(tablets, 'terminalCode', 'Tablet', '/devices/tablets', '端末CD');

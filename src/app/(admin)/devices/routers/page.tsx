@@ -264,10 +264,49 @@ function RouterListContent() {
             finalStatus = statusMap[rawStatus] || "available";
           }
 
+          // 負担先の事業所コード解決
+          // 入力例「0444」→ 事業所コード「xxxx-04」などのハイフン除去数字列の末尾一致でマッチング
+          const rawCostBearer = String(rowData["負担先"] || "").trim();
+          let resolvedCostBearer = "";
+          if (rawCostBearer) {
+            const normalizedInput = rawCostBearer.replace(/-/g, "");
+            // 完全一致でまず探す
+            const exactMatch = addresses.find(
+              (a) => a.addressCode === rawCostBearer
+            );
+            if (exactMatch) {
+              resolvedCostBearer = exactMatch.addressCode;
+            } else {
+              // ハイフンを除去した数字の末尾一致で探す
+              const partialMatch = addresses.find((a) => {
+                const codeDigits = a.addressCode.replace(/-/g, "");
+                return codeDigits.endsWith(normalizedInput) || normalizedInput.endsWith(codeDigits);
+              });
+              if (partialMatch) {
+                resolvedCostBearer = partialMatch.addressCode;
+              } else {
+                const rowNum = i + 2;
+                errors.push(
+                  `${rowNum}行目: 負担先「${rawCostBearer}」は事業所マスタに存在しません`
+                );
+                continue;
+              }
+            }
+          }
+
+          // キャリア名の正規化（略称 → 正式名称）
+          const carrierAliasMap: Record<string, string> = {
+            "SB": "SoftBank",
+            "sb": "SoftBank",
+            "softbank": "SoftBank",
+          };
+          const rawCarrier = String(rowData["通信キャリア"] || "").trim();
+          const normalizedCarrier = carrierAliasMap[rawCarrier] ?? rawCarrier;
+
           const newRouter: Omit<Router, "id"> = {
             no: String(rowData["管理番号"] || "").trim(),
             contractStatus: String(rowData["契約状況"] || ""),
-            carrier: String(rowData["通信キャリア"] || ""),
+            carrier: normalizedCarrier,
             modelNumber: modelNumber,
             simNumber: formatPhoneNumber(simNumberNormalized),
             dataCapacity: String(rowData["通信容量"] || ""),
@@ -282,7 +321,7 @@ function RouterListContent() {
             cost:
               parseInt(String(rowData["費用"] || "").replace(/[^0-9]/g, "")) || 0,
             costTransfer: String(rowData["費用振替"] || ""),
-            costBearer: String(rowData["負担先"] || ""),
+            costBearer: resolvedCostBearer,
             lendingHistory: String(rowData["貸与履歴"] || ""),
             notes: String(rowData["備考(返却日)"] || ""),
             returnDate: "",

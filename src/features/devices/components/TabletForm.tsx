@@ -84,15 +84,12 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         setFormData(prev => {
             const updates: any = { [name]: value };
             if (value === '') {
-                if (name === 'employeeCode') updates.addressCode = '';
-                if (name === 'addressCode') updates.employeeCode = '';
+                if (name === 'addressCode') updates.status = 'available';
             }
 
-            // Determine final values after this change
-            const finalEmployeeCode = updates.employeeCode !== undefined ? updates.employeeCode : (name === 'employeeCode' ? value : prev.employeeCode);
             const finalAddressCode = updates.addressCode !== undefined ? updates.addressCode : (name === 'addressCode' ? value : prev.addressCode);
 
-            if (finalEmployeeCode || finalAddressCode) {
+            if (finalAddressCode) {
                 updates.status = 'in-use';
             } else {
                 updates.status = 'available';
@@ -122,10 +119,6 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
         if (!formData.terminalCode) {
             newErrorFields.add('terminalCode');
             if (!firstErrorField) firstErrorField = terminalCodeRef.current;
-        }
-        if (!formData.modelNumber) {
-            newErrorFields.add('modelNumber');
-            if (!firstErrorField) firstErrorField = modelNumberRef.current;
         }
 
         if (isTerminalCodeDuplicate) {
@@ -169,16 +162,14 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                             )}
                         </div>
                         <div>
-                            <FormLabel required>型番</FormLabel>
+                            <FormLabel>型番</FormLabel>
                             <Input
                                 ref={modelNumberRef}
                                 type="text"
                                 name="modelNumber"
                                 value={formData.modelNumber}
                                 onChange={handleChange}
-                                error={errorFields.has('modelNumber')}
                             />
-                            {errorFields.has('modelNumber') && <FormError>この項目は必須です</FormError>}
                         </div>
                         <div>
                             <FormLabel>メーカー</FormLabel>
@@ -210,17 +201,8 @@ export const TabletForm: React.FC<TabletFormProps> = ({ initialData, onSubmit, o
                 </div>
 
                 <div className="space-y-4">
-                    <SectionHeader>使用者・場所</SectionHeader>
+                    <SectionHeader>使用事業所</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <FormLabel>社員名(社員コード)</FormLabel>
-                            <SearchableSelect
-                                options={employeeOptions}
-                                value={formData.employeeCode}
-                                onChange={(val) => handleSelectChange('employeeCode', val)}
-                                placeholder="社員を検索..."
-                            />
-                        </div>
                         <div>
                             <FormLabel>事業所 (事業所コード)</FormLabel>
                             <SearchableSelect

@@ -183,10 +183,9 @@ export const TabletDetailModal: React.FC<TabletDetailModalProps> = ({
 
                         {/* Section 2: User/Place */}
                         <div>
-                            <SectionHeader icon={<User size={18} />} title="使用者・場所" />
+                            <SectionHeader icon={<User size={18} />} title="使用事業所" />
                             <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <DetailRow label="社員名" value={employeeName} subValue={item.employeeCode} icon={<User size={14} className="text-gray-400" />} />
                                     <DetailRow label="事業所" value={addressName} subValue={item.addressCode} icon={<MapPin size={14} className="text-gray-400" />} />
                                 </div>
                                 <DetailRow label="負担先" value={item.costBearer} />
