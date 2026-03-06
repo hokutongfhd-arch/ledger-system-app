@@ -50,9 +50,9 @@ export default function AdminLayout({
             </div>
 
             {/* Main Content Area - Offset for Sidebar */}
-            <div className="flex-1 flex flex-col pl-64 relative min-h-screen">
+            <div className="flex-1 flex flex-col pl-64 relative min-h-screen min-w-0 overflow-hidden">
                 <AdminHeader />
-                <main className="flex-1 p-10 overflow-x-hidden">
+                <main className="flex-1 p-10 overflow-x-hidden min-w-0">
                     {children}
                 </main>
             </div>

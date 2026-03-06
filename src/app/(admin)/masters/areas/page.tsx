@@ -478,7 +478,7 @@ function AreaListContent() {
   };
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="space-y-4 h-full flex flex-col min-w-0">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-text-main">エリアマスタ</h1>
         <div className="flex gap-2">
@@ -551,6 +551,7 @@ function AreaListContent() {
         rowClassName={(item) =>
           item.id === highlightId ? "bg-red-100 hover:bg-red-200" : ""
         }
+        containerClassName="max-h-[600px] overflow-auto border-b border-border"
         columns={[
           {
             header: (

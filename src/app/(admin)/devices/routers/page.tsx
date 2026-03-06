@@ -708,7 +708,7 @@ function RouterListContent() {
     item.id === highlightId ? "bg-red-100 hover:bg-red-200" : "";
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="space-y-4 h-full flex flex-col min-w-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-text-main">ルーター管理台帳</h1>
         <div className="flex gap-2">

@@ -593,7 +593,7 @@ function EmployeeListContent() {
     item.id === highlightId ? "bg-red-100 hover:bg-red-200" : "";
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="space-y-4 h-full flex flex-col min-w-0">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-text-main">社員マスタ</h1>
         <div className="flex gap-2">
@@ -667,6 +667,7 @@ function EmployeeListContent() {
       <Table<Employee>
         data={paginatedData}
         rowClassName={rowClassName}
+        containerClassName="max-h-[600px] overflow-auto border-b border-border"
         columns={[
           {
             header: (

@@ -31,6 +31,51 @@ export async function fetchEmployeesPaginatedAction({ page, pageSize, searchTerm
     await checkAuth();
     const admin = getSupabaseAdmin();
 
+    const keyMap: Record<string, string> = {
+        code: 'employee_code',
+        name: 'name',
+        nameKana: 'name_kana',
+        email: 'email',
+        joinDate: 'join_date',
+        role: 'authority',
+        areaCode: 'area_code',
+        addressCode: 'address_code',
+    };
+
+    // 社員コード（code）のソートが含まれている場合は数値ソートが必要
+    // employee_code はテキスト型のため、DB側では辞書順になるため JS 側でソートする
+    const codeSort = sortCriteria?.find(s => s.key === 'code');
+    if (codeSort) {
+        // 全件取得してから JS 側でソート → ページング
+        let query = admin.from('employees').select('*', { count: 'exact' });
+        if (searchTerm) {
+            query = query.or(`employee_code.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%,name_kana.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+        }
+
+        const { data: allData, count, error } = await query.order('employee_code', { ascending: true });
+        if (error) throw new Error(error.message);
+
+        // 数値ソート（社員コードが数値以外の場合は文字列比較にフォールバック）
+        const sorted = (allData || []).sort((a: any, b: any) => {
+            const aNum = parseInt(a.employee_code, 10);
+            const bNum = parseInt(b.employee_code, 10);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return codeSort.order === 'asc' ? aNum - bNum : bNum - aNum;
+            }
+            return codeSort.order === 'asc'
+                ? (a.employee_code || '').localeCompare(b.employee_code || '')
+                : (b.employee_code || '').localeCompare(a.employee_code || '');
+        });
+
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize;
+        return {
+            data: sorted.slice(from, to),
+            totalCount: count || 0,
+        };
+    }
+
+    // 社員コード以外のソートは DB 側に委ねる
     let query = admin.from('employees').select('*', { count: 'exact' });
 
     if (searchTerm) {
@@ -38,29 +83,34 @@ export async function fetchEmployeesPaginatedAction({ page, pageSize, searchTerm
     }
 
     if (sortCriteria && sortCriteria.length > 0) {
-        const keyMap: Record<string, string> = {
-            code: 'employee_code',
-            name: 'name',
-            nameKana: 'name_kana',
-            email: 'email',
-            joinDate: 'join_date',
-            role: 'authority',
-            areaCode: 'area_code',
-            addressCode: 'address_code',
-        };
         for (const { key, order } of sortCriteria) {
             const dbKey = keyMap[key] || key;
             query = query.order(dbKey, { ascending: order === 'asc', nullsFirst: false });
         }
     } else {
-        query = query.order('employee_code', { ascending: true });
+        // デフォルトは社員番号昇順（数値ソート）で全件取得してスライスする
+        const { data: allData, count, error } = await query.order('employee_code', { ascending: true });
+        if (error) throw new Error(error.message);
+
+        const sorted = (allData || []).sort((a: any, b: any) => {
+            const aNum = parseInt(a.employee_code, 10);
+            const bNum = parseInt(b.employee_code, 10);
+            if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+            return (a.employee_code || '').localeCompare(b.employee_code || '');
+        });
+
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize;
+        return {
+            data: sorted.slice(from, to),
+            totalCount: count || 0,
+        };
     }
 
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
     const { data, count, error } = await query.range(from, to);
-
     if (error) throw new Error(error.message);
 
     return {
@@ -68,6 +118,7 @@ export async function fetchEmployeesPaginatedAction({ page, pageSize, searchTerm
         totalCount: count || 0,
     };
 }
+
 
 export async function fetchEmployeesAllAction(searchTerm?: string) {
     await checkAuth();
