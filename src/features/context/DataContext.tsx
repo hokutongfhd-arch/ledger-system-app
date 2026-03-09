@@ -694,7 +694,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         bulkDeleteAction: (items: { id: string, version: number }[]) => Promise<any>
     ) => {
         try {
-            setIsSyncing(true);
             const result = await bulkDeleteAction(itemsToProcess);
 
             if (!result.success) {
@@ -708,8 +707,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error: any) {
             console.error(`Bulk delete failed for ${table}:`, error);
             await handleCRUDError(table, error, false);
-        } finally {
-            setIsSyncing(false);
         }
     }, [showToast, handleCRUDError]);
 
@@ -1063,19 +1060,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const deleteManyEmployees = async (ids: string[]) => {
         if (user?.id === 'INITIAL_SETUP_ACCOUNT') {
             try {
-                setIsSyncing(true);
                 await deleteManyEmployeesBySetupAdmin(ids);
                 setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
                 showToast(`${ids.length}件、削除しました (Setup)`, 'success');
             } catch (error: any) {
                 showToast('削除に失敗しました', 'error', error.message);
-            } finally {
-                setIsSyncing(false);
             }
             return;
         }
-        const items = employees.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));
-        await deleteManyItems('employees', items, setEmployees, deleteManyEmployeesAction);
+
+        try {
+            const result = await deleteManyEmployeesAction(ids as any); // Type assertion or type update in action
+            if (!result.success) {
+                await handleCRUDError('employees', new Error(result.error), false);
+                return;
+            }
+            setEmployees(prev => prev.filter(p => !ids.includes(p.id)));
+            showToast(`${ids.length}件、削除しました`, 'success');
+        } catch (error: any) {
+            console.error(`Bulk delete failed for employees:`, error);
+            await handleCRUDError('employees', error, false);
+        }
     };
     const deleteManyAreas = async (ids: string[]) => {
         const items = areas.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, version: p.version }));

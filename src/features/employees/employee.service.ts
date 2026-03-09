@@ -97,8 +97,6 @@ export const employeeService = {
     },
 
     saveEmployeesBulk: async (items: EmployeeInput[]) => {
-        // Reduced chunk size to 10 for safer processing (Hobby Plan limit)
-        const CHUNK_SIZE = 10;
         const results = {
             successCount: 0,
             failureCount: 0,
@@ -107,6 +105,40 @@ export const employeeService = {
             validationErrors: [] as string[]
         };
 
+        // 1. 全件のメールアドレス重複を一括で事前検証する
+        try {
+            const validationPayload = items.map(item => ({
+                employee_code: item.code,
+                email: item.email
+            }));
+
+            const valResponse = await fetch('/api/admin/employees/validate-emails', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employees: validationPayload }),
+            });
+
+            if (!valResponse.ok) {
+                const errData = await valResponse.json().catch(() => ({}));
+                if (valResponse.status === 400 && errData.validationErrors) {
+                    results.validationErrors = errData.validationErrors;
+                    results.failureCount = items.length;
+                    return results; // ここで即座にエラー全てをまとめて返す
+                }
+                const serverErrorMsg = errData.error || errData.message || valResponse.statusText;
+                throw new Error(`Validation API Error: ${serverErrorMsg}`);
+            }
+        } catch (error: any) {
+            console.error('Pre-validation Error:', error);
+            results.errors.push(`Validation Error: ${error.message}`);
+            results.failureCount = items.length;
+            return results;
+        }
+
+        // 2. 問題なければチャンクに分けてインポート本処理
+        // Reduced chunk size to 10 for safer processing (Hobby Plan limit)
+        const CHUNK_SIZE = 10;
+        
         for (let i = 0; i < items.length; i += CHUNK_SIZE) {
             const chunk = items.slice(i, i + CHUNK_SIZE);
 
@@ -136,12 +168,11 @@ export const employeeService = {
                 });
 
                 if (!response.ok) {
-                    // HTTP 400 はメール重複など構造的エラー
                     const errData = await response.json().catch(() => ({}));
                     if (response.status === 400 && errData.validationErrors) {
-                        results.validationErrors = errData.validationErrors;
+                        results.validationErrors = [...results.validationErrors, ...errData.validationErrors];
                         results.failureCount += chunk.length;
-                        return results; // 即座に中断して結果を返す
+                        return results;
                     }
                     throw new Error(`API Error: ${response.statusText}`);
                 }
