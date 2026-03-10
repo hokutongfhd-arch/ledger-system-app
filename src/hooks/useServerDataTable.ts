@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 export type SortOrder = 'asc' | 'desc';
 
@@ -8,17 +8,19 @@ export interface SortCriterion<T> {
 }
 
 interface UseServerDataTableProps<T> {
-    fetchData: (params: { page: number; pageSize: number; searchTerm: string; sortCriteria: SortCriterion<T>[] }) => Promise<{ data: any[]; totalCount: number }>;
+    fetchData: (params: { page: number; pageSize: number; searchTerm: string; sortCriteria: SortCriterion<T>[]; highlightId?: string }) => Promise<{ data: any[]; totalCount: number; highlightPage?: number }>;
     mapData: (dbItem: any) => T;
     initialPageSize?: number;
     debounceMs?: number;
+    highlightId?: string | null;
 }
 
 export const useServerDataTable = <T extends { id: string }>({
     fetchData,
     mapData,
     initialPageSize = 15,
-    debounceMs = 300
+    debounceMs = 300,
+    highlightId,
 }: UseServerDataTableProps<T>) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -31,9 +33,17 @@ export const useServerDataTable = <T extends { id: string }>({
     const [totalItems, setTotalItems] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [highlightHandled, setHighlightHandled] = useState(false);
+
+    const isFirstRender = useRef(true);
 
     // Debounce search term
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
         const handler = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
             setCurrentPage(1); // Reset page on new search
@@ -42,24 +52,47 @@ export const useServerDataTable = <T extends { id: string }>({
     }, [searchTerm, debounceMs]);
 
     const loadData = useCallback(async () => {
+        console.log('[useServerDataTable] loadData called', { currentPage, pageSize, searchTerm: debouncedSearchTerm, sortCriteria, highlightId, highlightHandled });
         setIsLoading(true);
         setError(null);
         try {
-            const result = await fetchData({
+            const params: any = {
                 page: currentPage,
                 pageSize,
                 searchTerm: debouncedSearchTerm,
                 sortCriteria
-            });
-            setPaginatedData(result.data.map(mapData));
+            };
+            
+            if (highlightId && !highlightHandled) {
+                params.highlightId = highlightId;
+                console.log('[useServerDataTable] Requesting highlightPage for id:', highlightId);
+            }
+
+            const result = await fetchData(params);
+            console.log('[useServerDataTable] Received result:', result);
+
+            // Set totalItems FIRST so the boundary effect doesn't reset currentPage to 1
             setTotalItems(result.totalCount);
+
+            if (result.highlightPage && result.highlightPage !== currentPage) {
+                console.log('[useServerDataTable] Changing page to highlightPage:', result.highlightPage);
+                setCurrentPage(result.highlightPage);
+                setHighlightHandled(true);
+                return; // Let the next effect run with the new page
+            }
+
+            console.log('[useServerDataTable] Setting paginated data. Items:', result.data.length);
+            setPaginatedData(result.data.map(mapData));
+            if (highlightId) {
+                setHighlightHandled(true);
+            }
         } catch (err: any) {
-            console.error('Failed to load server data:', err);
+            console.error('[useServerDataTable] Failed to load server data:', err);
             setError(err.message || 'データ取得エラー');
         } finally {
             setIsLoading(false);
         }
-    }, [fetchData, mapData, currentPage, pageSize, debouncedSearchTerm, sortCriteria]);
+    }, [fetchData, mapData, currentPage, pageSize, debouncedSearchTerm, sortCriteria, highlightId, highlightHandled]);
 
     // Re-fetch when dependencies change
     useEffect(() => {

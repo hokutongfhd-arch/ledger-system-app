@@ -19,6 +19,7 @@ import { useServerDataTable } from '../../../../hooks/useServerDataTable';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
 import { logger } from '../../../../lib/logger';
+import { recordImportSummaryLog } from '../../../../lib/importLogger';
 import { fetchTabletsPaginatedAction, fetchTabletsAllAction } from '../../../../app/actions/device_fetch';
 import { mapTabletFromDb } from '../../../../features/context/DataContext';
 
@@ -90,7 +91,8 @@ function TabletListContent() {
     } = useServerDataTable<Tablet>({
         fetchData: fetchTabletsPaginatedAction as any,
         mapData: mapTabletFromDb,
-        initialPageSize: 15
+        initialPageSize: 15,
+        highlightId: highlightId || undefined,
     });
 
     const { handleExport } = useCSVExport<Tablet>();
@@ -136,6 +138,7 @@ function TabletListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            const importStartTime = new Date().toISOString();
             setIsSyncing(true);
             try {
                 const allTabletsRaw = await fetchTabletsAllAction();
@@ -267,6 +270,8 @@ function TabletListContent() {
                 if (successCount > 0 && errorCount === 0) {
                     showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
                 }
+                // インポートログを1件にまとめる
+                await recordImportSummaryLog('tablets', importStartTime, successCount, user?.name, user?.code);
                 refetch();
             } finally {
                 setIsSyncing(false);
@@ -475,7 +480,7 @@ function TabletListContent() {
     const getRowClassName = (item: Tablet) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : '';
 
     return (
-        <div className="space-y-4 h-full flex flex-col">
+        <div className="space-y-4 h-full flex flex-col min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-2xl font-bold text-text-main">タブレット管理台帳</h1>
                 <div className="flex gap-2">

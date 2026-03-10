@@ -62,27 +62,58 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
             targetAuthId = existingEmployee.auth_id;
             authAction = 'update_by_id';
         } else {
-            // Priority 2: New Employee -> Lookup by Email (Auth Email)
-            const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-            if (listError) throw new Error(`Auth lookup failed: ${listError.message}`);
+            // まず新規作成を試みる（6000件超でも listUsers の1000件制限に依存しない）
+            const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                email: authEmail,
+                password: password || '12345678',
+                email_confirm: true,
+                user_metadata: { name, employee_code, email: authEmail },
+                app_metadata: { role: authority === 'admin' ? 'admin' : 'user' }
+            });
 
-            const existingAuthUser = users.find(u => u.email?.toLowerCase() === authEmail.toLowerCase());
-
-            if (existingAuthUser) {
-                targetAuthId = existingAuthUser.id;
-                authAction = 'reuse_existing';
-            } else {
-                const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-                    email: authEmail,
-                    password: password || '12345678',
-                    email_confirm: true,
-                    user_metadata: { name, employee_code, email: authEmail },
-                    app_metadata: { role: authority === 'admin' ? 'admin' : 'user' }
-                });
-
-                if (createError) throw new Error(`Auth create failed: ${createError.message}`);
+            if (!createError) {
+                // 新規作成成功
                 targetAuthId = newUser.user.id;
                 authAction = 'created';
+            } else if (
+                createError.message?.toLowerCase().includes('already') ||
+                createError.message?.toLowerCase().includes('registered') ||
+                (createError as any).status === 422
+            ) {
+                // メールアドレスが既に Auth に存在する場合：DB 経由で auth_id を検索
+                const { data: existingEmpByEmail } = await supabaseAdmin
+                    .from('employees')
+                    .select('auth_id')
+                    .ilike('email', authEmail)
+                    .not('auth_id', 'is', null)
+                    .limit(1)
+                    .single();
+
+                if (existingEmpByEmail?.auth_id) {
+                    targetAuthId = existingEmpByEmail.auth_id;
+                    authAction = 'reuse_existing';
+                } else {
+                    // DB に auth_id がない場合はページネーションで全件検索（フォールバック）
+                    let found = false;
+                    let page = 1;
+                    while (!found) {
+                        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+                        if (listError) throw new Error(`Auth lookup failed: ${JSON.stringify({ url: listError.message })}`);
+                        const match = users.find(u => u.email?.toLowerCase() === authEmail);
+                        if (match) {
+                            targetAuthId = match.id;
+                            authAction = 'reuse_existing';
+                            found = true;
+                        }
+                        if (users.length < 1000) break;
+                        page++;
+                    }
+                    if (!found) {
+                        throw new Error(`Auth lookup failed: email ${authEmail} が Auth に見つかりません`);
+                    }
+                }
+            } else {
+                throw new Error(`Auth create failed: ${createError.message}`);
             }
         }
 
@@ -105,30 +136,33 @@ export async function upsertEmployeeLogic(supabaseAdmin: SupabaseClient, data: a
         let dbError: any = null;
 
         if (isUpdate) {
-            // 更新時は RPC を利用して楽観ロックを適用
-            const { data: success, error: rpcError } = await supabaseAdmin.rpc('update_employee_safe', {
-                p_id: existingEmployee.id,
-                p_version: currentVersion,
-                p_employee_code: employee_code,
-                p_name: name,
-                p_name_kana: name_kana,
-                p_email: email,
-                p_gender: gender,
-                p_birthday: birthday,
-                p_join_date: join_date,
-                p_area_code: area_code,
-                p_address_code: address_code,
-                p_authority: authority === 'admin' ? 'admin' : 'user'
-            });
+            // 更新時は直接 UPDATE で楽観ロックを適用（version が一致する行のみ更新）
+            const { data: updatedData, error: updateError } = await supabaseAdmin
+                .from('employees')
+                .update({
+                    employee_code,
+                    name,
+                    name_kana,
+                    email,
+                    gender,
+                    birthday: birthday || null,
+                    join_date: join_date || null,
+                    area_code,
+                    address_code,
+                    authority: authority === 'admin' ? 'admin' : 'user',
+                    version: currentVersion + 1,
+                })
+                .eq('id', existingEmployee.id)
+                .eq('version', currentVersion) // 楽観ロック: バージョンが一致する場合のみ更新
+                .select()
+                .single();
 
-            if (rpcError) {
-                dbError = rpcError;
-            } else if (!success) {
+            if (updateError) {
+                dbError = updateError;
+            } else if (!updatedData) {
                 dbError = { message: 'Conflict: 他のユーザーにより更新されています。', code: '409' };
             } else {
-                // 更新後のデータを再取得（Auditログ対応用）
-                const { data: updated } = await supabaseAdmin.from('employees').select('*').eq('id', existingEmployee.id).single();
-                dbResult = updated;
+                dbResult = updatedData;
             }
         } else {
             // 新規登録は直接 INSERT

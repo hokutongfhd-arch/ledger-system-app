@@ -33,6 +33,7 @@ import { useServerDataTable } from "../../../../hooks/useServerDataTable";
 import { useCSVExport } from "../../../../hooks/useCSVExport";
 import { useFileImport } from "../../../../hooks/useFileImport";
 import { logger } from "../../../../lib/logger";
+import { recordImportSummaryLog } from "../../../../lib/importLogger";
 import {
   fetchRoutersPaginatedAction,
   fetchRoutersAllAction,
@@ -104,6 +105,7 @@ function RouterListContent() {
     fetchData: fetchRoutersPaginatedAction as any,
     mapData: mapRouterFromDb,
     initialPageSize: 15,
+    highlightId: highlightId || undefined,
   });
 
   const { handleExport } = useCSVExport<Router>();
@@ -171,6 +173,7 @@ function RouterListContent() {
       return true;
     },
     onImport: async (rows, fileHeaders) => {
+      const importStartTime = new Date().toISOString();
       setIsSyncing(true);
       try {
         const allRoutersRaw = await fetchRoutersAllAction();
@@ -253,7 +256,8 @@ function RouterListContent() {
 
           const rawStatus = String(rowData["状況"] || "").trim();
           const employeeCode = String(rowData["社員コード"] || "").trim();
-          const addressCode = String(rowData["事業所コード"] || "").trim();
+          let addressCode = String(rowData["事業所コード"] || "").trim();
+          if (addressCode === "-") addressCode = "";
 
           let finalStatus: any;
           if (employeeCode || addressCode) {
@@ -313,10 +317,10 @@ function RouterListContent() {
             terminalCode: terminalCode,
             employeeCode: employeeCode,
             addressCode: addressCode,
-            ipAddress: String(rowData["IPアドレス"] || ""),
-            subnetMask: String(rowData["サブネットマスク"] || ""),
-            startIp: String(rowData["開始IP"] || ""),
-            endIp: String(rowData["終了IP"] || ""),
+            ipAddress: String(rowData["IPアドレス"] || "").trim(),
+            subnetMask: String(rowData["サブネットマスク"] || "").trim(),
+            startIp: String(rowData["開始IP"] || "").trim(),
+            endIp: String(rowData["終了IP"] || "").trim(),
             biller: String(rowData["請求元"] || ""),
             cost:
               parseInt(String(rowData["費用"] || "").replace(/[^0-9]/g, "")) || 0,
@@ -401,6 +405,8 @@ function RouterListContent() {
             "success",
           );
         }
+        // インポートログを1件にまとめる
+        await recordImportSummaryLog('routers', importStartTime, successCount, user?.name, user?.code);
         refetch();
       } finally {
         setIsSyncing(false);
@@ -704,7 +710,7 @@ function RouterListContent() {
     item.id === highlightId ? "bg-red-100 hover:bg-red-200" : "";
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="space-y-4 h-full flex flex-col min-w-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-text-main">ルーター管理台帳</h1>
         <div className="flex gap-2">

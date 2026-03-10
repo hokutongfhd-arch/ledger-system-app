@@ -43,13 +43,14 @@ export const validateAddressImportRow = (
         errors.push(`${excelRowNumber}行目: 事業所コードが空です`);
         rowHasError = true;
     } else {
-        const is6Digits = /^\d{6}$/.test(officeCode);
-        const isFormatted = /^\d{4}-\d{2}$/.test(officeCode);
+        const isDigitsOnly = /^\d{6,7}$/.test(officeCode);
+        const isFormatted = /^\d{4,5}-\d{2}$/.test(officeCode);
 
-        if (is6Digits) {
-            officeCode = `${officeCode.slice(0, 4)}-${officeCode.slice(4)}`;
+        if (isDigitsOnly) {
+            const splitPos = officeCode.length - 2;
+            officeCode = `${officeCode.slice(0, splitPos)}-${officeCode.slice(splitPos)}`;
         } else if (!isFormatted) {
-            errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」は「xxxx-xx」または「xxxxxx(6桁)」の形式で入力してください`);
+            errors.push(`${excelRowNumber}行目: 事業所コード「${officeCode}」は「xxxx(x)-xx」または「xxxxxx(6~7桁)」の形式で入力してください`);
             rowHasError = true;
         }
 
@@ -102,7 +103,9 @@ export const validateAddressImportRow = (
     const address = String(rowData['住所'] || '').trim();
 
     // 7. Phone (TEL, FAX)
-    const tel = toHalfWidth(String(rowData['TEL'] || '')).trim();
+    // 「-」「－」のみの場合は「入力なし」と見なして空文字にする
+    const rawTel = toHalfWidth(String(rowData['TEL'] || '')).trim();
+    const tel = rawTel === '-' ? '' : rawTel;
     if (tel) {
         if (!/^\d{2,4}-\d{2,4}-\d{2,4}$/.test(tel)) {
             errors.push(`${excelRowNumber}行目: TEL「${tel}」は「xxxx-xxxx-xxxx」の形式(各ブロック2~4桁)で入力してください`);
@@ -110,7 +113,8 @@ export const validateAddressImportRow = (
         }
     }
 
-    const fax = toHalfWidth(String(rowData['FAX'] || '')).trim();
+    const rawFax = toHalfWidth(String(rowData['FAX'] || '')).trim();
+    const fax = rawFax === '-' ? '' : rawFax;
     if (fax) {
         if (!/^\d{2,4}-\d{2,4}-\d{2,4}$/.test(fax)) {
             errors.push(`${excelRowNumber}行目: FAX「${fax}」は「xxxx-xxxx-xxxx」の形式(各ブロック2~4桁)で入力してください`);
@@ -127,35 +131,33 @@ export const validateAddressImportRow = (
 
     // 9. Area - エリア名を1次ソースとして検索
     const rawAreaInput = toHalfWidth(String(rowData['エリア名'] || '')).trim();
-    let resolvedAreaCode = '';
+    const exactAreaInput = String(rowData['エリア名'] || '').trim();
+    let resolvedAreaName = '';
     if (rawAreaInput) {
         if (areaList && areaList.length > 0) {
             // まずエリアコードとして完全一致で探す
             const byCode = areaList.find(a => a.areaCode === rawAreaInput);
             if (byCode) {
-                resolvedAreaCode = byCode.areaCode;
+                resolvedAreaName = byCode.areaName;
             } else {
                 // エリア名で探す
-                const byName = areaList.find(a => a.areaName === rawAreaInput);
+                const byName = areaList.find(a => a.areaName === exactAreaInput || a.areaName === rawAreaInput);
                 if (byName) {
-                    resolvedAreaCode = byName.areaCode;
+                    resolvedAreaName = byName.areaName;
                 } else {
-                    errors.push(`${excelRowNumber}行目: エリア「${rawAreaInput}」はエリアマスタに存在しません`);
+                    errors.push(`${excelRowNumber}行目: エリア「${exactAreaInput}」はエリアマスタに存在しません`);
                     rowHasError = true;
                 }
             }
         } else {
             // areaList が渡されていない場合は値をそのまま使用
-            resolvedAreaCode = rawAreaInput;
+            resolvedAreaName = exactAreaInput;
         }
     }
 
     // 10. Branch Number (to match '枝番')
-    const branchNumber = toHalfWidth(String(rowData['枝番'] || '')).trim();
-    if (branchNumber && !/^[0-9-]+$/.test(branchNumber)) {
-        errors.push(`${excelRowNumber}行目: 枝番「${branchNumber}」は半角数字とハイフンのみ入力可能です`);
-        rowHasError = true;
-    }
+    // 書式制限なし：「枝番」などの日本語文字列も含め任意の文字を受け入れる
+    const branchNumber = String(rowData['枝番'] || '').trim();
 
     // 11. Label Zip (to match '宛名ラベル用〒')
     const labelZip = toHalfWidth(String(rowData['宛名ラベル用〒'] || '')).trim();
@@ -180,7 +182,7 @@ export const validateAddressImportRow = (
     const newAddress: Omit<Address, 'id'> = {
         addressCode: officeCode,
         officeName: officeName,
-        area: resolvedAreaCode,
+        area: resolvedAreaName,
         no: no,
         zipCode: formatZipCode(zip || ''),
         address: address,
@@ -189,7 +191,7 @@ export const validateAddressImportRow = (
         division: String(rowData['事業部'] || ''),
         accountingCode: accountingCode,
         mainPerson: String(rowData['主担当'] || ''),
-        branchNumber: branchNumber,
+        branchNumber: branchNumber, // 任意テキスト（書式制限なし）
         specialNote: '', // ※列は削除されたため空文字固定
         notes: String(rowData['備考'] || ''),
         labelName: String(rowData['宛名ラベル用'] || ''),

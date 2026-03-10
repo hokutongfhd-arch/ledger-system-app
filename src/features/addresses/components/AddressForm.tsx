@@ -75,8 +75,10 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
 
     const areaOptions = useMemo(() => {
         return areas.map(area => ({
-            value: area.areaCode,
+            value: area.areaName,
             label: area.areaName,
+            displayId: area.areaCode,
+            searchText: area.areaCode,
         }));
     }, [areas]);
 
@@ -85,11 +87,11 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
     // Initialize from initialData
     useEffect(() => {
         if (initialData) {
-            // Check if initialData.area is a name and convert to code if possible
+            // Check if initialData.area is a code and convert to name if possible
             let areaValue = initialData.area;
-            const matchedArea = areas.find(a => a.areaName === initialData.area);
+            const matchedArea = areas.find(a => a.areaCode === initialData.area || a.areaName === initialData.area);
             if (matchedArea) {
-                areaValue = matchedArea.areaCode;
+                areaValue = matchedArea.areaName;
             }
 
             setFormData({
@@ -297,7 +299,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
         let firstErrorField: HTMLElement | null = null;
 
         // Required Field Check
-        if (!formData.addressCode || !/^\d{4}-\d{2}$/.test(formData.addressCode)) {
+        if (!formData.addressCode || !/^\d{4,5}-\d{2}$/.test(formData.addressCode)) {
             newErrorFields.add('addressCode');
             if (!firstErrorField) firstErrorField = codePart1Ref.current;
         }
@@ -305,14 +307,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
             newErrorFields.add('officeName');
             if (!firstErrorField) firstErrorField = officeNameRef.current;
         }
-        if (!formData.zipCode || formData.zipCode.length < 8) { // 3 digits + '-' + 4 digits = 8 chars
-            newErrorFields.add('zipCode');
-            if (!firstErrorField) firstErrorField = zipPart1Ref.current;
-        }
-        if (!formData.address) {
-            newErrorFields.add('address');
-            if (!firstErrorField) firstErrorField = addressRef.current;
-        }
+        // 〒・住所は任意項目のため必須チェックなし
 
         if (isAddressCodeDuplicate) {
             newErrorFields.add('addressCode');
@@ -361,9 +356,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                     name="part1"
                                     value={addressCodeParts.part1}
                                     onChange={handleAddressCodeChange}
-                                    maxLength={4}
-                                    className="w-20 text-center"
-                                    placeholder="1234"
+                                    maxLength={5}
+                                    className="w-24 text-center"
+                                    placeholder="12345"
                                     error={errorFields.has('addressCode')}
                                     readOnly={!!initialData}
                                 />
@@ -381,7 +376,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                 />
                             </div>
                             {errorFields.has('addressCode') && !formData.addressCode && <FormError>この項目は必須です</FormError>}
-                            {errorFields.has('addressCode') && formData.addressCode && !/^\d{4}-\d{2}$/.test(formData.addressCode) && <FormError>形式が正しくありません (xxxx-xx)</FormError>}
+                            {errorFields.has('addressCode') && formData.addressCode && !/^\d{4,5}-\d{2}$/.test(formData.addressCode) && <FormError>形式が正しくありません (xxxx(x)-xx)</FormError>}
                             {errorFields.has('addressCode') && formData.addressCode === initialData?.addressCode && addresses.some(a => a.addressCode === formData.addressCode && (!initialData || a.id !== initialData.id)) && (
                                 <FormError>既に登録されている事業所コードです</FormError>
                             )}
@@ -411,7 +406,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                     <SectionHeader>連絡先情報</SectionHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <FormLabel required>〒</FormLabel>
+                            <FormLabel>〒</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Input
                                     ref={zipPart1Ref}
@@ -421,7 +416,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                     maxLength={3}
                                     className="w-16 text-center"
                                     placeholder="123"
-                                    error={errorFields.has('zipCode')}
                                 />
                                 <span className="text-gray-500">-</span>
                                 <Input
@@ -432,21 +426,17 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                                     maxLength={4}
                                     className="w-20 text-center"
                                     placeholder="4567"
-                                    error={errorFields.has('zipCode')}
                                 />
                             </div>
-                            {errorFields.has('zipCode') && <FormError>この項目は必須です（ハイフン込み7桁）</FormError>}
                         </div>
                         <div className="md:col-span-2">
-                            <FormLabel required>住所</FormLabel>
+                            <FormLabel>住所</FormLabel>
                             <Input
                                 ref={addressRef}
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
-                                error={errorFields.has('address')}
                             />
-                            {errorFields.has('address') && <FormError>この項目は必須です</FormError>}
                         </div>
                         <div>
                             <FormLabel>ＴＥＬ</FormLabel>
@@ -537,7 +527,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSubmit,
                             />
                         </div>
                         <div>
-                            <FormLabel>エリアコード</FormLabel>
+                            <FormLabel>エリア名</FormLabel>
                             <SearchableSelect
                                 options={areaOptions}
                                 value={formData.area}

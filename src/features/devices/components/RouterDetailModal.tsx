@@ -55,7 +55,9 @@ export const RouterDetailModal: React.FC<RouterDetailModalProps> = ({
     const getEmployeeName = (code: string) => employees.find(e => e.code === code)?.name || code;
 
     // Logic for Address vs OfficeCode display could be unified, typically finding by addressCode
-    const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
+    const addressName = (!item.addressCode || item.addressCode === '返却')
+        ? '返却'
+        : addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
     const costBearerName = addresses.find(a => a.addressCode === item.costBearer)?.officeName || item.costBearer || '-';
 
 

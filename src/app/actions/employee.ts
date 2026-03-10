@@ -108,17 +108,36 @@ export async function fetchEmployeesAction() {
 
     // 2. Use Admin Client to Fetch All (Bypass RLS)
     const supabaseAdmin = getSupabaseAdmin();
-    const { data, error } = await supabaseAdmin
-        .from('employees')
-        .select('*')
-        .order('employee_code', { ascending: true });
+    
+    // Supabase default limit is 1000. Fetch all in chunks.
+    const allData: any[] = [];
+    const PAGE_SIZE = 1000;
+    let offset = 0;
 
-    if (error) {
-        console.error('Fetch Employees Action Error:', error);
-        throw new Error(error.message);
+    while (true) {
+        const { data, error } = await supabaseAdmin
+            .from('employees')
+            .select('*')
+            .order('employee_code', { ascending: true })
+            .range(offset, offset + PAGE_SIZE - 1);
+
+        if (error) {
+            console.error('Fetch Employees Action Error:', error);
+            throw new Error(error.message);
+        }
+
+        if (data && data.length > 0) {
+            allData.push(...data);
+            if (data.length < PAGE_SIZE) {
+                break; // Last page
+            }
+            offset += PAGE_SIZE;
+        } else {
+            break; // No more data
+        }
     }
 
-    return data;
+    return allData;
 }
 
 export async function updateEmployeeAction(id: string, data: any) {
@@ -263,7 +282,12 @@ export async function deleteEmployeeAction(id: string, version: number) {
     }
 
     if (count === 0) {
-        return { success: false, error: 'NotFoundError' };
+        // カスケード削除等で既に削除済みか確認
+        const { data: stillThere } = await supabaseAdmin.from('employees').select('id').eq('id', id).maybeSingle();
+        if (stillThere) {
+            // レコードは存在しているがバージョンが異なり削除されなかった場合（競合）
+            return { success: false, error: 'ConcurrencyError' };
+        }
     }
 
     // 5. Audit Log Actor -> REMOVED.
@@ -277,14 +301,23 @@ export async function deleteEmployeeAction(id: string, version: number) {
     return { success: true };
 }
 
-export async function deleteManyEmployeesAction(items: { id: string, version: number }[]) {
-    // We must respect ID + version for each delete as per Rule 6.
-    // Use Promise.all to process deletes in parallel on the server side to improve performance.
+export async function deleteManyEmployeesAction(ids: string[]) {
+    // Fetch latest versions to perform deletion
     try {
-        const results = await Promise.all(items.map(item => deleteEmployeeAction(item.id, item.version)));
+        const supabaseAdmin = getSupabaseAdmin();
+        const { data: currentItems, error } = await supabaseAdmin
+            .from('employees')
+            .select('id, version')
+            .in('id', ids);
+
+        if (error || !currentItems) {
+            return { success: false, error: error?.message || 'Could not fetch records for deletion' };
+        }
+
+        const results = await Promise.all(currentItems.map(item => deleteEmployeeAction(item.id, item.version)));
         const failures = results.filter(r => !r.success);
         if (failures.length > 0) {
-            return { success: false, error: failures[0].error || 'Deletion failed' };
+            return { success: false, error: failures[0].error || 'Deletion failed for some items' };
         }
         return { success: true };
     } catch (error: any) {

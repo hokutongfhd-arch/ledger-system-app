@@ -77,6 +77,13 @@ export const useSystemAlerts = () => {
         // Helper to check missing required codes
         const checkMissing = (items: Record<string, any>[], key: string, source: AlertSource, path: string, label: string, type: AlertType) => {
             items.forEach(item => {
+                // Ignore devices that are not currently 'in-use'
+                if (source !== 'Employee' && source !== 'Area' && source !== 'Address') {
+                    if (item.status && item.status !== 'in-use') {
+                        return;
+                    }
+                }
+
                 const val = String(item[key] || '').trim();
                 // If value is empty, it means the code is missing but the record exists
                 if (!val) {
@@ -123,7 +130,7 @@ export const useSystemAlerts = () => {
         // 2. Unregistered Address Code
         // Tablet, iPhone, FeaturePhone, Router, Employee
         const checkAddress = (item: any, source: AlertSource, path: string) => {
-            if (item.addressCode && !addressCodes.has(item.addressCode)) {
+            if (item.addressCode && item.addressCode !== '返却' && !addressCodes.has(item.addressCode)) {
                 result.push({
                     id: `unreg-addr-${source}-${item.id}`,
                     type: 'unregistered_address',
@@ -204,7 +211,6 @@ export const useSystemAlerts = () => {
         checkMissing(featurePhones, 'addressCode', 'FeaturePhone', '/devices/feature-phones', '事業所コード', 'missing_address_code');
 
         // Tablet
-        checkMissing(tablets, 'employeeCode', 'Tablet', '/devices/tablets', '社員コード', 'missing_employee_code');
         checkMissing(tablets, 'addressCode', 'Tablet', '/devices/tablets', '事業所コード', 'missing_address_code');
 
         // Router

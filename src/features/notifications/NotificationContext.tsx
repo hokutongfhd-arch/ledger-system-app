@@ -55,8 +55,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 .eq('is_acknowledged', false);
 
             if (error) {
-                // severity カラムが原因の場合は severity なしで再試行
-                console.warn('fetchUnreadState: retrying without severity:', error.message);
                 const { count: fallbackCount, error: fallbackError } = await supabase
                     .from('audit_logs')
                     .select('*', { count: 'exact', head: true })
@@ -64,7 +62,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     .eq('is_acknowledged', false);
 
                 if (fallbackError) {
-                    console.error('fetchUnreadState fallback error:', fallbackError);
+                    // 長時間放置によるセッション切れやネットワークエラーで空のオブジェクトが返されることがあるため、エラー表示を抑制
+                    if (Object.keys(fallbackError).length > 0 && fallbackError.message) {
+                        console.warn('fetchUnreadState fallback error:', fallbackError.message);
+                    }
                     return;
                 }
 
@@ -94,7 +95,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 setMaxSeverity(currentMax);
             }
         } catch (err) {
-            console.error('Failed to fetch unread anomalies:', err);
+            // ネットワークエラー等は静かに無視する
         }
     }, [isHigherSeverity, supabase]);
 

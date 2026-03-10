@@ -1,9 +1,13 @@
 import { Employee } from '../employee.types';
 import { calculateAge, calculateServicePeriod } from '../../../lib/utils/dateHelpers';
+import { Area } from '../../areas/area.types';
+import { Address } from '../../../lib/types';
 
 export const parseAndValidateEmployees = (
     rows: any[][],
-    headers: string[]
+    headers: string[],
+    areaList?: Area[],
+    addressList?: Address[]
 ): { validEmployees: Employee[]; errors: string[] } => {
     const processedCodes = new Set<string>();
     const processedEmails = new Set<string>(); // ファイル内メール重複チェック用
@@ -94,7 +98,7 @@ export const parseAndValidateEmployees = (
 
         // 半角カナ → 全角カナ変換（バリデーション前に自動変換）
         const toFullWidthKana = (str: string): string => {
-            // 半角カナ濁点・半濁点付き文字の対応表
+            // 半角カナ濁点・半濁点付き文字の対応表（半角カナ→全角カナ）
             const hankakuMap: Record<string, string> = {
                 'ｦ': 'ヲ', 'ｧ': 'ァ', 'ｨ': 'ィ', 'ｩ': 'ゥ', 'ｪ': 'ェ', 'ｫ': 'ォ',
                 'ｬ': 'ャ', 'ｭ': 'ュ', 'ｮ': 'ョ', 'ｯ': 'ッ', 'ｰ': 'ー',
@@ -107,25 +111,35 @@ export const parseAndValidateEmployees = (
                 'ﾏ': 'マ', 'ﾐ': 'ミ', 'ﾑ': 'ム', 'ﾒ': 'メ', 'ﾓ': 'モ',
                 'ﾔ': 'ヤ', 'ﾕ': 'ユ', 'ﾖ': 'ヨ',
                 'ﾗ': 'ラ', 'ﾘ': 'リ', 'ﾙ': 'ル', 'ﾚ': 'レ', 'ﾛ': 'ロ',
-                'ﾜ': 'ワ', 'ﾝ': 'ン', 'ﾞ': '゛', 'ﾟ': '゜',
+                'ﾜ': 'ワ', 'ﾝ': 'ン',
+                // 注意: ﾞ（半角濁点）と ﾟ（半角半濁点）はここで変換せず
+                // dakutenMap で先に合成処理を行う
             };
-            // 濁点・半濁点付き文字の合成対応表
+            // 半角カナ+半角濁点/半濁点 → 全角カナ（合成済み）の変換表
+            // キーは「半角カナ + 半角濁点(ﾞ U+FF9E) または 半角半濁点(ﾟ U+FF9F)」
             const dakutenMap: Record<string, string> = {
-                'カﾞ': 'ガ', 'キﾞ': 'ギ', 'クﾞ': 'グ', 'ケﾞ': 'ゲ', 'コﾞ': 'ゴ',
-                'サﾞ': 'ザ', 'シﾞ': 'ジ', 'スﾞ': 'ズ', 'セﾞ': 'ゼ', 'ソﾞ': 'ゾ',
-                'タﾞ': 'ダ', 'チﾞ': 'ヂ', 'ツﾞ': 'ヅ', 'テﾞ': 'デ', 'トﾞ': 'ド',
-                'ハﾞ': 'バ', 'ヒﾞ': 'ビ', 'フﾞ': 'ブ', 'ヘﾞ': 'ベ', 'ホﾞ': 'ボ',
-                'ハﾟ': 'パ', 'ヒﾟ': 'ピ', 'フﾟ': 'プ', 'ヘﾟ': 'ペ', 'ホﾟ': 'ポ',
-                'ウﾞ': 'ヴ',
+                'ｶﾞ': 'ガ', 'ｷﾞ': 'ギ', 'ｸﾞ': 'グ', 'ｹﾞ': 'ゲ', 'ｺﾞ': 'ゴ',
+                'ｻﾞ': 'ザ', 'ｼﾞ': 'ジ', 'ｽﾞ': 'ズ', 'ｾﾞ': 'ゼ', 'ｿﾞ': 'ゾ',
+                'ﾀﾞ': 'ダ', 'ﾁﾞ': 'ヂ', 'ﾂﾞ': 'ヅ', 'ﾃﾞ': 'デ', 'ﾄﾞ': 'ド',
+                'ﾊﾞ': 'バ', 'ﾋﾞ': 'ビ', 'ﾌﾞ': 'ブ', 'ﾍﾞ': 'ベ', 'ﾎﾞ': 'ボ',
+                'ﾊﾟ': 'パ', 'ﾋﾟ': 'ピ', 'ﾌﾟ': 'プ', 'ﾍﾟ': 'ペ', 'ﾎﾟ': 'ポ',
+                'ｳﾞ': 'ヴ',
             };
-            // まず1文字ずつ全角カナに変換
-            let result = str.split('').map(c => hankakuMap[c] || c).join('');
-            // 次に濁点・半濁点の合成処理
+            // Step1: 半角カナ+半角濁点/半濁点 を先に全角カナへ合成変換
+            let result = str;
             for (const [key, val] of Object.entries(dakutenMap)) {
                 result = result.split(key).join(val);
             }
+            // Step2: 残った半角カナを1文字ずつ全角カナへ変換
+            result = result.split('').map(c => hankakuMap[c] || c).join('');
+            // Step3: 変換されなかった単独の半角濁点・半濁点を除去（余分な文字が残らないよう）
+            result = result.replace(/[ﾞﾟ]/g, '');
+            // Step4: ASCII半角ハイフン「-」を全角長音符「ー」に変換
+            // 海外名など「ﾘ-」のようにハイフンで長音を表現している場合に対応
+            result = result.replace(/-/g, 'ー');
             return result;
         };
+
 
         const lastNameKanaRaw = String(rowData['苗字カナ'] || rowData['氏名カナ'] || '').trim();
         const firstNameKanaRaw = String(rowData['名前カナ'] || '').trim();
@@ -187,16 +201,34 @@ export const parseAndValidateEmployees = (
 
         // 10. Area Code
         const rawAreaCode = String(rowData['エリアコード'] || '').trim();
-        if (rawAreaCode && hasFullWidth(rawAreaCode)) {
-            validationErrors.push(`${excelRowNumber}行目: エリアコード「${rawAreaCode}」に全角文字が含まれています`);
-            rowHasError = true;
+        if (rawAreaCode) {
+            if (hasFullWidth(rawAreaCode)) {
+                validationErrors.push(`${excelRowNumber}行目: エリアコード「${rawAreaCode}」に全角文字が含まれています`);
+                rowHasError = true;
+            } else if (areaList && areaList.length > 0) {
+                // エリアマスタに存在するコードか確認
+                const exists = areaList.some(a => a.areaCode === rawAreaCode);
+                if (!exists) {
+                    validationErrors.push(`${excelRowNumber}行目: エリアコード「${rawAreaCode}」はエリアマスタに存在しません`);
+                    rowHasError = true;
+                }
+            }
         }
 
         // 11. Office Code
         const rawAddressCode = String(rowData['事業所コード'] || '').trim();
-        if (rawAddressCode && hasFullWidth(rawAddressCode)) {
-            validationErrors.push(`${excelRowNumber}行目: 事業所コード「${rawAddressCode}」に全角文字が含まれています`);
-            rowHasError = true;
+        if (rawAddressCode) {
+            if (hasFullWidth(rawAddressCode)) {
+                validationErrors.push(`${excelRowNumber}行目: 事業所コード「${rawAddressCode}」に全角文字が含まれています`);
+                rowHasError = true;
+            } else if (addressList && addressList.length > 0) {
+                // 事業所マスタに存在するコードか確認
+                const exists = addressList.some(a => a.addressCode === rawAddressCode);
+                if (!exists) {
+                    validationErrors.push(`${excelRowNumber}行目: 事業所コード「${rawAddressCode}」は事業所マスタに存在しません`);
+                    rowHasError = true;
+                }
+            }
         }
 
         // 12. Join Date
@@ -246,20 +278,21 @@ export const parseAndValidateEmployees = (
         }
         const role = (rawRole === '管理者') ? 'admin' : 'user';
 
-        // 16. Password
+        // 16. Password（必須、半角数字8文字以上17字未満）
         const rawPassword = String(rowData['パスワード(必須)'] || '').trim();
         const password = rawPassword;
-        if (password) {
-            if (hasFullWidth(password)) {
-                validationErrors.push(`${excelRowNumber}行目: パスワード「${password}」に全角文字が含まれています`);
-                rowHasError = true;
-            } else if (password.length < 8 || password.length > 16) {
-                validationErrors.push(`${excelRowNumber}行目: パスワードは8文字以上16文字以下である必要があります`);
-                rowHasError = true;
-            } else if (!/^[0-9]+$/.test(password)) {
-                validationErrors.push(`${excelRowNumber}行目: パスワードは半角数字のみ使用可能です`);
-                rowHasError = true;
-            }
+        if (!password) {
+            validationErrors.push(`${excelRowNumber}行目: パスワード(必須)が未入力です`);
+            rowHasError = true;
+        } else if (hasFullWidth(password)) {
+            validationErrors.push(`${excelRowNumber}行目: パスワード「${password}」に全角文字が含まれています`);
+            rowHasError = true;
+        } else if (!/^[0-9]+$/.test(password)) {
+            validationErrors.push(`${excelRowNumber}行目: パスワードは半角数字のみ使用可能です`);
+            rowHasError = true;
+        } else if (password.length < 8 || password.length > 16) {
+            validationErrors.push(`${excelRowNumber}行目: パスワードは8文字以上16文字以下（17字未満）である必要があります`);
+            rowHasError = true;
         }
 
         if (rowHasError) continue;

@@ -57,7 +57,9 @@ export const IPhoneDetailModal: React.FC<IPhoneDetailModalProps> = ({
 
     // Address (Office) mapping
     // Current item address
-    const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
+    const addressName = (!item.addressCode || item.addressCode === '返却')
+        ? '返却'
+        : addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
 
     // Status Badge Helper
     const getStatusColor = (status: string) => {

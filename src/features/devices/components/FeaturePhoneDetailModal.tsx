@@ -54,7 +54,9 @@ export const FeaturePhoneDetailModal: React.FC<FeaturePhoneDetailModalProps> = (
     // Helper to resolve employee name in history
     const getEmployeeName = (code: string) => employees.find(e => e.code === code)?.name || code;
 
-    const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
+    const addressName = (!item.addressCode || item.addressCode === '返却')
+        ? '返却'
+        : addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
 
     // Status Badge Helper
     const getStatusColor = (status: string) => {

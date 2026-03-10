@@ -74,7 +74,11 @@ export const RouterForm: React.FC<RouterFormProps> = ({ initialData, onSubmit, o
             value: a.addressCode,
             subLabel: a.address
         }));
-        return [{ label: '返却', value: '', subLabel: '' }, ...options];
+        return [
+            { label: '未選択', value: '', subLabel: '' },
+            { label: '返却', value: '返却', subLabel: '' },
+            ...options
+        ];
     }, [addresses]);
 
     useEffect(() => {

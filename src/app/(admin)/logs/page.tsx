@@ -482,10 +482,13 @@ function OperationLogContent() {
                                 <span className={clsx(
                                     "px-2 py-0.5 rounded text-xs font-bold",
                                     item.operation === 'INSERT' ? 'bg-green-100 text-green-700' :
-                                        item.operation === 'DELETE' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                        item.operation === 'DELETE' ? 'bg-red-100 text-red-700' :
+                                            item.operation === 'IMPORT' ? 'bg-purple-100 text-purple-700' :
+                                                'bg-blue-100 text-blue-700'
                                 )}>
                                     {item.operation === 'INSERT' ? '登録' :
-                                        item.operation === 'DELETE' ? '削除' : '更新'}
+                                        item.operation === 'DELETE' ? '削除' :
+                                            item.operation === 'IMPORT' ? 'インポート' : '更新'}
                                 </span>
                             )
                         },

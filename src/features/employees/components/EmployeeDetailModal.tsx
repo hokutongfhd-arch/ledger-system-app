@@ -26,7 +26,9 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
     if (!item) return null;
 
     const areaName = areas.find(a => a.areaCode === item.areaCode)?.areaName || '-';
-    const addressName = addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
+    const addressName = (!item.addressCode || item.addressCode === '返却')
+        ? '返却'
+        : addresses.find(a => a.addressCode === item.addressCode)?.officeName || '-';
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="社員 詳細">

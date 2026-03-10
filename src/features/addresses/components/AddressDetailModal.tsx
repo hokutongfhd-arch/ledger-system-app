@@ -24,7 +24,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
     if (!item) return null;
 
     const matchedArea = areas.find(a => a.areaName === item.area || a.areaCode === item.area);
-    const areaDisplay = matchedArea ? `${matchedArea.areaCode} (${matchedArea.areaName})` : (item.area || '-');
+    const areaDisplay = matchedArea ? matchedArea.areaName : (item.area || '-');
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="事業所 詳細">
@@ -88,7 +88,7 @@ export const AddressDetailModal: React.FC<AddressDetailModalProps> = ({
                                 <DetailRow label="経理コード" value={item.accountingCode} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <DetailRow label="エリアコード" value={areaDisplay} />
+                                <DetailRow label="エリア名" value={areaDisplay} />
                                 <DetailRow label="主担当" value={item.mainPerson} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

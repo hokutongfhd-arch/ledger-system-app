@@ -288,15 +288,14 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
             if (!firstErrorField) firstErrorField = emailRef.current;
         }
 
-        // Password Validation (8+ digits, numeric only)
+        // Password Validation (半角数字8文字以上17字未満)
         if (isAdmin && formData.password) {
             const password = formData.password;
-            if (password.length < 8) {
-                newErrorFields.add('password_length');
-                if (!firstErrorField) firstErrorField = passwordRef.current;
-            }
             if (!/^[0-9]+$/.test(password)) {
                 newErrorFields.add('password_format');
+                if (!firstErrorField) firstErrorField = passwordRef.current;
+            } else if (password.length < 8 || password.length > 16) {
+                newErrorFields.add('password_length');
                 if (!firstErrorField) firstErrorField = passwordRef.current;
             }
         }
@@ -583,17 +582,17 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ initialData, onSubmi
                                         }
                                     }}
                                     className="bg-yellow-50"
-                                    placeholder="管理者のみ表示 (半角数字8文字以上)"
+                                    placeholder="管理者のみ表示 (半角数字 8〜16桁)"
                                     error={errorFields.has('password') || errorFields.has('password_length') || errorFields.has('password_format')}
                                 />
                                 {errorFields.has('password') && (
                                     <FormError>この項目は必須です</FormError>
                                 )}
-                                {errorFields.has('password_length') && (
-                                    <FormError>パスワードは8文字以上必要です</FormError>
-                                )}
                                 {errorFields.has('password_format') && (
                                     <FormError>パスワードは半角数字のみ使用できます</FormError>
+                                )}
+                                {errorFields.has('password_length') && (
+                                    <FormError>パスワードは8文字以上16文字以下（17字未満）で設定してください</FormError>
                                 )}
                             </div>
                         )}

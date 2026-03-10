@@ -249,7 +249,7 @@ export interface OperationLog {
     id: string;
     timestamp: string;        // occurred_at
     tableName: string;        // table_name
-    operation: 'INSERT' | 'UPDATE' | 'DELETE';
+    operation: 'INSERT' | 'UPDATE' | 'DELETE' | 'IMPORT';
     oldData: any;             // old_data
     newData: any;             // new_data
     actorName: string;        // actor_name

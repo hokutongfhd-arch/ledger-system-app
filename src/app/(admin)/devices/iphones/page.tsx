@@ -22,6 +22,7 @@ import { mapIPhoneFromDb } from '../../../../features/context/DataContext';
 import { useCSVExport } from '../../../../hooks/useCSVExport';
 import { useFileImport } from '../../../../hooks/useFileImport';
 import { logger } from '../../../../lib/logger';
+import { recordImportSummaryLog } from '../../../../lib/importLogger';
 
 export default function IPhoneListPage() {
     const { user } = useAuth();
@@ -69,7 +70,8 @@ function IPhoneListContent() {
     } = useServerDataTable<IPhone>({
         fetchData: fetchIPhonesPaginatedAction as any,
         mapData: mapIPhoneFromDb,
-        initialPageSize: 15
+        initialPageSize: 15,
+        highlightId: highlightId || undefined,
     });
 
     const { handleExport } = useCSVExport<IPhone>();
@@ -146,6 +148,7 @@ function IPhoneListContent() {
             return true;
         },
         onImport: async (rows, fileHeaders) => {
+            const importStartTime = new Date().toISOString();
             setIsSyncing(true);
             try {
                 const allIPhonesRaw = await fetchIPhonesAllAction();
@@ -318,6 +321,8 @@ function IPhoneListContent() {
                 if (successCount > 0 && errorCount === 0) {
                     showToast(`インポート完了 - 成功: ${successCount}件 / 失敗: ${errorCount}件`, 'success');
                 }
+                // インポートログを1件にまとめる
+                await recordImportSummaryLog('iphones', importStartTime, successCount, user?.name, user?.code);
                 refetch();
             } finally {
                 // エラー・正常終了・バリデーションエラーどの経路でも必ず解除する
@@ -578,7 +583,7 @@ function IPhoneListContent() {
     const getRowClassName = (item: IPhone) => item.id === highlightId ? 'bg-red-100 hover:bg-red-200' : '';
 
     return (
-        <div className="space-y-4 h-full flex flex-col">
+        <div className="space-y-4 h-full flex flex-col min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-2xl font-bold text-text-main">iPhone 管理台帳</h1>
                 <div className="flex gap-2">

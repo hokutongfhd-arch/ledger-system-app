@@ -5,6 +5,8 @@ export interface Option {
     label: string;
     value: string;
     subLabel?: string;
+    displayId?: string;
+    searchText?: string;
 }
 
 interface SearchableSelectProps {
@@ -61,7 +63,9 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         return (
             opt.label.toLowerCase().includes(term) ||
             opt.value.toLowerCase().includes(term) ||
-            (opt.subLabel && opt.subLabel.toLowerCase().includes(term))
+            (opt.subLabel && opt.subLabel.toLowerCase().includes(term)) ||
+            (opt.displayId && opt.displayId.toLowerCase().includes(term)) ||
+            (opt.searchText && opt.searchText.toLowerCase().includes(term))
         );
     });
 
@@ -146,7 +150,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                                 >
                                     <span className="font-medium">{option.label}</span>
                                     <div className="flex items-center gap-2 text-xs opacity-70">
-                                        <span>ID: {option.value}</span>
+                                        <span>ID: {option.displayId || option.value}</span>
                                         {option.subLabel && option.subLabel !== option.value && <span>• {option.subLabel}</span>}
                                     </div>
                                 </div>
