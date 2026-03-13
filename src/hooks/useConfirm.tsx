@@ -77,7 +77,7 @@ export const useConfirm = () => {
                 <DialogHeader>
                     <DialogTitle>{config.title}</DialogTitle>
                     <DialogDescription asChild>
-                        <div>
+                        <div className="text-sm text-muted-foreground py-2">
                             {config.description}
                         </div>
                     </DialogDescription>

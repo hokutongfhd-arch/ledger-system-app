@@ -10,6 +10,7 @@ import { Eye, Loader2 } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "../../../../components/ui/dialog";
@@ -127,6 +128,9 @@ export default function AuditReportsPage() {
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Report Detail: {selectedReport && new Date(selectedReport.period_start).toLocaleDateString()}</DialogTitle>
+                        <DialogDescription>
+                            監査レポートの詳細情報を表示しています。
+                        </DialogDescription>
                     </DialogHeader>
                     {selectedReport && (
                         <div className="space-y-6">

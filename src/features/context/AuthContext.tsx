@@ -1,10 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseBrowserClient } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { Employee } from '../../lib/types';
-// import { supabase } from '../../lib/supabaseClient'; // REMOVE: Don't use static client for auth
 import { logger } from '../../lib/logger';
 import { loginInitialSetup, getSetupUserServer, logoutSetupAccount } from '../../app/actions/auth_setup';
 import { getLoginEmailAction, handleLoginFailureAction, handleLoginSuccessAction } from '@/app/actions/auth';
@@ -45,22 +44,9 @@ const mapEmployeeFromDb = (d: any): Employee => ({
     updatedAt: s(d.updated_at),
 });
 
-// Singleton pattern for Supabase client to prevent "Multiple GoTrueClient instances" in dev
-const getSupabaseClient = () => {
-    if (typeof window === 'undefined') return createClientComponentClient();
-
-    if (process.env.NODE_ENV === 'development') {
-        if (!(global as any)._supabaseClient) {
-            (global as any)._supabaseClient = createClientComponentClient();
-        }
-        return (global as any)._supabaseClient;
-    }
-    return createClientComponentClient();
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Use singleton or create new
-    const [supabase] = useState(() => getSupabaseClient());
+    // Use shared singleton
+    const [supabase] = useState(() => getSupabaseBrowserClient());
 
     const [user, setUser] = useState<Employee | null>(null);
     const [isLoading, setIsLoading] = useState(true);
