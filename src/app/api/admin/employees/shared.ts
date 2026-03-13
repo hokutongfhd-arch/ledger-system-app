@@ -14,7 +14,8 @@ export async function upsertEmployeeLogic(
     supabaseAdmin: SupabaseClient,
     data: any,
     actorUser?: any,
-    authCache?: Map<string, string> // email -> id
+    authCache?: Map<string, string>, // email -> id
+    mode: 'strict' | 'upsert' = 'upsert'
 ): Promise<UpsertResult> {
     const {
         employee_code,
@@ -51,6 +52,15 @@ export async function upsertEmployeeLogic(
         }
 
         const isUpdate = !!existingEmployee;
+
+        // 厳格モードの場合、既存の社員（コード重複）が見つかったらエラー
+        if (mode === 'strict' && isUpdate) {
+            return {
+                success: false,
+                error: `登録エラー: 社員コード「${employee_code}」は既に登録されています。`,
+                code: employee_code
+            };
+        }
         const currentVersion = existingEmployee?.version || 1;
 
         // メールアドレスは必須。空の場合はエラーとして処理する

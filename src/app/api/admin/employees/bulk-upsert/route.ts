@@ -85,60 +85,39 @@ export async function POST(req: Request) {
         const authCache = await getAuthCache(supabaseAdmin);
 
         // =========================================================
-        // インポート前: メールアドレスの DB 重複チェック
-        // 既に登録されているメールアドレスが含まれていればインポートを中止
+        // インポート直前: 重複チェックの厳格化
         // =========================================================
         const importEmails = employees
-            .filter((emp: any) => emp.email) // メールアドレスがある行のみ
-            .map((emp: any) => ({ code: emp.employee_code, email: emp.email.trim().toLowerCase() }));
+            .filter((emp: any) => emp.email)
+            .map((emp: any) => ({ code: String(emp.employee_code).trim(), email: String(emp.email).trim().toLowerCase() }));
+        const importCodes = employees.map((emp: any) => String(emp.employee_code).trim());
 
         if (importEmails.length > 0) {
-            // DB に存在する全社員のメールアドレス一覧を事前取得
             const emailList = importEmails.map((e: any) => e.email);
-            const { data: existingEmailRows, error: emailFetchError } = await supabaseAdmin
+            const { data: existingRows, error: fetchError } = await supabaseAdmin
                 .from('employees')
                 .select('employee_code, name, email')
-                .in('email', emailList);
+                .or(`email.in.(${emailList.map(e => `"${e}"`).join(',')}),employee_code.in.(${importCodes.map(c => `"${c}"`).join(',')})`);
 
-            if (!emailFetchError && existingEmailRows && existingEmailRows.length > 0) {
-                // 自分自身の上書き更新は除外して重複を判定
-                const importCodes = new Set(employees.map((e: any) => e.employee_code));
-                const duplicateErrors: string[] = [];
-
-                existingEmailRows.forEach((row: any) => {
-                    const isOwnUpdate = importCodes.has(row.employee_code);
-                    if (!isOwnUpdate) {
-                        // 既存の別社員のメールと重複
-                        const importedRow = importEmails.find((e: any) =>
-                            e.email === (row.email || '').toLowerCase()
-                        );
-                        if (importedRow) {
-                            duplicateErrors.push(
-                                `メールアドレス「${row.email}」は既に登録されています（登録済み社員: ${row.name || row.employee_code}）`
-                            );
-                        }
-                    }
+            if (!fetchError && existingRows && existingRows.length > 0) {
+                const duplicateErrors: string[] = existingRows.map((row: any) => {
+                    return `データ競合: ${row.name || row.employee_code} (コード: ${row.employee_code}) は既に登録されています。`;
                 });
 
-                if (duplicateErrors.length > 0) {
-                    return NextResponse.json({
-                        success: false,
-                        error: 'メールアドレスの重複が検出されたためインポートを中止しました',
-                        duplicateErrors,
-                        validationErrors: duplicateErrors,
-                    }, { status: 400 });
-                }
+                return NextResponse.json({
+                    success: false,
+                    error: '登録済みのデータが検出されたためインポートを中止しました',
+                    duplicateErrors,
+                    validationErrors: duplicateErrors,
+                }, { status: 400 });
             }
         }
 
         const results = [];
 
-        // Process sequentially to be safe (or Promise.all with concurrency limit if needed)
-        // Sequential is safer for auth rate limits.
+        // Process sequentially to be safe
         for (const emp of employees) {
-            // We pass 'actorUser' so that shared logic can patch the audit log after upsert
-            // Pass authCache to avoid redundant listUsers calls
-            const res = await upsertEmployeeLogic(supabaseAdmin, emp, actorUser, authCache);
+            const res = await upsertEmployeeLogic(supabaseAdmin, emp, actorUser, authCache, 'strict');
             results.push(res);
         }
 

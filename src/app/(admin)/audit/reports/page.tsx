@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { AuditReport } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table-components';
@@ -21,7 +21,7 @@ export default function AuditReportsPage() {
     const [reports, setReports] = useState<AuditReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedReport, setSelectedReport] = useState<AuditReport | null>(null);
-    const supabase = createClientComponentClient();
+    const supabase = getSupabaseBrowserClient();
 
     useEffect(() => {
         fetchReports();

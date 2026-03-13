@@ -1,5 +1,5 @@
 import { supabase as staticSupabase } from './supabaseClient';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseBrowserClient } from './supabase/client';
 import { createLogAction } from '../app/actions/log';
 
 export type LogActionType =
@@ -49,11 +49,7 @@ class LoggerService {
 
     protected getClient() {
         if (typeof window === 'undefined') return staticSupabase;
-        if (this.client) return this.client;
-
-        // クライアントサイドでの一貫したインスタンス管理
-        this.client = createClientComponentClient();
-        return this.client;
+        return getSupabaseBrowserClient();
     }
 
     /**

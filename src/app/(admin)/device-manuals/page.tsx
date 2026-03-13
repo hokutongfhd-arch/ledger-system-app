@@ -14,7 +14,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TitleFragment, ManualItem, ManualFile } from '@/features/manuals/manual.types';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useConfirm } from '@/hooks/useConfirm';
 import { logSystemError } from '@/lib/systemLogger';
 
@@ -183,7 +183,7 @@ export default function ManualListPage() {
 }
 
 const DeviceManualListContent = () => {
-    const supabase = createClientComponentClient();
+    const supabase = getSupabaseBrowserClient();
     const [manuals, setManuals] = useState<ManualItem[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);

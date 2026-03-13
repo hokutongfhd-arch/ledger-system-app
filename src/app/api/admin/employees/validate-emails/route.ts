@@ -35,12 +35,14 @@ export async function POST(req: Request) {
         }
 
         const emailList = importEmails.map((e: any) => e.email);
+        const codeList = importEmails.map((e: any) => e.code);
         
-        // Supabase の .in() クエリが URL 長の上限エラー (414) になるのを防ぐため 100件ずつ分割して取得
+        // 分割して取得
         const CHUNK_SIZE = 100;
-        let existingEmailRows: any[] = [];
-        let emailFetchError: any = null;
+        let existingRows: any[] = [];
+        let fetchError: any = null;
 
+        // 1. メールアドレスの重複チェック
         for (let i = 0; i < emailList.length; i += CHUNK_SIZE) {
             const chunk = emailList.slice(i, i + CHUNK_SIZE);
             const { data, error } = await supabaseAdmin
@@ -48,48 +50,52 @@ export async function POST(req: Request) {
                 .select('employee_code, name, email')
                 .in('email', chunk);
             
-            if (error) {
-                emailFetchError = error;
-                break;
-            }
-            if (data) existingEmailRows.push(...data);
+            if (error) { fetchError = error; break; }
+            if (data) existingRows.push(...data.map(r => ({ ...r, conflictType: 'email' })));
         }
 
-        if (emailFetchError) {
-             console.error('Email validation fetch error:', emailFetchError);
-             return NextResponse.json({ error: 'Failed to validate emails' }, { status: 500 });
-        }
-
-        if (existingEmailRows && existingEmailRows.length > 0) {
-            // 自分自身の上書き更新は除外して重複を判定
-            const importCodes = new Set(employees.map((e: any) => String(e.employee_code).trim()));
-            const duplicateErrors: string[] = [];
-
-            existingEmailRows.forEach((row: any) => {
-                const dbCode = String(row.employee_code).trim();
-                const isOwnUpdate = importCodes.has(dbCode);
+        // 2. 社員コードの重複チェック
+        if (!fetchError) {
+            for (let i = 0; i < codeList.length; i += CHUNK_SIZE) {
+                const chunk = codeList.slice(i, i + CHUNK_SIZE);
+                const { data, error } = await supabaseAdmin
+                    .from('employees')
+                    .select('employee_code, name, email')
+                    .in('employee_code', chunk);
                 
-                if (!isOwnUpdate) {
-                    // 既存の別社員のメールと重複している
-                    const importedRow = importEmails.find((e: any) =>
-                        e.email === (row.email || '').toLowerCase()
-                    );
-                    if (importedRow) {
-                        duplicateErrors.push(
-                            `メールアドレス「${row.email}」は既に登録されています（登録済み社員: ${row.name || row.employee_code}）`
-                        );
-                    }
+                if (error) { fetchError = error; break; }
+                if (data) {
+                    // メール重複で既に取得済みの行と重なる可能性があるため、マージ
+                    data.forEach(r => {
+                        if (!existingRows.find(ex => ex.employee_code === r.employee_code)) {
+                            existingRows.push({ ...r, conflictType: 'code' });
+                        }
+                    });
+                }
+            }
+        }
+
+        if (fetchError) {
+             console.error('Validation fetch error:', fetchError);
+             return NextResponse.json({ error: 'Failed to validate employees' }, { status: 500 });
+        }
+
+        if (existingRows.length > 0) {
+            // 誰の重複であってもエラーとする（厳格モード）
+            const duplicateErrors: string[] = existingRows.map((row: any) => {
+                if (row.conflictType === 'email') {
+                    return `メールアドレス「${row.email}」は既に登録されています（登録済み社員: ${row.name || row.employee_code}）`;
+                } else {
+                    return `社員コード「${row.employee_code}」は既に登録されています（登録済み社員: ${row.name || row.employee_code}）`;
                 }
             });
 
-            if (duplicateErrors.length > 0) {
-                return NextResponse.json({
-                    success: false,
-                    error: 'メールアドレスの重複が検出されたためインポートを中止しました',
-                    duplicateErrors,
-                    validationErrors: duplicateErrors,
-                }, { status: 400 });
-            }
+            return NextResponse.json({
+                success: false,
+                error: '既に登録済みのデータが検出されたためインポートを中止しました',
+                duplicateErrors,
+                validationErrors: duplicateErrors,
+            }, { status: 400 });
         }
 
         return NextResponse.json({ success: true });

@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseBrowserClient } from './supabase/client';
 import { supabase as staticSupabase } from './supabaseClient';
 
 interface SystemErrorLogEntry {
@@ -11,7 +11,7 @@ interface SystemErrorLogEntry {
 export const logSystemError = async (entry: SystemErrorLogEntry) => {
     try {
         // Use client component client if in browser, otherwise fallback to static client
-        const supabase = typeof window !== 'undefined' ? createClientComponentClient() : staticSupabase;
+        const supabase = typeof window !== 'undefined' ? getSupabaseBrowserClient() : staticSupabase;
 
         // Try to get the current user ID if not provided
         let userId = entry.userId;

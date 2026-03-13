@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseBrowserClient } from '../../lib/supabase/client';
 import { logger } from '../../lib/logger';
 
 export interface AnomalyRule {
@@ -12,7 +12,7 @@ export interface AnomalyRule {
     updated_at?: string;
 }
 
-const supabase = createClientComponentClient();
+const supabase = getSupabaseBrowserClient();
 
 export const auditService = {
     async fetchAnomalyRules(): Promise<AnomalyRule[]> {
